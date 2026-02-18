@@ -53,13 +53,34 @@ MINDmyPAIN is a Wizard-of-Oz prototype built for user research workshops. It sim
 
    Edit `.env.local` and fill in your credentials.
 
-4. **Start the development server:**
+4. **Database Setup (Schema & Seed Data):**
+
+   This project requires a specific database schema and seed data to function.
+
+   **a. Login & Link:**
+
+   ```bash
+   npx supabase login
+   npx supabase link --project-ref awjkvzvpifiqbcfkzwjl
+   ```
+
+   **b. Apply Schema:**
+
+   ```bash
+   npx supabase db push
+   ```
+
+   **c. Populate Data (Seed):**
+   - **Option 1 (Dashboard):** Copy `supabase/seed.sql` content -> Paste in [Supabase SQL Editor](https://supabase.com/dashboard/project/awjkvzvpifiqbcfkzwjl/sql) -> Run.
+   - **Option 2 (CLI):** Run `npx supabase db reset --linked` (WARNING: Wipes remote DB and re-seeds).
+
+5. **Start the development server:**
 
    ```bash
    npm run dev
    ```
 
-5. **Open the app:**
+6. **Open the app:**
    - Patient view: [http://localhost:3000](http://localhost:3000)
    - Researcher dashboard: [http://localhost:3000/dashboard](http://localhost:3000/dashboard)
 
