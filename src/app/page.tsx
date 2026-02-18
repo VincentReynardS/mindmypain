@@ -1,9 +1,10 @@
-import { redirect } from "next/navigation";
+import { PersonaSelector } from "@/components/patient/persona-selector";
 
 /**
- * Root Home - Redirects to the patient journal view.
- * The journal is the primary patient experience.
+ * Root Home - Persona selection landing page.
+ * Users select Sarah or Michael to enter the workshop scenario.
+ * No auth required (FR_AP1).
  */
 export default function Home() {
-  redirect("/journal");
+  return <PersonaSelector />;
 }
