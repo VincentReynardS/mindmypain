@@ -20,18 +20,15 @@ import { useUserStore } from "@/lib/stores/user-store";
 export function PersonaGuard({ children }: { children: React.ReactNode }) {
   const isSelected = useUserStore((s) => s.isSelected);
   const router = useRouter();
-  const [hasHydrated, setHasHydrated] = useState(false);
+  const [hasHydrated, setHasHydrated] = useState(() =>
+    useUserStore.persist.hasHydrated()
+  );
 
   useEffect(() => {
-    // Wait for Zustand persist to finish rehydrating from sessionStorage
+    // Subscribe to finish hydration if not already hydrated
     const unsub = useUserStore.persist.onFinishHydration(() => {
       setHasHydrated(true);
     });
-
-    // If already hydrated (e.g. navigating between client pages), set immediately
-    if (useUserStore.persist.hasHydrated()) {
-      setHasHydrated(true);
-    }
 
     return unsub;
   }, []);
