@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { JournalEntry, JournalEntryType } from '@/types/database';
+import { SafeClinicalSummaryRender } from './renderers/safe-clinical-summary-render';
 
 interface GlassBoxCardProps {
   entry: JournalEntry;
@@ -40,10 +41,13 @@ function SafeAgendaRender({ content }: { content: string }) {
   return <>{content}</>;
 }
 
+
 export function GlassBoxCard({ entry, onUpdate, onApprove }: GlassBoxCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(entry.content);
   const [isSaving, setIsSaving] = useState(false);
+
+  // ... (existing code for TYPE_CONFIG, handleSave, handleApprove, handleCancel, isEditing check) ...
 
   const config = TYPE_CONFIG[entry.entry_type] || TYPE_CONFIG.raw_text;
 
@@ -142,6 +146,8 @@ export function GlassBoxCard({ entry, onUpdate, onApprove }: GlassBoxCardProps) 
       <div className="whitespace-pre-wrap text-sm text-calm-text leading-relaxed">
         {entry.entry_type === "agendas" ? (
           <SafeAgendaRender content={entry.content} />
+        ) : entry.entry_type === "clinical_summary" ? (
+          <SafeClinicalSummaryRender content={entry.content || ''} />
         ) : (
           entry.content
         )}

@@ -29,6 +29,7 @@ export interface AudioState {
   setAudioBlob: (blob: Blob | null) => void;
   setTranscribedText: (text: string) => void;
   setError: (error: string | null) => void;
+  resetTranscribedText: () => void;
   reset: () => void;
 }
 
@@ -56,5 +57,6 @@ export const useAudioStore = create<AudioState>((set) => ({
   setAudioBlob: (audioBlob: Blob | null) => set({ audioBlob }),
   setTranscribedText: (transcribedText: string) => set({ transcribedText }),
   setError: (error: string | null) => set({ error }),
+  resetTranscribedText: () => set({ transcribedText: "" }),
   reset: () => set(initialState),
 }));

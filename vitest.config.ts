@@ -5,6 +5,9 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    env: {
+      OPENAI_API_KEY: 'mock-key',
+    },
   },
   resolve: {
     alias: {

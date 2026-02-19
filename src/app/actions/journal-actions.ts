@@ -17,26 +17,33 @@ import { revalidatePath } from 'next/cache';
 import { NewJournalEntry, UpdateJournalEntry } from '@/types/database';
 import { parseAgenda } from '@/lib/openai/smart-parser';
 
-export async function createJournalEntry(content: string, userId: string) {
+export async function createJournalEntry(
+  content: string, 
+  userId: string, 
+  entryType: 'raw_text' | 'clinical_summary' = 'raw_text'
+) {
   const supabase = await createClient();
 
   const newEntry: NewJournalEntry = {
     user_id: userId,
     content,
     status: 'draft',
-    entry_type: 'raw_text',
+    entry_type: entryType,
   };
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('journal_entries')
     // TODO: Regenerate types to fix inference - Supabase v2 type mismatch
-    .insert(newEntry as any);
+    .insert(newEntry as any)
+    .select('id')
+    .single<{ id: string }>();
 
   if (error) {
     throw new Error(error.message);
   }
 
   revalidatePath('/app/journal');
+  return data?.id;
 }
 
 
@@ -78,9 +85,9 @@ export async function processJournalEntry(id: string) {
   // 1. Fetch current content
   const { data: entry, error: fetchError } = await supabase
     .from('journal_entries')
-    .select('content')
+    .select('content, entry_type')
     .eq('id', id)
-    .single<{ content: string }>();
+    .single<{ content: string; entry_type: string }>();
 
   if (fetchError || !entry) {
     throw new Error('Entry not found');
@@ -89,14 +96,28 @@ export async function processJournalEntry(id: string) {
   // 2. Call AI Service
   // Note: This might take 1-3 seconds
   try {
-    const agendaResponse = await parseAgenda(entry.content);
+    let aiResponse;
+    const currentType = entry.entry_type;
+    let nextType = currentType;
+
+    // Default to agendas if raw_text, unless specified otherwise
+    // If it's already clinical_summary (e.g. from "Save as Summary"), process as such
+    if (currentType === 'clinical_summary') {
+      const { generateClinicalSummary } = await import('@/lib/openai/smart-parser');
+      aiResponse = await generateClinicalSummary(entry.content || '');
+      nextType = 'clinical_summary';
+    } else {
+      // Default behavior: Parsing agendas
+      aiResponse = await parseAgenda(entry.content || '');
+      nextType = 'agendas';
+    }
     
     // 3. Update Entry with "Glass Box" state
     const updatePayload: UpdateJournalEntry = {
-      entry_type: 'agendas',
+      entry_type: nextType as any,
       // @ts-ignore - Supabase type definition mismatch for JSON fields
-      ai_response: agendaResponse, 
-      content: JSON.stringify(agendaResponse), // For GlassBoxCard compatibility (Story 2.3 pattern)
+      ai_response: aiResponse, 
+      content: JSON.stringify(aiResponse), // For GlassBoxCard compatibility (Story 2.3 pattern)
       status: 'draft' // Keep as draft for user review
     };
 
