@@ -20,6 +20,8 @@ export interface JournalState {
   error: string | null;
   fetchEntries: (userId: string) => Promise<void>;
   addEntry: (entry: JournalEntry) => void;
+  updateEntry: (id: string, updates: Partial<JournalEntry>) => void;
+  approveEntry: (id: string) => void;
   setEntries: (entries: JournalEntry[]) => void;
   clearEntries: () => void;
 }
@@ -60,6 +62,20 @@ export const useJournalStore = create<JournalState>()((set, get) => ({
   addEntry: (entry: JournalEntry) => {
     set((state) => ({
       entries: [entry, ...state.entries],
+    }));
+  },
+
+  updateEntry: (id: string, updates: Partial<JournalEntry>) => {
+    set((state) => ({
+      entries: state.entries.map((e) => (e.id === id ? { ...e, ...updates } : e)),
+    }));
+  },
+
+  approveEntry: (id: string) => {
+    set((state) => ({
+      entries: state.entries.map((e) =>
+        e.id === id ? { ...e, status: "approved" as const } : e
+      ),
     }));
   },
 

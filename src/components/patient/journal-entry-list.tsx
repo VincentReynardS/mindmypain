@@ -14,6 +14,8 @@ import { useJournalStore } from "@/lib/stores/journal-store";
 import { groupEntriesByDate } from "@/lib/utils/date-helpers";
 import { DateGroupHeader } from "./date-group-header";
 import { JournalEntryCard } from "./journal-entry-card";
+import { GlassBoxCard } from "@/components/shared/glass-box/glass-box-card";
+import { updateJournalEntry, approveJournalEntry } from "@/app/actions/journal-actions";
 
 import { useUserStore } from "@/lib/stores/user-store";
 
@@ -48,6 +50,8 @@ export function JournalEntryList() {
   const isLoading = useJournalStore((s) => s.isLoading);
   const error = useJournalStore((s) => s.error);
   const fetchEntries = useJournalStore((s) => s.fetchEntries);
+  const updateEntry = useJournalStore((s) => s.updateEntry);
+  const approveEntry = useJournalStore((s) => s.approveEntry);
   const personaId = useUserStore((s) => s.personaId);
 
   if (isLoading) {
@@ -83,9 +87,28 @@ export function JournalEntryList() {
         <div key={label}>
           <DateGroupHeader label={label} />
           <div className="flex flex-col gap-2">
-            {groupEntries.map((entry) => (
-              <JournalEntryCard key={entry.id} entry={entry} />
-            ))}
+            {groupEntries.map((entry) =>
+              entry.entry_type === "raw_text" ? (
+                <JournalEntryCard key={entry.id} entry={entry} />
+              ) : (
+                <GlassBoxCard
+                  key={entry.id}
+                  entry={entry}
+                  onUpdate={async (id, content) => {
+                    // Optimistic update
+                    updateEntry(id, { content });
+                    // Server update
+                    await updateJournalEntry(id, { content });
+                  }}
+                  onApprove={async (id) => {
+                    // Optimistic update
+                    approveEntry(id);
+                    // Server update
+                    await approveJournalEntry(id);
+                  }}
+                />
+              )
+            )}
           </div>
         </div>
       ))}
