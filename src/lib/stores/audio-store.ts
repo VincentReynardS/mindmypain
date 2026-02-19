@@ -16,6 +16,9 @@ export interface AudioState {
   isProcessing: boolean;
   duration: number;
   volume: number;
+  audioBlob: Blob | null;
+  transcribedText: string;
+  error: string | null;
   startRecording: () => void;
   pauseRecording: () => void;
   resumeRecording: () => void;
@@ -23,6 +26,9 @@ export interface AudioState {
   setProcessing: (processing: boolean) => void;
   setVolume: (volume: number) => void;
   setDuration: (duration: number) => void;
+  setAudioBlob: (blob: Blob | null) => void;
+  setTranscribedText: (text: string) => void;
+  setError: (error: string | null) => void;
   reset: () => void;
 }
 
@@ -32,16 +38,23 @@ const initialState = {
   isProcessing: false,
   duration: 0,
   volume: 0,
+  audioBlob: null as Blob | null,
+  transcribedText: "",
+  error: null as string | null,
 };
 
 export const useAudioStore = create<AudioState>((set) => ({
   ...initialState,
-  startRecording: () => set({ isRecording: true, isPaused: false }),
+  startRecording: () =>
+    set({ isRecording: true, isPaused: false, error: null }),
   pauseRecording: () => set({ isPaused: true }),
   resumeRecording: () => set({ isPaused: false }),
   stopRecording: () => set({ isRecording: false, isPaused: false }),
   setProcessing: (isProcessing: boolean) => set({ isProcessing }),
   setVolume: (volume: number) => set({ volume }),
   setDuration: (duration: number) => set({ duration }),
+  setAudioBlob: (audioBlob: Blob | null) => set({ audioBlob }),
+  setTranscribedText: (transcribedText: string) => set({ transcribedText }),
+  setError: (error: string | null) => set({ error }),
   reset: () => set(initialState),
 }));
