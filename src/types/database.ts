@@ -32,9 +32,9 @@ export interface Database {
           audio_url: string | null;
           status: JournalEntryStatus;
           entry_type: JournalEntryType;
-          ai_response: Record<string, unknown> | null;
+          ai_response: any | null;
           tags: string[];
-          metadata: Record<string, unknown> | null;
+          metadata: any | null;
         };
         Insert: {
           id?: string;
@@ -46,9 +46,9 @@ export interface Database {
           audio_url?: string | null;
           status?: JournalEntryStatus;
           entry_type?: JournalEntryType;
-          ai_response?: Record<string, unknown> | null;
+          ai_response?: any | null;
           tags?: string[];
-          metadata?: Record<string, unknown> | null;
+          metadata?: any | null;
         };
         Update: {
           id?: string;
@@ -60,9 +60,9 @@ export interface Database {
           audio_url?: string | null;
           status?: JournalEntryStatus;
           entry_type?: JournalEntryType;
-          ai_response?: Record<string, unknown> | null;
+          ai_response?: any | null;
           tags?: string[];
-          metadata?: Record<string, unknown> | null;
+          metadata?: any | null;
         };
       };
     };

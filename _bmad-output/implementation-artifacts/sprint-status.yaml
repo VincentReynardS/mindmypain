@@ -51,7 +51,7 @@ development_status:
   2-1-journal-entry-input-voice-text: done
   2-2-daily-list-view: review
   2-3-glass-box-card-component: done
-  2-4-integration-smart-parsing: backlog
+  2-4-integration-smart-parsing: done
   2-5-integration-clinical-summary: backlog
   epic-2-retrospective: optional
 

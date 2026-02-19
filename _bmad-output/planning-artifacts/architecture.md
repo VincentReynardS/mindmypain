@@ -139,6 +139,8 @@ npm install @supabase/supabase-js @supabase/ssr framer-motion lucide-react clsx 
 - **Implementation:**
   - **Hardcoded Profiles:** The app will have a `UserContext` provider initialized with one of three static profiles: `Sarah` (Seed Data), `Michael` (Seed Data), or `Guest` (Empty).
   - **Security Trade-off:** RLS policies will need to use a simulated `user_id` passed in queries rather than `auth.uid()`. This is acceptable **strictly** for the prototype/workshop environment but must be refactored for production.
+    > [!WARNING]
+    > **CRITICAL IMPLEMENTATION DETAIL:** The app uses string-based Persona IDs (e.g., 'sarah', 'michael') for `user_id`. Do NOT enforce `supabase.auth.getUser()` checks in Server Actions that expect UUIDs. This will break the application. Use the Persona ID passed from the client instead.
 
 ### API & Communication Patterns
 

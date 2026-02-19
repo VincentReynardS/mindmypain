@@ -1,16 +1,10 @@
-"use client";
 
-/**
- * JournalEntryCard - Renders a single journal entry in the daily list.
- *
- * Displays timestamp, content snippet, and entry_type badge.
- * Uses Calm design tokens for consistent visual language.
- *
- * @see 2-2-daily-list-view.md - Task 3
- */
-
+import { useState } from "react";
 import { type JournalEntry, type JournalEntryType } from "@/types/database";
 import { formatTime, truncateContent } from "@/lib/utils/date-helpers";
+import { Sparkles, Loader2 } from "lucide-react";
+import { processJournalEntry } from "@/app/actions/journal-actions";
+import { useJournalStore } from "@/lib/stores/journal-store";
 
 const TYPE_BADGE_CONFIG: Record<
   JournalEntryType,
@@ -36,7 +30,24 @@ interface JournalEntryCardProps {
 }
 
 export function JournalEntryCard({ entry }: JournalEntryCardProps) {
+  const [isProcessing, setIsProcessing] = useState(false);
+  const fetchEntries = useJournalStore((s) => s.fetchEntries);
   const badge = TYPE_BADGE_CONFIG[entry.entry_type];
+
+  const handleOrganize = async () => {
+    try {
+      setIsProcessing(true);
+      await processJournalEntry(entry.id);
+      // Refresh list to show GlassBoxCard
+      await fetchEntries(entry.user_id);
+    } catch (error) {
+      console.error("Failed to organize entry:", error);
+      alert("Failed to organize entry. Please try again.");
+      // Optional: Add toast notification here
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   return (
     <div
@@ -53,6 +64,27 @@ export function JournalEntryCard({ entry }: JournalEntryCardProps) {
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
+          {entry.entry_type === "raw_text" && (
+            <button
+              onClick={handleOrganize}
+              disabled={isProcessing}
+              className="group flex items-center gap-1.5 rounded-full bg-calm-blue-soft px-3 py-1 text-xs font-medium text-calm-blue transition-colors hover:bg-calm-blue hover:text-white disabled:opacity-50"
+              title="Organize with AI"
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <span>Organizing...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-3 w-3" />
+                  <span>Organize</span>
+                </>
+              )}
+            </button>
+          )}
+
           {badge && (
             <span
               className={`rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}
