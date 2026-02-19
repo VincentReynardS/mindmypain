@@ -49,7 +49,7 @@ development_status:
 
   epic-2: in-progress
   2-1-journal-entry-input-voice-text: done
-  2-2-daily-list-view: backlog
+  2-2-daily-list-view: review
   2-3-glass-box-card-component: backlog
   2-4-integration-smart-parsing: backlog
   2-5-integration-clinical-summary: backlog

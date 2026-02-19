@@ -1,24 +1,38 @@
 "use client";
 
 /**
- * Journal Page - Daily journal view with voice/text input.
+ * Journal Page - Daily journal view with voice/text input and entry list.
  *
  * Primary patient interaction surface. Integrates:
  * - JournalInput: text area for typing or viewing transcriptions
  * - ScribeControls: mic button, stop, processing state
  * - AudioVisualizer: waveform feedback during recording
+ * - JournalEntryList: date-grouped list of existing entries
  *
- * Existing journal entries (Story 2.2) will be rendered below.
- *
- * @see epics.md - Story 2.1 (Journal Entry Input)
+ * @see epics.md - Story 2.1 (Journal Entry Input), Story 2.2 (Daily List View)
  * @see ux-design-specification.md - "Frictionless Dump"
  */
 
+import { useEffect } from "react";
 import { JournalInput } from "@/components/patient/journal-input";
 import { ScribeControls } from "@/components/patient/scribe-controls";
 import { AudioVisualizer } from "@/components/shared/audio-visualizer";
+import { JournalEntryList } from "@/components/patient/journal-entry-list";
+import { useJournalStore } from "@/lib/stores/journal-store";
+import { useUserStore } from "@/lib/stores/user-store";
 
 export default function JournalPage() {
+  const personaId = useUserStore((s) => s.personaId);
+  const fetchEntries = useJournalStore((s) => s.fetchEntries);
+  const clearEntries = useJournalStore((s) => s.clearEntries);
+
+  useEffect(() => {
+    if (personaId) {
+      clearEntries();
+      fetchEntries(personaId);
+    }
+  }, [personaId, fetchEntries, clearEntries]);
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -36,6 +50,13 @@ export default function JournalPage() {
 
       {/* Recording controls -- mic, stop, processing */}
       <ScribeControls />
+
+      {/* Separator between input and history */}
+      <hr className="border-border" />
+
+      {/* Date-grouped journal entry list */}
+      <JournalEntryList />
     </div>
   );
 }
+
