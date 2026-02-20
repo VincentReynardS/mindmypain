@@ -13,6 +13,8 @@
 import { PersonaGuard } from "@/components/shared/persona-guard";
 import { MobileHeader } from "@/components/patient/mobile-header";
 
+import { PatientBottomNav } from "@/components/patient/bottom-nav";
+
 export default function PatientLayout({
   children,
 }: {
@@ -22,7 +24,8 @@ export default function PatientLayout({
     <PersonaGuard>
       <div className="min-h-screen bg-calm-surface">
         <MobileHeader />
-        <main className="mx-auto max-w-lg px-4 pb-20 pt-6">{children}</main>
+        <main className="mx-auto max-w-lg px-4 pb-[calc(5rem+env(safe-area-inset-bottom))] pt-6">{children}</main>
+        <PatientBottomNav />
       </div>
     </PersonaGuard>
   );

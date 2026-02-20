@@ -53,14 +53,19 @@ export async function updateJournalEntry(id: string, updates: UpdateJournalEntry
   const { error } = await supabase
     .from('journal_entries')
     // TODO: Regenerate types to fix inference
-    .update(updates as any)
+    .update(updates as never)
     .eq('id', id);
 
   if (error) {
     throw new Error(error.message);
   }
 
-  revalidatePath('/app/journal');
+  revalidatePath('/journal');
+}
+
+export async function updateAppointmentEntry(id: string, content: string) {
+  await updateJournalEntry(id, { content });
+  revalidatePath('/appointments');
 }
 
 export async function approveJournalEntry(id: string) {
@@ -69,14 +74,14 @@ export async function approveJournalEntry(id: string) {
   const { error } = await supabase
     .from('journal_entries')
     // TODO: Regenerate types to fix inference
-    .update({ status: 'approved' } as any)
+    .update({ status: 'approved' } as never)
     .eq('id', id);
 
   if (error) {
     throw new Error(error.message);
   }
 
-  revalidatePath('/app/journal');
+  revalidatePath('/journal');
 }
 
 export async function processJournalEntry(id: string) {
@@ -124,14 +129,14 @@ export async function processJournalEntry(id: string) {
     const { error: updateError } = await supabase
       .from('journal_entries')
       // TODO: Regenerate types to fix inference
-      .update(updatePayload as any)
+      .update(updatePayload as never)
       .eq('id', id);
 
     if (updateError) {
       throw new Error(updateError.message);
     }
 
-    revalidatePath('/app/journal');
+    revalidatePath('/journal');
     return { success: true };
     
   } catch (err) {
