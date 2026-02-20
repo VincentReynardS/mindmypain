@@ -231,76 +231,142 @@ So that I can communicate my history effectively without anxiety.
 **And** The AI should return a JSON structure with sections: Chief Complaint, Med Review, Patient Goal
 **And** The frontend should render this as a "Doctor Letter Card" (Glass Box) ready for approval
 
-### Epic 3: The Wizard's Dashboard & Scenario Control
+# Epic 3: Structured Health Records & Navigation
 
-**Goal**: Enable the Researcher to monitor live sessions and trigger specific "Scenario Responses" (e.g., Clinical Summary, Agenda, Pacing Alert) or edit text in real-time.
+**Goal**: Transform the application from a chronological feed into a section-based health record matching the physical journal's mental model. Provide specific input forms and tables for Appointments, Medications, and Scripts.
+**User Outcome**: Users can organize their health data logically, finding specific records quickly instead of scrolling through a continuous timeline.
+**FRs covered**: FR_SJ2 (Categorization refinement), plus implied new requirements for structured forms.
+
+### Story 3.1: Bottom Navigation Structure
+
+As a patient user,
+I want to navigate between different sections of my journal (Home, Appointment, Medication, Scripts & Referrals),
+So that I can organize and find my health records logically.
+
+**Acceptance Criteria:**
+- **Given** the user is viewing the `/app/(patient)` layout
+- **When** they look at the bottom of the screen
+- **Then** they should see a fixed tab bar with icons for: Home, Appointment, Medication, Scripts
+- **And** Tap interactions should route to respective views (`/app/journal`, `/app/appointments`, `/app/medications`, `/app/scripts`)
+
+### Story 3.2: Appointment Record Glass Box
+
+As a patient user,
+I want a specific form to log my doctor appointments,
+So that I can capture the exact details prescribed in my physical journal.
+
+**Acceptance Criteria:**
+- **Given** the user navigates to the Appointment tab OR the AI classifies an input as an Appointment
+- **When** the entry is displayed
+- **Then** it should render an `AppointmentGlassBox` component
+- **And** Edit mode should provide explicit form fields for: Date, Profession, Practitioner Name, Visit Type, Location, Reason, Admin Needs (checkboxes), Questions, Outcomes, Follow-up Questions, Notes.
+- **And** Saving updates the structured data in Supabase.
+
+### Story 3.3: Medication Record Glass Box
+
+As a patient user,
+I want a specific form to log my medications,
+So that I can track dosages, side effects, and adherence over time.
+
+**Acceptance Criteria:**
+- **Given** the user navigates to the Medication tab OR the AI classifies an input as a Medication log
+- **When** the entry is displayed
+- **Then** it should render a `MedicationGlassBox` component
+- **And** Edit mode should provide explicit fields for: Brand Name, Generic Name, Dosage, Date Started, Reason, Side Effects, Feelings, Date Stopped, Stop Reason, Notes.
+- **And** Saving updates the structured data in Supabase.
+
+### Story 3.4: Scripts and Referrals Table
+
+As a patient user,
+I want to see a clear checklist of my pending prescriptions and referrals,
+So that I can manage my pharmacy visits and admin tasks efficiently.
+
+**Acceptance Criteria:**
+- **Given** the user navigates to the Scripts & Referrals tab
+- **When** the view loads
+- **Then** it should display a data table or checklist view
+- **And** The table should have columns/states for: Medication/Referral Name, To Be Filled, Filled (checkbox/toggle).
+
+### Story 3.5: Intelligent Routing Parser Upgrade
+
+As a patient user,
+I want the AI to automatically file my "messy dumps" into the correct journal tabs,
+So that I don't have to manually fill out the complex forms.
+
+**Acceptance Criteria:**
+- **Given** the user submits a voice/text entry
+- **When** the system parses the input
+- **Then** the `smart-parser.ts` logic should identify if the input represents an Appointment, Medication change, Script task, or general Agenda
+- **And** The AI should attempt to populate the corresponding JSON schema for that specific category
+- **And** The backend should set the `entry_type` correctly so it appears in the right tab's list view.
+
+
+# Epic 4: The Wizard's Dashboard & Scenario Control
+
+**Goal**: Enable the Researcher to monitor live sessions and trigger specific "Scenario Responses" or edit text in real-time. (Delayed from Epic 3 due to pivot).
 **User Outcome**: (Researcher) Can invisibly drive the workshop scenarios. (Patient) Receives intelligent, context-aware responses that feel like a "Magic" AI.
 **FRs covered**: FR_WD1, FR_WD2, FR_WD3
 
-### Story 3.1: Researcher Dashboard Overview
+### Story 4.1: Researcher Dashboard Overview
 
 As a researcher,
 I want a dashboard where I can see the active session for "Sarah" or "Michael",
 So that I can monitor their inputs in real-time.
 
 **Acceptance Criteria:**
+- **Given** the user is on `/app/dashboard`
+- **When** the page loads
+- **Then** they should see two panels: "Active Patient: Sarah" and "History Log"
+- **And** The interface should clearly distinguish between 'User Input' (Left) and 'AI Response' (Right)
+- **And** It should show the current connection status (Online/Offline)
+- **And** Must adhere to `@simulated-auth-only` principles for viewing across users.
 
-**Given** the user is on `/app/dashboard`
-**When** the page loads
-**Then** they should see two panels: "Active Patient: Sarah" and "History Log"
-**And** The interface should clearly distinguish between 'User Input' (Left) and 'AI Response' (Right)
-**And** It should show the current connection status (Online/Offline)
-
-### Story 3.2: Live Stream & Real-time Updates
+### Story 4.2: Live Stream & Real-time Updates
 
 As a researcher,
 I want incoming patient logs to appear instantly (<500ms),
 So that I can respond quickly and maintain the illusion of a fast AI.
 
 **Acceptance Criteria:**
+- **Given** the dashboard is open
+- **When** a patient submits a new log via Epic 2/3 forms
+- **Then** the new entry should appear at the top of the feed immediately (Supabase Realtime)
+- **And** A visual indicator should flash to grab my attention (NFR_USE2)
 
-**Given** the dashboard is open
-**When** a patient submits a new log via Epic 2
-**Then** the new entry should appear at the top of the feed immediately (Supabase Realtime)
-**And** A visual indicator should flash to grab my attention (NFR_USE2)
-
-### Story 3.3: Wizard Intervention Actions (Edit/Scenario Trigger)
+### Story 4.3: Wizard Intervention Actions (Edit/Scenario Trigger)
 
 As a researcher,
 I want to edit the AI-generated draft before the patient sees it,
 So that I can correct hallucinations or improve the tone.
 
 **Acceptance Criteria:**
+- **Given** a new drafted response appears in the dashboard
+- **When** I click "Edit"
+- **Then** the text area (or structured JSON form) should become editable
+- **And** I can type new content or correct form fields
+- **And** Clicking "Push to Patient" should update the `journal_entries` status to `pending_review` (visible to patient)
 
-**Given** a new drafted response appears in the dashboard
-**When** I click "Edit"
-**Then** the text area should become editable
-**And** I can type new content
-**And** Clicking "Push to Patient" should update the `journal_entries` status to `pending_review` (visible to patient)
-
-### Story 3.4: Pre-Canned Response Library
+### Story 4.4: Pre-Canned Response Library
 
 As a researcher,
 I want a library of pre-written responses for the specific workshop scenarios,
 So that I don't have to type long medical summaries in 7 minutes.
 
 **Acceptance Criteria:**
+- **Given** I am responding to an input
+- **When** I click the "Scenario Library" button
+- **Then** a modal should open with options matched to the structured schemas (e.g. `[New Appointment Pattern]`, `[Medication Review Alert]`)
+- **And** Selecting one should auto-fill the response editor with the scripted text/json
+- **And** I can still make minor edits before pushing
 
-**Given** I am responding to an input
-**When** I click the "Scenario Library" button
-**Then** a modal should open with options: `[Scenario 1: Pacing Alert]`, `[Scenario 2: Clinical Summary]`, `[Scenario 3: Agenda]`
-**And** Selecting one should auto-fill the response text area with the scripted text
-**And** I can still make minor edits before pushing
-
-### Story 3.5: "Thinking State" Indication
+### Story 4.5: "Thinking State" Indication
 
 As a patient user,
 I want to see a "AI is thinking..." animation while the researcher is preparing a response,
 So that I know the system hasn't crashed.
 
 **Acceptance Criteria:**
-
-**Given** the researcher is editing/typing a response (dashboard active)
-**When** the entry status is `draft` (backend state)
-**Then** the patient UI should show a "pulsing brain" or "Thinking..." skeleton loader
-**And** It should persist until the status changes to `pending_review`
+- **Given** the researcher is editing/typing a response (dashboard active)
+- **When** the entry status is `draft` (backend state)
+- **Then** the patient UI should show a "pulsing brain" or "Thinking..." skeleton loader
+- **And** It should persist until the status changes to `pending_review`

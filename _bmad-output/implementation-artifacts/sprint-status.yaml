@@ -47,18 +47,26 @@ development_status:
   1-4-mobile-first-patient-layout: done
   epic-1-retrospective: done
 
-  epic-2: in-progress
+  epic-2: done
   2-1-journal-entry-input-voice-text: done
   2-2-daily-list-view: done
   2-3-glass-box-card-component: done
   2-4-integration-smart-parsing: done
   2-5-integration-clinical-summary: done
-  epic-2-retrospective: optional
+  epic-2-retrospective: done
 
   epic-3: backlog
-  3-1-researcher-dashboard-overview: backlog
-  3-2-live-stream-real-time-updates: backlog
-  3-3-wizard-intervention-actions: backlog
-  3-4-pre-canned-response-library: backlog
-  3-5-thinking-state-indication: backlog
+  3-1-bottom-navigation-structure: backlog
+  3-2-appointment-record-glass-box: backlog
+  3-3-medication-record-glass-box: backlog
+  3-4-scripts-and-referrals-table: backlog
+  3-5-intelligent-routing-parser: backlog
   epic-3-retrospective: optional
+
+  epic-4: backlog
+  4-1-researcher-dashboard-overview: backlog
+  4-2-live-stream-real-time-updates: backlog
+  4-3-wizard-intervention-actions: backlog
+  4-4-pre-canned-response-library: backlog
+  4-5-thinking-state-indication: backlog
+  epic-4-retrospective: optional
