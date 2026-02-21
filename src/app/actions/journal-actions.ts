@@ -127,21 +127,40 @@ export async function processJournalEntry(id: string) {
       aiResponse = await generateClinicalSummary(entry.content || '');
       nextType = 'clinical_summary';
     } else {
-      // Default behavior: Parsing agendas or medication based on keyword heuristic
-      const textToAnalyze = entry.content?.toLowerCase() || '';
-      
-      if (textToAnalyze.includes('taking') || textToAnalyze.includes('mg') || textToAnalyze.includes('lyrica') || textToAnalyze.includes('medication')) {
-        const { parseMedication } = await import('@/lib/openai/smart-parser');
-        aiResponse = await parseMedication(entry.content || '');
-        nextType = 'agendas'; // Keeping agendas to satisfy type restrictions in prototype DB schema
-      } else if (textToAnalyze.includes('prescribe') || textToAnalyze.includes('prescription') || textToAnalyze.includes('referral') || textToAnalyze.includes('script') || textToAnalyze.includes('refill')) {
-        const { parseScript } = await import('@/lib/openai/smart-parser');
-        aiResponse = await parseScript(entry.content || '');
-        nextType = 'agendas';
-      } else {
-        const { parseAgenda } = await import('@/lib/openai/smart-parser');
-        aiResponse = await parseAgenda(entry.content || '');
-        nextType = 'agendas';
+      // Use LLM to classify intent
+      const { classifyIntent } = await import('@/lib/openai/smart-parser');
+      const intent = await classifyIntent(entry.content || '');
+
+      switch (intent) {
+        case 'medication': {
+          const { parseMedication } = await import('@/lib/openai/smart-parser');
+          aiResponse = await parseMedication(entry.content || '');
+          // TODO (Tech Debt): Refactor DB schema to handle medication/script/appointment types natively
+          // Keeping agendas to satisfy type restrictions in prototype DB schema 'journal_entry_type'
+          nextType = 'agendas'; 
+          break;
+        }
+        case 'script': {
+          const { parseScript } = await import('@/lib/openai/smart-parser');
+          aiResponse = await parseScript(entry.content || '');
+          // TODO (Tech Debt): Extract out to dedicated type in DB
+          nextType = 'agendas';
+          break;
+        }
+        case 'appointment': {
+          const { parseAppointment } = await import('@/lib/openai/smart-parser');
+          aiResponse = await parseAppointment(entry.content || '');
+          // TODO (Tech Debt): Extract out to dedicated type in DB
+          nextType = 'agendas';
+          break;
+        }
+        case 'agenda':
+        default: {
+          const { parseAgenda } = await import('@/lib/openai/smart-parser');
+          aiResponse = await parseAgenda(entry.content || '');
+          nextType = 'agendas';
+          break;
+        }
       }
     }
     

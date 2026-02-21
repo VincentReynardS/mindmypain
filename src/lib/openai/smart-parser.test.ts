@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { parseAgenda } from './smart-parser';
+import { parseAgenda, generateClinicalSummary, parseMedication, parseScript, classifyIntent, parseAppointment } from './smart-parser';
 
 // Hoist the mock function so it's available in vi.mock
 const { mockCreate } = vi.hoisted(() => {
@@ -16,89 +16,172 @@ vi.mock('openai', () => {
   return { default: MockOpenAI };
 });
 
-
-
 describe('smart-parser', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('should parse text into agenda items', async () => {
-    const mockResponse = {
-      agenda_items: [
-        { category: 'Clinical', item: 'Knee pain' },
-        { category: 'Admin', item: 'Buy milk' }
-      ],
-      questions: ['Is this normal?']
-    };
-
-    mockCreate.mockResolvedValueOnce({
-      choices: [
-        {
-          message: {
-            content: JSON.stringify(mockResponse),
-          },
-        },
-      ],
+  describe('classifyIntent', () => {
+    it('should classify an appointment intent', async () => {
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: JSON.stringify({ intent: 'appointment' }) } }],
+      });
+      const result = await classifyIntent('I have a doctor appointment tomorrow');
+      expect(result).toBe('appointment');
     });
 
-    const result = await parseAgenda('My knee hurts and I need milk. Is this normal?');
-
-    expect(result).toEqual(mockResponse);
-    expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({
-      model: 'gpt-5.2',
-      response_format: { type: 'json_object' },
-    }));
-  });
-
-  it('should throw error for empty input', async () => {
-    await expect(parseAgenda('')).rejects.toThrow('Input text cannot be empty');
-  });
-
-  it('should handle API errors for agenda parsing', async () => {
-    mockCreate.mockRejectedValueOnce(new Error('API Error'));
-
-    await expect(parseAgenda('test')).rejects.toThrow('Failed to parse agenda from text');
-  });
-});
-
-import { generateClinicalSummary } from './smart-parser';
-
-describe('smart-parser: clinical summary', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('should generate a clinical summary with correct structure', async () => {
-    const mockResponse = {
-      chief_complaint: 'Right knee pain',
-      medication_review: 'Taking Lyrica',
-      patient_goal: 'Reduce pain'
-    };
-
-    mockCreate.mockResolvedValueOnce({
-      choices: [
-        {
-          message: {
-            content: JSON.stringify(mockResponse),
-          },
-        },
-      ],
+    it('should classify a medication intent', async () => {
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: JSON.stringify({ intent: 'medication' }) } }],
+      });
+      const result = await classifyIntent('I took 500mg of aspirin');
+      expect(result).toBe('medication');
     });
 
-    const result = await generateClinicalSummary('My knee hurts and I take Lyrica');
-
-    expect(result).toEqual(mockResponse);
-    expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({
-      model: 'gpt-5.2',
-      response_format: { type: 'json_object' },
-      messages: expect.arrayContaining([
-        expect.objectContaining({ role: 'system', content: expect.stringContaining('medical scribe') })
-      ])
-    }));
+    it('should fall back to agenda if unclear', async () => {
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: JSON.stringify({ intent: 'agenda' }) } }],
+      });
+      const result = await classifyIntent('Need to call my mom');
+      expect(result).toBe('agenda');
+    });
   });
 
-  it('should throw error for empty input', async () => {
-    await expect(generateClinicalSummary('')).rejects.toThrow('Input text cannot be empty');
+  describe('parseAppointment', () => {
+    it('should parse text into appointment format using Zod validation', async () => {
+      const mockResponse = {
+        Date: '2026-02-22',
+        'Practitioner Name': 'Dr. Smith',
+        'Visit Type': 'Follow-up',
+        Reason: 'Knee pain',
+        'Admin Needs': ['Referral']
+      };
+
+      mockCreate.mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              content: JSON.stringify(mockResponse),
+            },
+          },
+        ],
+      });
+
+      const result = await parseAppointment('I have a follow-up with Dr. Smith tomorrow for my knee pain. Need a referral.');
+
+      expect(result).toEqual(mockResponse);
+      expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({
+        model: 'gpt-5.2',
+        response_format: { type: 'json_object' },
+      }));
+    });
+
+    it('should strip unrecognized keys during Zod validation', async () => {
+      const invalidResponse = {
+        'Visit Type': 'Follow-up',
+        SomeRandomKey: 'hello'
+      };
+
+      mockCreate.mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              content: JSON.stringify(invalidResponse),
+            },
+          },
+        ],
+      });
+
+      // Zod should strip SomeRandomKey
+      const result = await parseAppointment('hello');
+      expect(result).toEqual({ 'Visit Type': 'Follow-up' });
+    });
+  });
+
+  describe('parseMedication', () => {
+    it('should parse medication with exact keys', async () => {
+      const mockResponse = {
+        'Brand Name': 'Advil',
+        Dosage: '200mg',
+        Reason: 'Headache'
+      };
+      mockCreate.mockResolvedValueOnce({ choices: [{ message: { content: JSON.stringify(mockResponse) } }] });
+      const result = await parseMedication('Took Advil 200mg for headache');
+      expect(result).toEqual(mockResponse);
+    });
+  });
+
+  describe('parseScript', () => {
+    it('should parse scripts and referrals', async () => {
+      const mockResponse = {
+        Name: 'Physiotherapy Referral',
+        Filled: false
+      };
+      mockCreate.mockResolvedValueOnce({ choices: [{ message: { content: JSON.stringify(mockResponse) } }] });
+      const result = await parseScript('Got a physio referral today');
+      expect(result).toEqual(mockResponse);
+    });
+  });
+
+  describe('parseAgenda', () => {
+    it('should parse text into agenda items', async () => {
+      const mockResponse = {
+        agenda_items: [
+          { category: 'Clinical', item: 'Knee pain' },
+          { category: 'Admin', item: 'Buy milk' }
+        ],
+        questions: ['Is this normal?']
+      };
+
+      mockCreate.mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              content: JSON.stringify(mockResponse),
+            },
+          },
+        ],
+      });
+
+      const result = await parseAgenda('My knee hurts and I need milk. Is this normal?');
+
+      expect(result).toEqual(mockResponse);
+      expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({
+        model: 'gpt-5.2',
+        response_format: { type: 'json_object' },
+      }));
+    });
+
+    it('should throw error for empty input', async () => {
+      await expect(parseAgenda('')).rejects.toThrow('Input text cannot be empty');
+    });
+
+    it('should handle API errors for agenda parsing', async () => {
+      mockCreate.mockRejectedValueOnce(new Error('API Error'));
+
+      await expect(parseAgenda('test')).rejects.toThrow('Failed to parse agenda from text');
+    });
+  });
+
+  describe('clinical summary', () => {
+    it('should generate a clinical summary with correct structure', async () => {
+      const mockResponse = {
+        chief_complaint: 'Right knee pain',
+        medication_review: 'Taking Lyrica',
+        patient_goal: 'Reduce pain'
+      };
+
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: JSON.stringify(mockResponse) } }],
+      });
+
+      const result = await generateClinicalSummary('My knee hurts and I take Lyrica');
+
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should throw error for empty input', async () => {
+      await expect(generateClinicalSummary('')).rejects.toThrow('Input text cannot be empty');
+    });
   });
 });

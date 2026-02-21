@@ -102,6 +102,45 @@ INSERT INTO journal_entries (user_id, content, transcription, status, entry_type
   ARRAY['Sleep', 'Pain', 'Exercise', 'Diet'],
   '{"pain_level": 5, "sleep_hours": 6, "mood": "cautiously optimistic"}',
   now() - INTERVAL '1 day'
+),
+
+-- Entry 8 (New): Structured Appointment (12 hours ago)
+(
+  'sarah',
+  '{"Date":"Next Tuesday","Profession":"Specialist","Practitioner Name":"Dr. Chen","Visit Type":"Follow-up","Reason":"Pain management review","Admin Needs":["Prescription"],"Questions":"Can we increase Lyrica?","Notes":"Need to ask about the burning in left hand."}',
+  'I have a follow up with Dr. Chen next Tuesday. We need to do a pain management review. I need a new prescription and I want to ask if we can increase the Lyrica. Oh, and I need to ask about the burning in my left hand.',
+  'approved',
+  'agendas',
+  '{"Date":"Next Tuesday","Profession":"Specialist","Practitioner Name":"Dr. Chen","Visit Type":"Follow-up","Reason":"Pain management review","Admin Needs":["Prescription"],"Questions":"Can we increase Lyrica?","Notes":"Need to ask about the burning in left hand."}',
+  ARRAY['Appointment', 'Doctor'],
+  '{}',
+  now() - INTERVAL '12 hours'
+),
+
+-- Entry 9 (New): Structured Medication (10 hours ago)
+(
+  'sarah',
+  '{"Brand Name":"Lyrica","Dosage":"150mg","Date Started":"Today","Reason":"Nerve pain","Feelings":"Hopeful it works better","Notes":"Doctor told me to increase my morning dose."}',
+  'Doctor told me to increase my morning dose of Lyrica to 150mg starting today for the nerve pain. I am hopeful it works better.',
+  'approved',
+  'agendas',
+  '{"Brand Name":"Lyrica","Dosage":"150mg","Date Started":"Today","Reason":"Nerve pain","Feelings":"Hopeful it works better","Notes":"Doctor told me to increase my morning dose."}',
+  ARRAY['Medication'],
+  '{}',
+  now() - INTERVAL '10 hours'
+),
+
+-- Entry 10 (New): Structured Script/Referral (8 hours ago)
+(
+  'sarah',
+  '{"Name":"Aqua Therapy Referral","Date Prescribed":"Yesterday","Filled":false,"Notes":"Need to call the clinic on Monday to book."}',
+  'Dr. Chen gave me an aqua therapy referral yesterday. I have not filled it yet, I need to call the clinic on Monday to book.',
+  'approved',
+  'agendas',
+  '{"Name":"Aqua Therapy Referral","Date Prescribed":"Yesterday","Filled":false,"Notes":"Need to call the clinic on Monday to book."}',
+  ARRAY['Script', 'Referral'],
+  '{}',
+  now() - INTERVAL '8 hours'
 );
 
 
@@ -202,4 +241,43 @@ INSERT INTO journal_entries (user_id, content, transcription, status, entry_type
   ARRAY['Wellbeing', 'Coping', 'Pain', 'Work'],
   '{"pain_level": 5, "activity": "meditation 10min", "mood": "determined"}',
   now() - INTERVAL '1 day'
+),
+
+-- Entry 8 (New): Structured Appointment (12 hours ago)
+(
+  'michael',
+  '{"Date":"Next Month","Profession":"Rheumatologist","Practitioner Name":"Dr. Sharma","Visit Type":"Initial Review","Reason":"Fibromyalgia assessment","Admin Needs":["Medical Certificate"],"Questions":"What does this diagnosis mean for my job?","Notes":"Going to take my list of questions."}',
+  'I have my review appointment with Dr. Sharma next month for the fibromyalgia assessment. I need to get a medical certificate for work. I want to ask him what this diagnosis means for my job. I am going to take my list of questions.',
+  'approved',
+  'agendas',
+  '{"Date":"Next Month","Profession":"Rheumatologist","Practitioner Name":"Dr. Sharma","Visit Type":"Initial Review","Reason":"Fibromyalgia assessment","Admin Needs":["Medical Certificate"],"Questions":"What does this diagnosis mean for my job?","Notes":"Going to take my list of questions."}',
+  ARRAY['Appointment'],
+  '{}',
+  now() - INTERVAL '12 hours'
+),
+
+-- Entry 9 (New): Structured Medication (10 hours ago)
+(
+  'michael',
+  '{"Brand Name":"Cymbalta","Dosage":"30mg","Date Started":"Last week","Reason":"Fibromyalgia","Side Effects":"None yet","Feelings":"Anxious but trying","Notes":"Taking it every morning with food."}',
+  'I started taking Cymbalta 30mg last week for the Fibromyalgia. I don''t have any side effects yet. I am taking it every morning with food. I feel anxious about it but I am trying.',
+  'approved',
+  'agendas',
+  '{"Brand Name":"Cymbalta","Dosage":"30mg","Date Started":"Last week","Reason":"Fibromyalgia","Side Effects":"None yet","Feelings":"Anxious but trying","Notes":"Taking it every morning with food."}',
+  ARRAY['Medication'],
+  '{}',
+  now() - INTERVAL '10 hours'
+),
+
+-- Entry 10 (New): Structured Script/Referral (8 hours ago)
+(
+  'michael',
+  '{"Name":"Psychologist Referral","Date Prescribed":"Yesterday","Filled":true,"Notes":"Booked the first session for next week."}',
+  'I got a psychologist referral yesterday and I just filled it. I booked the first session for next week.',
+  'approved',
+  'agendas',
+  '{"Name":"Psychologist Referral","Date Prescribed":"Yesterday","Filled":true,"Notes":"Booked the first session for next week."}',
+  ARRAY['Script', 'Referral'],
+  '{}',
+  now() - INTERVAL '8 hours'
 );
