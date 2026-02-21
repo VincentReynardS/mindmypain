@@ -115,3 +115,53 @@ export async function generateClinicalSummary(text: string): Promise<ClinicalSum
     throw new Error('Failed to generate clinical summary from text');
   }
 }
+
+export interface MedicationResponse {
+  'Brand Name'?: string;
+  'Generic Name'?: string;
+  Dosage?: string;
+  'Date Started'?: string;
+  Reason?: string;
+  'Side Effects'?: string;
+  Feelings?: string;
+  'Date Stopped'?: string;
+  'Stop Reason'?: string;
+  Notes?: string;
+}
+
+const MEDICATION_SYSTEM_PROMPT = `
+You are a medical scribe extracting medication data from a journal entry.
+Extract the medication details and output valid JSON exactly matching these keys:
+"Brand Name", "Generic Name", "Dosage", "Date Started", "Reason", "Side Effects", "Feelings", "Date Stopped", "Stop Reason", "Notes".
+
+Omit keys if not mentioned. Be concise.
+`;
+
+export async function parseMedication(text: string): Promise<MedicationResponse> {
+  if (!text || text.trim().length === 0) {
+    throw new Error('Input text cannot be empty');
+  }
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: MODEL_ID,
+      messages: [
+        { role: 'system', content: MEDICATION_SYSTEM_PROMPT },
+        { role: 'user', content: text },
+      ],
+      response_format: { type: 'json_object' },
+    });
+
+    const content = response.choices[0].message.content;
+
+    if (!content) {
+      throw new Error('No content received from AI');
+    }
+
+    const parsed = JSON.parse(content) as MedicationResponse;
+    return parsed;
+  } catch (error) {
+    console.error('Error parsing medication:', error);
+    throw new Error('Failed to parse medication from text');
+  }
+}

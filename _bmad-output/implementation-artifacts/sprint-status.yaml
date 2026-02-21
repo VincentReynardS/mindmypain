@@ -58,7 +58,7 @@ development_status:
   epic-3: in-progress
   3-1-bottom-navigation-structure: done
   3-2-appointment-record-glass-box: done
-  3-3-medication-record-glass-box: backlog
+  3-3-medication-record-glass-box: done
   3-4-scripts-and-referrals-table: backlog
   3-5-intelligent-routing-parser: backlog
   epic-3-retrospective: optional

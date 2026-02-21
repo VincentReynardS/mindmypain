@@ -1,23 +1,68 @@
-import { createClient } from '@/lib/supabase/server';
+"use client";
+
+import { useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import { AppointmentGlassBox } from '@/components/patient/appointment-glass-box';
-import { updateAppointmentEntry, approveJournalEntry } from '@/app/actions/journal-actions';
+import { updateAppointmentEntry, approveAppointmentEntry } from '@/app/actions/journal-actions';
 import { JournalEntry } from '@/types/database';
+import { useUserStore } from '@/lib/stores/user-store';
 
-export const dynamic = 'force-dynamic';
+export default function AppointmentsPage() {
+  const [appointmentEntries, setAppointmentEntries] = useState<JournalEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const personaId = useUserStore((s) => s.personaId);
+  const supabase = createClient();
 
-export default async function AppointmentsPage() {
-  const supabase = await createClient();
+  // Optimistic update wrapper functions
+  const handleUpdate = async (id: string, content: string) => {
+    // Optimistically update the UI list
+    setAppointmentEntries(entries => 
+      entries.map(e => e.id === id ? { ...e, content } : e)
+    );
+    // Persist to server
+    await updateAppointmentEntry(id, content);
+  };
 
-  // For the prototype, we assume Persona ID determines the view implicitly or we just fetch all
-  // The Architecture specifies Sarah (uuid1) or Michael (uuid2) are implicitly handled
-  // We'll fetch entries of type 'appointment' (or potentially agendas if we piggyback)
-  // For Epic 3, we define the `appointment` entry_type.
-  const { data: entries, error } = await supabase
-    .from('journal_entries')
-    .select('*')
-    .eq('entry_type', 'agendas') // Using agendas for now as smart-parser produces this. 
-    // Ideally we would have a dedicated 'appointment' type or parse it into appt
-    .order('created_at', { ascending: false });
+  const handleApprove = async (id: string) => {
+    // Optimistically update the UI list
+    setAppointmentEntries(entries => 
+      entries.map(e => e.id === id ? { ...e, status: 'approved' } : e)
+    );
+    // Persist to server
+    await approveAppointmentEntry(id);
+  };
+
+  useEffect(() => {
+    async function loadAppointments() {
+      if (!personaId) {
+        setAppointmentEntries([]);
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      const { data: entries } = await supabase
+        .from('journal_entries')
+        .select('*')
+        .eq('user_id', personaId) // Strictly filter by persona
+        .eq('entry_type', 'agendas')
+        .order('created_at', { ascending: false });
+
+      const filteredAppts = ((entries as JournalEntry[]) || []).filter(entry => {
+        try {
+          const parsed = JSON.parse(entry.content || '{}');
+          return parsed['Practitioner Name'] !== undefined || parsed['Visit Type'] !== undefined;
+        } catch {
+          return false;
+        }
+      });
+      
+      setAppointmentEntries(filteredAppts);
+      setIsLoading(false);
+    }
+    
+    loadAppointments();
+  }, [personaId, supabase]);
 
   return (
     <div className="flex flex-col h-full min-h-screen pb-24 bg-calm-background p-4">
@@ -29,18 +74,24 @@ export default async function AppointmentsPage() {
       </div>
 
       <div className="space-y-4">
-        {(!entries || entries.length === 0) ? (
+        {isLoading ? (
+          <div className="flex flex-col gap-3">
+             {[1, 2].map((i) => (
+                <div key={i} className="animate-pulse rounded-lg bg-calm-surface-raised px-4 py-8" />
+              ))}
+          </div>
+        ) : (!appointmentEntries || appointmentEntries.length === 0) ? (
           <div className="rounded-lg border border-calm-border border-dashed p-8 text-center bg-calm-surface">
              <p className="text-sm text-calm-text-muted">No appointments found.</p>
              <p className="text-xs text-calm-text-muted mt-2">Speak an entry like "I have a doctor's appointment tomorrow" into your journal.</p>
           </div>
         ) : (
-          entries.map((entry: JournalEntry) => (
+          appointmentEntries.map((entry) => (
             <AppointmentGlassBox 
               key={entry.id} 
               entry={entry} 
-              onUpdate={updateAppointmentEntry}
-              onApprove={approveJournalEntry}
+              onUpdate={handleUpdate}
+              onApprove={handleApprove}
             />
           ))
         )}

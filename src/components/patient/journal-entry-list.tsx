@@ -15,7 +15,8 @@ import { groupEntriesByDate } from "@/lib/utils/date-helpers";
 import { DateGroupHeader } from "./date-group-header";
 import { JournalEntryCard } from "./journal-entry-card";
 import { GlassBoxCard } from "@/components/shared/glass-box/glass-box-card";
-import { updateJournalEntry, approveJournalEntry } from "@/app/actions/journal-actions";
+import { updateJournalEntry, approveJournalEntry, updateMedicationEntry, approveMedicationEntry, updateAppointmentEntry, approveAppointmentEntry } from "@/app/actions/journal-actions";
+import { isMedicationAgenda, isAppointmentAgenda } from "@/lib/utils/glass-box-helpers";
 
 import { useUserStore } from "@/lib/stores/user-store";
 
@@ -87,28 +88,58 @@ export function JournalEntryList() {
         <div key={label}>
           <DateGroupHeader label={label} />
           <div className="flex flex-col gap-2">
-            {groupEntries.map((entry) =>
-              entry.entry_type === "raw_text" ? (
-                <JournalEntryCard key={entry.id} entry={entry} />
-              ) : (
+            {groupEntries.map((entry) => {
+              if (entry.entry_type === "raw_text") {
+                return <JournalEntryCard key={entry.id} entry={entry} />;
+              }
+
+              if (entry.entry_type === "agendas") {
+                try {
+                  const parsed = JSON.parse(entry.content || '{}');
+                  
+                  if (isMedicationAgenda(parsed)) {
+                    const { MedicationGlassBox } = require('@/components/patient/medication-glass-box');
+                    return (
+                      <MedicationGlassBox 
+                        key={entry.id} 
+                        entry={entry} 
+                        onUpdate={async (id: string, content: string) => { updateEntry(id, { content }); await updateMedicationEntry(id, content); }} 
+                        onApprove={async (id: string) => { approveEntry(id); await approveMedicationEntry(id); }} 
+                      />
+                    );
+                  }
+                  
+                  if (isAppointmentAgenda(parsed)) {
+                     const { AppointmentGlassBox } = require('@/components/patient/appointment-glass-box');
+                     return (
+                      <AppointmentGlassBox 
+                        key={entry.id} 
+                        entry={entry} 
+                        onUpdate={async (id: string, content: string) => { updateEntry(id, { content }); await updateAppointmentEntry(id, content); }} 
+                        onApprove={async (id: string) => { approveEntry(id); await approveAppointmentEntry(id); }} 
+                      />
+                    );
+                  }
+                } catch (e) {
+                  // Fallthrough to GlassBoxCard
+                }
+              }
+
+              return (
                 <GlassBoxCard
                   key={entry.id}
                   entry={entry}
                   onUpdate={async (id, content) => {
-                    // Optimistic update
                     updateEntry(id, { content });
-                    // Server update
                     await updateJournalEntry(id, { content });
                   }}
                   onApprove={async (id) => {
-                    // Optimistic update
                     approveEntry(id);
-                    // Server update
                     await approveJournalEntry(id);
                   }}
                 />
-              )
-            )}
+              );
+            })}
           </div>
         </div>
       ))}
