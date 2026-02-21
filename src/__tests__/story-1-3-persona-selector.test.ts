@@ -54,7 +54,7 @@ describe("Story 1.3: Persona Selector & Context", () => {
       useUserStore.getState().selectPersona("guest");
       const state = useUserStore.getState();
 
-      expect(state.personaId).toBe("guest");
+      expect(state.personaId?.startsWith("guest_")).toBe(true);
       expect(state.personaName).toBe("Guest");
       expect(state.isSelected).toBe(true);
     });

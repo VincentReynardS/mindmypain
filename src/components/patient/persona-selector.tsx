@@ -4,7 +4,7 @@
  * PersonaSelector - Landing page component for selecting a workshop persona.
  *
  * Renders two persona cards (Sarah & Michael) that set the global UserContext
- * via Zustand and navigate to /journal. No auth flow — simulated personas only.
+ * via Zustand and navigate to /journal. No auth flow - simulated personas only.
  *
  * @see architecture.md - Authentication & Security (Decision 2)
  * @see user-store.ts - PersonaId, selectPersona()
@@ -12,7 +12,7 @@
 
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Heart, Brain } from "lucide-react";
+import { Heart, Brain, User } from "lucide-react";
 import { useUserStore, type PersonaId } from "@/lib/stores/user-store";
 
 interface PersonaConfig {
@@ -27,6 +27,17 @@ interface PersonaConfig {
 }
 
 const personas: PersonaConfig[] = [
+  {
+    id: "guest",
+    name: "Guest",
+    age: 0,
+    subtitle: "The Clean Slate",
+    description:
+      "Start with a blank canvas. No prior medical history or seeded data will be loaded.",
+    icon: <User className="h-8 w-8" />,
+    accentClass: "bg-calm-surface-raised",
+    accentBorderClass: "border-calm-text-muted",
+  },
   {
     id: "sarah",
     name: "Sarah",
@@ -123,7 +134,8 @@ export function PersonaSelector() {
 
             {/* Name & Subtitle */}
             <h2 className="text-xl font-semibold text-calm-text">
-              {persona.name}, {persona.age}
+              {persona.name}
+              {persona.age > 0 ? `, ${persona.age}` : ""}
             </h2>
             <p className="mt-1 text-sm font-medium text-calm-text-muted">
               {persona.subtitle}

@@ -19,3 +19,15 @@ This file contains critical rules and specific architectural deviations from sta
 ### 3. Server Actions & Client Components
 
 - When passing functions from Server Components to Client Components, ALWAYS wrap them in a strictly exported async server action rather than using inline async closures inside the Server Component.
+
+### 4. Manual UI Testing Requirement
+
+- **Context:** Passing unit tests and having correct code logic does not guarantee visual correctness or prevent runtime UI bugs (e.g., infinite render loops or invisible elements due to styling mismatches).
+- **Rule:** When developing UI features or performing code reviews, AI agents MUST devise a manual test plan and use the browser subagent to spin up a browser and physically inspect the application. Look at what is actually displayed on the UI.
+- **Why:** To ensure changes render correctly in the viewport, objects don't display as `[Object object]`, colors provide correct contrast, and interactions behave as expected in a live browser without relying solely on DOM inspection or Javascript execution tricks.
+
+### 5. Git Commit and Branch Management
+
+- **Context:** The developer prefers to manually control version control history and branching to maintain a clean and coherent timeline.
+- **Rule:** AI agents MUST NEVER run `git commit`, `git checkout -b`, or create/modify branches automatically. You may run `git status` or `git diff` for situational awareness, but do not alter the repository state.
+- **Why:** To prevent fragmented, unintended, or poorly described commits from cluttering the project's git history.

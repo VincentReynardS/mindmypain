@@ -16,6 +16,8 @@ import { User } from "lucide-react";
 
 export function MobileHeader() {
   const personaName = useUserStore((s) => s.personaName);
+  const personaIconBg = useUserStore((s) => s.personaIconBg || "bg-calm-blue-soft");
+  const personaIconText = useUserStore((s) => s.personaIconText || "text-calm-blue");
 
   return (
     <header
@@ -35,7 +37,7 @@ export function MobileHeader() {
               {personaName}
             </span>
             <div
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-calm-blue-soft text-calm-blue"
+              className={`flex h-11 w-11 items-center justify-center rounded-full ${personaIconBg} ${personaIconText}`}
               aria-hidden="true"
             >
               <User className="h-5 w-5" />

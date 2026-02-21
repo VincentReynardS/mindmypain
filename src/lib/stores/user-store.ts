@@ -14,11 +14,13 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
-export type PersonaId = "sarah" | "michael" | "guest";
+export type PersonaId = "sarah" | "michael" | "guest" | string;
 
 export interface UserState {
   personaId: PersonaId | null;
   personaName: string | null;
+  personaIconBg: string; // Taildwind class for avatar bg
+  personaIconText: string; // Tailwind class for avatar text
   isSelected: boolean;
   selectPersona: (id: PersonaId) => void;
   clearPersona: () => void;
@@ -29,17 +31,39 @@ export const useUserStore = create<UserState>()(
     (set) => ({
       personaId: null,
       personaName: null,
+      personaIconBg: "bg-surface-raised",
+      personaIconText: "text-calm-text-muted",
       isSelected: false,
-      selectPersona: (id: PersonaId) =>
+      selectPersona: (id: PersonaId) => {
+        // If guest, create a transient unique ID to prevent database collisions
+        // across multiple users testing the prototype simultaneously.
+        const actualId = id === "guest" ? `guest_${Date.now()}_${Math.random().toString(36).substring(2, 9)}` : id;
+        
+        let iconBg = "bg-calm-surface-raised";
+        let iconText = "text-calm-text-muted";
+        
+        if (id === "sarah") {
+           iconBg = "bg-calm-blue-soft";
+           iconText = "text-calm-blue";
+        } else if (id === "michael") {
+           iconBg = "bg-calm-green-soft";
+           iconText = "text-calm-green";
+        }
+        
         set({
-          personaId: id,
-          personaName: id.charAt(0).toUpperCase() + id.slice(1),
+          personaId: actualId,
+          personaName: id === "guest" ? "Guest" : actualId.charAt(0).toUpperCase() + actualId.slice(1),
+          personaIconBg: iconBg,
+          personaIconText: iconText,
           isSelected: true,
-        }),
+        });
+      },
       clearPersona: () =>
         set({
           personaId: null,
           personaName: null,
+          personaIconBg: "bg-calm-surface-raised",
+          personaIconText: "text-calm-text-muted",
           isSelected: false,
         }),
     }),
@@ -57,6 +81,8 @@ export const useUserStore = create<UserState>()(
       partialize: (state) => ({
         personaId: state.personaId,
         personaName: state.personaName,
+        personaIconBg: state.personaIconBg,
+        personaIconText: state.personaIconText,
         isSelected: state.isSelected,
       }),
     }
