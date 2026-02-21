@@ -131,11 +131,16 @@ Instead of a messy handwritten diary, Dr. Lee receives a 1-page "Clinical Snapsh
 - **FR_CS2:** **Primary User** can manually edit the text of any AI-generated draft.
 - **FR_CS3:** **Primary User** can "Approve" a draft to save it to their permanent record.
 
-### 4. Researcher Dashboard (Wizard Control)
+### 4. Proactive Recall (Chat Interface)
 
-- **FR_WD1:** **Researcher** can view incoming text/audio inputs from active sessions in real-time.
-- **FR_WD2:** **Researcher** can overwrite AI-generated text responses before they are displayed to the user.
-- **FR_WD3:** **Researcher** can trigger "Insight Cards" (pre-defined pattern notifications) to appear on the user's dashboard.
+- **FR_PR1:** **Primary User** can query their past records using a natural language chat interface.
+- **FR_PR2:** **System** preserves exact match capability for the specific MINDmyPAIN journal fields (Day, Sleep, Pain, Feeling, Action, Gratitude, Meds, Mood) ensuring data is never lost during parsing.
+
+### 5. Researcher Dashboard (Wizard Control) - (DEFERRED to Phase 1B)
+
+- **FR_WD1:** _Deferred_ Researcher can view incoming text/audio inputs from active sessions in real-time.
+- **FR_WD2:** _Deferred_ Researcher can overwrite AI-generated text responses before they are displayed to the user.
+- **FR_WD3:** _Deferred_ Researcher can trigger "Insight Cards" (pre-defined pattern notifications) to appear on the user's dashboard.
 
 ### 5. Authentication & Profile (Thesis Model)
 
@@ -209,9 +214,14 @@ Instead of a messy handwritten diary, Dr. Lee receives a 1-page "Clinical Snapsh
 
 ### Phase 1: Thesis Prototype (Current Scope)
 
-- Wizard-of-Oz AI (Researcher mediated).
+- Structural accuracy matching physical MINDmyPAIN journal.
+- "Proactive Recall" Chat Interface.
+- Simulated Accounts ("Sarah", "Michael", and "Guest").
 - Web-based only.
-- Simulated Accounts.
+
+### Phase 1B: The Wizard (Deferred Scope)
+
+- Wizard-of-Oz AI (Researcher mediated Dashboard and live edit controls).
 
 ### Phase 2: Pilot & Growth
 

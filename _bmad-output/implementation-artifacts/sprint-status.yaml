@@ -50,9 +50,9 @@ development_status:
   epic-2: done
   2-1-journal-entry-input-voice-text: done
   2-2-daily-list-view: done
-  2-3-glass-box-card-component: done
-  2-4-integration-smart-parsing: done
-  2-5-integration-clinical-summary: done
+  2-3-the-glass-box-card-component: done
+  2-4-integration-smart-parsing-scenario-1-3: done
+  2-5-integration-clinical-summary-scenario-2: done
   epic-2-retrospective: done
 
   epic-3: done
@@ -60,13 +60,21 @@ development_status:
   3-2-appointment-record-glass-box: done
   3-3-medication-record-glass-box: done
   3-4-scripts-and-referrals-table: done
-  3-5-intelligent-routing-parser: done
+  3-5-intelligent-routing-parser-upgrade: done
   epic-3-retrospective: done
 
   epic-4: backlog
-  4-1-researcher-dashboard-overview: backlog
-  4-2-live-stream-real-time-updates: backlog
-  4-3-wizard-intervention-actions: backlog
-  4-4-pre-canned-response-library: backlog
-  4-5-thinking-state-indication: backlog
+  4-1-guest-persona-safe-mode: backlog
+  4-2-journal-data-model-accuracy: backlog
+  4-3-smart-parser-fallback-terminology: backlog
+  4-4-glassboxcard-edit-state-fix: backlog
+  4-5-proactive-recall-chat-interface: backlog
   epic-4-retrospective: optional
+
+  epic-5: backlog
+  5-1-researcher-dashboard-overview: backlog
+  5-2-live-stream-real-time-updates: backlog
+  5-3-wizard-intervention-actions-edit-scenario-trigger: backlog
+  5-4-pre-canned-response-library: backlog
+  5-5-thinking-state-indication: backlog
+  epic-5-retrospective: optional

@@ -244,6 +244,7 @@ I want to navigate between different sections of my journal (Home, Appointment, 
 So that I can organize and find my health records logically.
 
 **Acceptance Criteria:**
+
 - **Given** the user is viewing the `/app/(patient)` layout
 - **When** they look at the bottom of the screen
 - **Then** they should see a fixed tab bar with icons for: Home, Appointment, Medication, Scripts
@@ -256,6 +257,7 @@ I want a specific form to log my doctor appointments,
 So that I can capture the exact details prescribed in my physical journal.
 
 **Acceptance Criteria:**
+
 - **Given** the user navigates to the Appointment tab OR the AI classifies an input as an Appointment
 - **When** the entry is displayed
 - **Then** it should render an `AppointmentGlassBox` component
@@ -269,6 +271,7 @@ I want a specific form to log my medications,
 So that I can track dosages, side effects, and adherence over time.
 
 **Acceptance Criteria:**
+
 - **Given** the user navigates to the Medication tab OR the AI classifies an input as a Medication log
 - **When** the entry is displayed
 - **Then** it should render a `MedicationGlassBox` component
@@ -282,6 +285,7 @@ I want to see a clear checklist of my pending prescriptions and referrals,
 So that I can manage my pharmacy visits and admin tasks efficiently.
 
 **Acceptance Criteria:**
+
 - **Given** the user navigates to the Scripts & Referrals tab
 - **When** the view loads
 - **Then** it should display a data table or checklist view
@@ -294,20 +298,98 @@ I want the AI to automatically file my "messy dumps" into the correct journal ta
 So that I don't have to manually fill out the complex forms.
 
 **Acceptance Criteria:**
+
 - **Given** the user submits a voice/text entry
 - **When** the system parses the input
 - **Then** the `smart-parser.ts` logic should identify if the input represents an Appointment, Medication change, Script task, or general Agenda
 - **And** The AI should attempt to populate the corresponding JSON schema for that specific category
 - **And** The backend should set the `entry_type` correctly so it appears in the right tab's list view.
 
+# Epic 4: AI Retrieval & Chat & Journal Accuracy
 
-# Epic 4: The Wizard's Dashboard & Scenario Control
+**Goal**: Implement the "Proactive Recall / Chat" interface to support Scenario 1 (Part B), fix the structural accuracy of the journal data model to match the physical MINDmyPAIN journal, and add a Guest persona.
+**User Outcome**: Users can query their past health records through a conversational interface, and all entered data maps correctly to the physical journal's structure.
+
+### Story 4.1: Guest Persona & Safe Mode
+
+As a workshop participant,
+I want to select a "Guest" persona from the login screen,
+So that I can enter the app with a clean slate without prior history.
+
+**Acceptance Criteria:**
+
+- **Given** the user lands on the root url `/`
+- **When** the page loads
+- **Then** they should see a third card for "Guest" alongside Sarah and Michael
+- **And** Clicking it sets the active `personaId` to `guest` and creates a fresh state for logging
+- **And** No seed data should be pre-loaded for the Guest persona.
+
+### Story 4.2: Journal Data Model Accuracy
+
+As a patient user,
+I want the app to use the exact structure of my physical MINDmyPAIN journal,
+So that I am familiar with the required fields (Day, Sleep, Pain, Feeling, Action, Gratitude, Meds, Mood).
+
+**Acceptance Criteria:**
+
+- **Given** the application's data models
+- **When** the user interfaces with the Journal entries
+- **Then** the parsing and structure should strictly support:
+  - Day / Date
+  - Hours of restful sleep / How did you sleep?
+  - Pain out of 10
+  - Right now I am feeling (Free text)
+  - What can I do to feel better today?
+  - I am grateful for...
+  - Medication (Morning, Midday, Evening)
+  - Mood (Scale of 22 specific moods)
+
+### Story 4.3: Smart Parser Fallback & Terminology
+
+As a patient user,
+I want the AI parser to never lose my data, and to use the term "Journal" instead of "Agenda",
+So that unrecognized inputs are safely filed under general notes.
+
+**Acceptance Criteria:**
+
+- **Given** the Smart Parser (`smart-parser.ts`) processes an unstructured input
+- **When** the AI cannot determine a specific category
+- **Then** it must explicitly map the raw text into a "Right now I am feeling" or a general "Notes" field.
+- **And** the term "Agenda" should be globally renamed to "Journal" in the UI and routing terminology.
+
+### Story 4.4: GlassBoxCard Edit State Fix
+
+As a patient user,
+I want to edit structured data in a user-friendly form within the Glass Box,
+So that I don't have to look at or edit raw JSON.
+
+**Acceptance Criteria:**
+
+- **Given** an AI-generated GlassBoxCard is presented
+- **When** the user clicks "Edit"
+- **Then** the card must switch into an explicit form UI, parsing the schema into distinct, editable text fields
+- **And** raw JSON strings should not be visible or editable by the direct user.
+
+### Story 4.5: Proactive Recall / Chat Interface
+
+As a patient user,
+I want to chat with an AI assistant about my past records via a chat interface,
+So that I can easily recall information like "When was my last pain flare?".
+
+**Acceptance Criteria:**
+
+- **Given** the user navigates to the Chat/Recall tab (or accesses it via the dashboard)
+- **When** the user asks a natural language question about their history
+- **Then** the interface should respond contextually based on their approved journal entries
+- **And** the UI should resemble a clean messaging/chat interface, supporting conversational turns.
+
+# Epic 5: The Wizard's Dashboard & Scenario Control (Deferred)
 
 **Goal**: Enable the Researcher to monitor live sessions and trigger specific "Scenario Responses" or edit text in real-time. (Delayed from Epic 3 due to pivot).
 **User Outcome**: (Researcher) Can invisibly drive the workshop scenarios. (Patient) Receives intelligent, context-aware responses that feel like a "Magic" AI.
 **FRs covered**: FR_WD1, FR_WD2, FR_WD3
 
-### Story 4.1: Researcher Dashboard Overview
+### Story 5.1: Researcher Dashboard Overview
 
 As a researcher,
 I want a dashboard where I can see the active session for "Sarah" or "Michael",
@@ -321,7 +403,7 @@ So that I can monitor their inputs in real-time.
 - **And** It should show the current connection status (Online/Offline)
 - **And** Must adhere to `@simulated-auth-only` principles for viewing across users.
 
-### Story 4.2: Live Stream & Real-time Updates
+### Story 5.2: Live Stream & Real-time Updates
 
 As a researcher,
 I want incoming patient logs to appear instantly (<500ms),
@@ -333,7 +415,7 @@ So that I can respond quickly and maintain the illusion of a fast AI.
 - **Then** the new entry should appear at the top of the feed immediately (Supabase Realtime)
 - **And** A visual indicator should flash to grab my attention (NFR_USE2)
 
-### Story 4.3: Wizard Intervention Actions (Edit/Scenario Trigger)
+### Story 5.3: Wizard Intervention Actions (Edit/Scenario Trigger)
 
 As a researcher,
 I want to edit the AI-generated draft before the patient sees it,
@@ -346,7 +428,7 @@ So that I can correct hallucinations or improve the tone.
 - **And** I can type new content or correct form fields
 - **And** Clicking "Push to Patient" should update the `journal_entries` status to `pending_review` (visible to patient)
 
-### Story 4.4: Pre-Canned Response Library
+### Story 5.4: Pre-Canned Response Library
 
 As a researcher,
 I want a library of pre-written responses for the specific workshop scenarios,
@@ -359,7 +441,77 @@ So that I don't have to type long medical summaries in 7 minutes.
 - **And** Selecting one should auto-fill the response editor with the scripted text/json
 - **And** I can still make minor edits before pushing
 
-### Story 4.5: "Thinking State" Indication
+### Story 5.5: "Thinking State" Indication
+
+As a patient user,
+I want to see a "AI is thinking..." animation while the researcher is preparing a response,
+So that I know the system hasn't crashed.
+
+**Acceptance Criteria:**
+- **Given** the researcher is editing/typing a response (dashboard active)
+- **When** the entry status is `draft` (backend state)
+- **Then** the patient UI should show a "pulsing brain" or "Thinking..." skeleton loader
+- **And** It should persist until the status changes to `pending_review`
+
+# Epic 5: The Wizard's Dashboard & Scenario Control (Deferred)
+
+**Goal**: Enable the Researcher to monitor live sessions and trigger specific "Scenario Responses" or edit text in real-time. (Delayed from Epic 3 due to pivot).
+**User Outcome**: (Researcher) Can invisibly drive the workshop scenarios. (Patient) Receives intelligent, context-aware responses that feel like a "Magic" AI.
+**FRs covered**: FR_WD1, FR_WD2, FR_WD3
+
+### Story 5.1: Researcher Dashboard Overview
+
+As a researcher,
+I want a dashboard where I can see the active session for "Sarah" or "Michael",
+So that I can monitor their inputs in real-time.
+
+**Acceptance Criteria:**
+- **Given** the user is on `/app/dashboard`
+- **When** the page loads
+- **Then** they should see two panels: "Active Patient: Sarah" and "History Log"
+- **And** The interface should clearly distinguish between 'User Input' (Left) and 'AI Response' (Right)
+- **And** It should show the current connection status (Online/Offline)
+- **And** Must adhere to `@simulated-auth-only` principles for viewing across users.
+
+### Story 5.2: Live Stream & Real-time Updates
+
+As a researcher,
+I want incoming patient logs to appear instantly (<500ms),
+So that I can respond quickly and maintain the illusion of a fast AI.
+
+**Acceptance Criteria:**
+- **Given** the dashboard is open
+- **When** a patient submits a new log via Epic 2/3 forms
+- **Then** the new entry should appear at the top of the feed immediately (Supabase Realtime)
+- **And** A visual indicator should flash to grab my attention (NFR_USE2)
+
+### Story 5.3: Wizard Intervention Actions (Edit/Scenario Trigger)
+
+As a researcher,
+I want to edit the AI-generated draft before the patient sees it,
+So that I can correct hallucinations or improve the tone.
+
+**Acceptance Criteria:**
+- **Given** a new drafted response appears in the dashboard
+- **When** I click "Edit"
+- **Then** the text area (or structured JSON form) should become editable
+- **And** I can type new content or correct form fields
+- **And** Clicking "Push to Patient" should update the `journal_entries` status to `pending_review` (visible to patient)
+
+### Story 5.4: Pre-Canned Response Library
+
+As a researcher,
+I want a library of pre-written responses for the specific workshop scenarios,
+So that I don't have to type long medical summaries in 7 minutes.
+
+**Acceptance Criteria:**
+- **Given** I am responding to an input
+- **When** I click the "Scenario Library" button
+- **Then** a modal should open with options matched to the structured schemas (e.g. `[New Appointment Pattern]`, `[Medication Review Alert]`)
+- **And** Selecting one should auto-fill the response editor with the scripted text/json
+- **And** I can still make minor edits before pushing
+
+### Story 5.5: "Thinking State" Indication
 
 As a patient user,
 I want to see a "AI is thinking..." animation while the researcher is preparing a response,
