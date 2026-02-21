@@ -33,6 +33,15 @@ function SafeAgendaRender({ content }: { content: string }) {
           ))}
         </ul>
       );
+    } else if (parsed && parsed.Name !== undefined) {
+      return (
+        <div className="space-y-1">
+          <p><span className="font-medium text-calm-primary">Script/Referral:</span> {parsed.Name}</p>
+          {parsed['Date Prescribed'] && <p><span className="font-medium text-calm-primary">Date:</span> {parsed['Date Prescribed']}</p>}
+          <p><span className="font-medium text-calm-primary">Status:</span> {parsed.Filled ? "Filled" : "To Be Filled"}</p>
+          {parsed.Notes && <p><span className="font-medium text-calm-primary">Notes:</span> {parsed.Notes}</p>}
+        </div>
+      );
     }
   } catch (_e) {
     // Not JSON, fall back to text rendering

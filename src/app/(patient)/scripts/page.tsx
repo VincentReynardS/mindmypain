@@ -1,8 +1,127 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { useUserStore } from '@/lib/stores/user-store';
+import { JournalEntry } from '@/types/database';
+import { ScriptsList } from '@/components/patient/scripts-list';
+import { updateScriptOrReferralEntry } from '@/app/actions/journal-actions';
+
 export default function ScriptsPage() {
+  const [scriptEntries, setScriptEntries] = useState<JournalEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const personaId = useUserStore((s) => s.personaId);
+  const supabase = createClient();
+
+  // Optimistic update wrapper function
+  const handleToggleFilled = async (id: string, isFilled: boolean) => {
+    // Store previous entries for rollback
+    const previousEntries = [...scriptEntries];
+    
+    // Optimistically update the UI list
+    setScriptEntries(entries => 
+      entries.map(e => {
+        if (e.id === id) {
+          try {
+            const parsed = JSON.parse(e.content || '{}');
+            parsed.Filled = isFilled;
+            return { ...e, content: JSON.stringify(parsed) };
+          } catch {
+            return e;
+          }
+        }
+        return e;
+      })
+    );
+    
+    try {
+      // Persist to server
+      await updateScriptOrReferralEntry(id, isFilled);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to update status on server:', err);
+      // Rollback to previous state
+      setScriptEntries(previousEntries);
+      setError('Failed to update status. Please try again.');
+    }
+  };
+
+  useEffect(() => {
+    async function loadScripts() {
+      if (!personaId) {
+        setScriptEntries([]);
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      const { data: entries } = await supabase
+        .from('journal_entries')
+        .select('*')
+        .eq('user_id', personaId) // Strictly filter by persona
+        .eq('entry_type', 'agendas')
+        .like('content', '%"Name"%') // Efficiently prep-filter server-side
+        .order('created_at', { ascending: false });
+
+      const filteredScripts = ((entries as JournalEntry[]) || []).filter(entry => {
+        try {
+          const parsed = JSON.parse(entry.content || '{}');
+          // In our prototype, if it has 'Name', we treat it as a Script or Referral 
+          // (Medications have 'Brand Name' or 'Generic Name', Appointments have specific other fields)
+          return parsed.Name !== undefined;
+        } catch {
+          return false;
+        }
+      });
+      
+      setScriptEntries(filteredScripts);
+      setIsLoading(false);
+    }
+    
+    loadScripts();
+  }, [personaId, supabase]);
+
   return (
-    <div className="flex h-full flex-col items-center justify-center p-6 text-center">
-      <h1 className="text-xl font-medium text-calm-text">Scripts & Referrals</h1>
-      <p className="mt-2 text-sm text-calm-text-muted">Coming soon in Epic 3.</p>
+    <div className="flex flex-col h-full min-h-screen pb-24 bg-calm-background p-4">
+      <div className="mb-6 mt-2">
+        <h1 className="text-2xl font-medium text-calm-text">Scripts & Referrals</h1>
+        <p className="mt-1 text-sm text-calm-text-muted">
+          Your pending prescriptions and referrals checklist.
+        </p>
+      </div>
+
+      {error && (
+        <div className="mb-4 rounded-md bg-red-50 p-3 flex items-center justify-between border border-red-200">
+           <div className="flex items-center gap-2">
+             <svg className="h-4 w-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+             </svg>
+             <p className="text-sm text-red-600 font-medium">{error}</p>
+           </div>
+           <button onClick={() => setError(null)} className="text-red-600 hover:bg-red-100 p-1 rounded-full transition-colors">
+              <span className="sr-only">Dismiss</span>
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+           </button>
+        </div>
+      )}
+
+      <div className="space-y-4">
+        {isLoading ? (
+          <div className="flex flex-col gap-3">
+             {[1, 2, 3].map((i) => (
+                <div key={i} className="animate-pulse flex p-4 items-center justify-between rounded-lg bg-calm-surface-raised border border-calm-border" />
+              ))}
+          </div>
+        ) : (
+          <ScriptsList 
+            entries={scriptEntries} 
+            onToggleFilled={handleToggleFilled} 
+          />
+        )}
+      </div>
     </div>
   );
 }

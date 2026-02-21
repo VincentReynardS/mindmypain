@@ -165,3 +165,49 @@ export async function parseMedication(text: string): Promise<MedicationResponse>
     throw new Error('Failed to parse medication from text');
   }
 }
+
+export interface ScriptResponse {
+  Name?: string;
+  'Date Prescribed'?: string;
+  Filled?: boolean;
+  Notes?: string;
+}
+
+const SCRIPT_SYSTEM_PROMPT = `
+You are a medical scribe extracting prescription or referral data from a journal entry.
+Extract the script/referral details and output valid JSON exactly matching these keys:
+"Name", "Date Prescribed", "Filled" (boolean), "Notes".
+
+- "Name" is the medication or doctor name (e.g., "Physiotherapy Referral", "Lyrica 50mg").
+- "Filled" should be false by default unless they explicitly say they picked it up.
+Omit keys if not mentioned. Be concise.
+`;
+
+export async function parseScript(text: string): Promise<ScriptResponse> {
+  if (!text || text.trim().length === 0) {
+    throw new Error('Input text cannot be empty');
+  }
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: MODEL_ID,
+      messages: [
+        { role: 'system', content: SCRIPT_SYSTEM_PROMPT },
+        { role: 'user', content: text },
+      ],
+      response_format: { type: 'json_object' },
+    });
+
+    const content = response.choices[0].message.content;
+
+    if (!content) {
+      throw new Error('No content received from AI');
+    }
+
+    const parsed = JSON.parse(content) as ScriptResponse;
+    return parsed;
+  } catch (error) {
+    console.error('Error parsing script:', error);
+    throw new Error('Failed to parse script from text');
+  }
+}

@@ -134,6 +134,10 @@ export async function processJournalEntry(id: string) {
         const { parseMedication } = await import('@/lib/openai/smart-parser');
         aiResponse = await parseMedication(entry.content || '');
         nextType = 'agendas'; // Keeping agendas to satisfy type restrictions in prototype DB schema
+      } else if (textToAnalyze.includes('prescribe') || textToAnalyze.includes('prescription') || textToAnalyze.includes('referral') || textToAnalyze.includes('script') || textToAnalyze.includes('refill')) {
+        const { parseScript } = await import('@/lib/openai/smart-parser');
+        aiResponse = await parseScript(entry.content || '');
+        nextType = 'agendas';
       } else {
         const { parseAgenda } = await import('@/lib/openai/smart-parser');
         aiResponse = await parseAgenda(entry.content || '');
@@ -167,4 +171,43 @@ export async function processJournalEntry(id: string) {
     console.error('Process Entry Failed:', err, (err as Error).stack); // Add stack trace for better debugging
     throw new Error('Failed to process entry with AI');
   }
+}
+
+export async function updateScriptOrReferralEntry(id: string, isFilled: boolean) {
+  const supabase = await createClient();
+  
+  // We fetch the current content first to update the specific JSON payload
+  const { data: entry, error: fetchError } = await supabase
+    .from('journal_entries')
+    .select('content')
+    .eq('id', id)
+    .single<{ content: string }>();
+    
+  if (fetchError || !entry) {
+    throw new Error('Entry not found');
+  }
+  
+  let parsedContent = {};
+  try {
+    parsedContent = JSON.parse(entry.content || '{}');
+  } catch (e) {
+    console.error('Failed to parse script content', e);
+  }
+
+  const updatedContent = JSON.stringify({
+    ...parsedContent,
+    Filled: isFilled
+  });
+
+  const { error } = await supabase
+    .from('journal_entries')
+    // TODO: Regenerate types to fix inference
+    .update({ content: updatedContent } as never)
+    .eq('id', id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath('/scripts');
 }
