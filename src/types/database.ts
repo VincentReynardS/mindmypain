@@ -14,9 +14,10 @@ export type JournalEntryStatus = "draft" | "pending_review" | "approved";
 
 export type JournalEntryType =
   | "raw_text"
-  | "agendas"
+  | "journal"
   | "clinical_summary"
-  | "insight_card";
+  | "insight_card"
+  | "daily_journal";
 
 export interface Database {
   public: {

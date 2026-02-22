@@ -11,9 +11,13 @@ const TYPE_BADGE_CONFIG: Record<
   { label: string; className: string } | null
 > = {
   raw_text: null,
-  agendas: {
-    label: "Agenda",
+  journal: {
+    label: "Journal",
     className: "bg-calm-purple-soft text-calm-purple",
+  },
+  daily_journal: {
+    label: "Journal",
+    className: "bg-calm-teal-soft text-calm-teal",
   },
   clinical_summary: {
     label: "Summary",

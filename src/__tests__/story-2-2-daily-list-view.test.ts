@@ -68,13 +68,15 @@ describe("Story 2.2: Daily List View", () => {
   describe("getDateLabel", () => {
     it("should return 'Today' for today's date", () => {
       const today = new Date().toISOString();
-      expect(getDateLabel(today)).toBe("Today");
+      const dayName = new Intl.DateTimeFormat("en-AU", { weekday: "long" }).format(new Date());
+      expect(getDateLabel(today)).toBe(`${dayName}, Today`);
     });
 
     it("should return 'Yesterday' for yesterday's date", () => {
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
-      expect(getDateLabel(yesterday.toISOString())).toBe("Yesterday");
+      const dayName = new Intl.DateTimeFormat("en-AU", { weekday: "long" }).format(yesterday);
+      expect(getDateLabel(yesterday.toISOString())).toBe(`${dayName}, Yesterday`);
     });
 
     it("should return formatted date for older dates in same year", () => {
@@ -147,7 +149,8 @@ describe("Story 2.2: Daily List View", () => {
       ];
       const groups = groupEntriesByDate(entries);
       expect(groups.length).toBe(1);
-      expect(groups[0][0]).toBe("Today");
+      const dayName = new Intl.DateTimeFormat("en-AU", { weekday: "long" }).format(new Date());
+      expect(groups[0][0]).toBe(`${dayName}, Today`);
       expect(groups[0][1].length).toBe(2);
     });
 
@@ -162,8 +165,10 @@ describe("Story 2.2: Daily List View", () => {
       ];
       const groups = groupEntriesByDate(entries);
       expect(groups.length).toBe(2);
-      expect(groups[0][0]).toBe("Today");
-      expect(groups[1][0]).toBe("Yesterday");
+      const todayDayName = new Intl.DateTimeFormat("en-AU", { weekday: "long" }).format(new Date());
+      const yesterdayDayName = new Intl.DateTimeFormat("en-AU", { weekday: "long" }).format(yesterday);
+      expect(groups[0][0]).toBe(`${todayDayName}, Today`);
+      expect(groups[1][0]).toBe(`${yesterdayDayName}, Yesterday`);
     });
 
     it("should preserve order within groups", () => {
@@ -268,7 +273,7 @@ describe("Story 2.2: Daily List View", () => {
 
     it("should have badge config for each entry_type", () => {
       expect(journalEntryCardSource).toContain("raw_text");
-      expect(journalEntryCardSource).toContain("agendas");
+      expect(journalEntryCardSource).toContain("journal");
       expect(journalEntryCardSource).toContain("clinical_summary");
       expect(journalEntryCardSource).toContain("insight_card");
     });

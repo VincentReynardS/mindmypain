@@ -12,16 +12,31 @@ interface GlassBoxCardProps {
 
 const TYPE_CONFIG: Record<JournalEntryType, { label: string; badgeClass: string }> = {
   raw_text: { label: '', badgeClass: '' },
-  agendas: { label: 'Agenda', badgeClass: 'bg-calm-purple-soft text-calm-purple' },
+  journal: { label: 'Journal', badgeClass: 'bg-calm-purple-soft text-calm-purple' },
   clinical_summary: { label: 'Summary', badgeClass: 'bg-calm-green-soft text-calm-green' },
   insight_card: { label: 'Insight', badgeClass: 'bg-calm-blue-soft text-calm-blue' },
+  daily_journal: { label: 'Journal', badgeClass: 'bg-calm-teal-soft text-calm-teal' },
 };
 
-function SafeAgendaRender({ content }: { content: string }) {
+function getDynamicBadge(entry: JournalEntry): { label: string; badgeClass: string } {
+  const config = TYPE_CONFIG[entry.entry_type] || TYPE_CONFIG.raw_text;
+  
+  if (entry.entry_type === 'journal' && entry.ai_response) {
+    const ai = entry.ai_response;
+    if (ai['Practitioner Name'] || ai['Visit Type'] || ai.Appointments) {
+      return { label: 'Appointment', badgeClass: 'bg-amber-100 text-amber-800' };
+    }
+    if (ai.Name || ai['Brand Name'] || ai.Scripts) {
+      return { label: 'Script', badgeClass: 'bg-calm-blue-soft text-calm-blue' };
+    }
+  }
+  
+  return config;
+}
+
+function SafeJournalRender({ content, aiResponse }: { content: string; aiResponse?: any }) {
   try {
-    // Attempt to parse content as JSON
-    // Note: The content might be a raw string if edited by user, or JSON if from AI
-    const parsed = JSON.parse(content);
+    const parsed = aiResponse || (content ? JSON.parse(content) : null);
     
     if (parsed && Array.isArray(parsed.agenda_items)) {
       return (
@@ -50,6 +65,80 @@ function SafeAgendaRender({ content }: { content: string }) {
   return <>{content}</>;
 }
 
+function SafeDailyJournalRender({ content, aiResponse }: { content: string; aiResponse?: any }) {
+  try {
+    const parsed = aiResponse || (content ? JSON.parse(content) : null);
+    
+    if (!parsed || typeof parsed !== 'object') {
+       return <>{content}</>;
+    }
+
+    // We only expect specific keys
+    const fields = [
+      { key: 'Sleep', label: 'Sleep' },
+      { key: 'Pain', label: 'Pain' },
+      { key: 'Feeling', label: 'Feeling' },
+      { key: 'Action', label: 'Action to Feel Better' },
+      { key: 'Grateful', label: 'Grateful For' },
+      { key: 'Medication', label: 'Medications' },
+      { key: 'Mood', label: 'Mood' },
+    ];
+
+    return (
+      <div className="space-y-3">
+        {/* Health Data */}
+        <div className="grid grid-cols-1 gap-2">
+          {fields.map(({ key, label }) => {
+            const val = parsed[key];
+            if (val && typeof val === 'string' && val.trim() !== '') {
+              return (
+                <div key={key} className="text-calm-text">
+                  <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-0.5">{label}</span>
+                  <div className="text-sm">{val}</div>
+                </div>
+              );
+            }
+            return null;
+          })}
+        </div>
+
+        {/* Appointments Section */}
+        {parsed.Appointments && parsed.Appointments.length > 0 && (
+          <div className="pt-2 border-t border-calm-border/30">
+            <span className="font-semibold text-calm-primary block text-[10px] uppercase tracking-wider mb-2">Appointments Identified</span>
+            <div className="space-y-2">
+              {parsed.Appointments.map((appt: any, idx: number) => (
+                <div key={idx} className="bg-calm-surface rounded p-2 text-xs border border-calm-border/20">
+                  <div className="font-medium">{appt['Practitioner Name'] || 'Doctor'} - {appt['Visit Type'] || 'Consultation'}</div>
+                  {appt.Date && <div className="text-calm-text-muted">{appt.Date} {appt.Time ? `@ ${appt.Time}` : ''}</div>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Scripts Section */}
+        {parsed.Scripts && parsed.Scripts.length > 0 && (
+          <div className="pt-2 border-t border-calm-border/30">
+            <span className="font-semibold text-calm-primary block text-[10px] uppercase tracking-wider mb-2">Scripts/Referrals Found</span>
+            <div className="space-y-1">
+              {parsed.Scripts.map((script: any, idx: number) => (
+                <div key={idx} className="flex items-center gap-2 text-xs py-1">
+                   <div className="h-1.5 w-1.5 rounded-full bg-calm-teal" />
+                   <span className="font-medium">{script.Name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  } catch (error) {
+    // Not JSON, fall back to text rendering
+    return <>{content}</>;
+  }
+}
+
 
 export function GlassBoxCard({ entry, onUpdate, onApprove }: GlassBoxCardProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -58,7 +147,7 @@ export function GlassBoxCard({ entry, onUpdate, onApprove }: GlassBoxCardProps) 
 
   // ... (existing code for TYPE_CONFIG, handleSave, handleApprove, handleCancel, isEditing check) ...
 
-  const config = TYPE_CONFIG[entry.entry_type] || TYPE_CONFIG.raw_text;
+  const config = getDynamicBadge(entry);
 
   const handleSave = async () => {
     try {
@@ -91,8 +180,8 @@ export function GlassBoxCard({ entry, onUpdate, onApprove }: GlassBoxCardProps) 
   if (isEditing) {
     return (
       <div className="rounded-lg bg-calm-surface-raised p-4 shadow-sm border border-calm-border">
-        <label className="mb-2 block text-sm font-medium text-calm-text">
-          Editing {config.label}
+        <label className="mb-4 block text-sm font-medium text-calm-text">
+          Editing {config.label || 'Journal Entry'}
         </label>
         <textarea
           className="w-full min-h-37.5 rounded-md border border-calm-border bg-white p-3 text-sm text-calm-text focus:border-calm-primary focus:ring-1 focus:ring-calm-primary"
@@ -153,10 +242,12 @@ export function GlassBoxCard({ entry, onUpdate, onApprove }: GlassBoxCardProps) 
       </div>
       
       <div className="whitespace-pre-wrap text-sm text-calm-text leading-relaxed">
-        {entry.entry_type === "agendas" ? (
-          <SafeAgendaRender content={entry.content} />
+        {entry.entry_type === "journal" ? (
+          <SafeJournalRender content={entry.content} aiResponse={entry.ai_response} />
         ) : entry.entry_type === "clinical_summary" ? (
           <SafeClinicalSummaryRender content={entry.content || ''} />
+        ) : entry.entry_type === "daily_journal" ? (
+          <SafeDailyJournalRender content={entry.content || ''} aiResponse={entry.ai_response} />
         ) : (
           entry.content
         )}

@@ -4,7 +4,7 @@
 
 -- Create custom ENUM types
 CREATE TYPE journal_entry_status AS ENUM ('draft', 'pending_review', 'approved');
-CREATE TYPE journal_entry_type AS ENUM ('raw_text', 'agendas', 'clinical_summary', 'insight_card');
+CREATE TYPE journal_entry_type AS ENUM ('raw_text', 'journal', 'clinical_summary', 'insight_card');
 
 -- Create the journal_entries table
 CREATE TABLE journal_entries (

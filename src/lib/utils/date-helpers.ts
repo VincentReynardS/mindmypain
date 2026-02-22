@@ -24,15 +24,17 @@ export function getDateLabel(dateString: string): string {
 
   const diffMs = today.getTime() - target.getTime();
   const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+  
+  const dayName = new Intl.DateTimeFormat("en-AU", { weekday: "long" }).format(date);
 
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Yesterday";
+  if (diffDays === 0) return `${dayName}, Today`;
+  if (diffDays === 1) return `${dayName}, Yesterday`;
 
   // For same year, omit year; for different year, include it
   const options: Intl.DateTimeFormatOptions =
     date.getFullYear() === now.getFullYear()
-      ? { month: "long", day: "numeric" }
-      : { month: "long", day: "numeric", year: "numeric" };
+      ? { weekday: "long", month: "long", day: "numeric" }
+      : { weekday: "long", month: "long", day: "numeric", year: "numeric" };
 
   return new Intl.DateTimeFormat("en-AU", options).format(date);
 }

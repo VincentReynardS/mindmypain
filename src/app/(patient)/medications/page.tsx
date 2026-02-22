@@ -44,20 +44,36 @@ export default function MedicationsPage() {
       const { data: entries } = await supabase
         .from('journal_entries')
         .select('*')
-        .eq('user_id', personaId) // Strictly filter by persona
-        .eq('entry_type', 'agendas')
+        .eq('user_id', personaId) 
+        .in('entry_type', ['journal', 'daily_journal'])
         .order('created_at', { ascending: false });
 
-      const filteredMeds = ((entries as JournalEntry[]) || []).filter(entry => {
-        try {
-          const parsed = JSON.parse(entry.content || '{}');
-          return parsed['Brand Name'] !== undefined || parsed['Dosage'] !== undefined;
-        } catch {
-          return false;
+      const processedEntries: JournalEntry[] = [];
+      
+      ((entries as JournalEntry[]) || []).forEach(entry => {
+        // Pattern 1: Agenda with Brand Name (Direct medication record)
+        if (entry.entry_type === 'journal') {
+          try {
+            const parsed = typeof entry.content === 'string' ? JSON.parse(entry.content || '{}') : entry.content;
+            if (parsed['Brand Name'] || parsed['Generic Name'] || parsed['Dosage']) {
+              processedEntries.push(entry);
+              return;
+            }
+          } catch { /* ignore */ }
+        }
+
+        // Pattern 2: Daily Journal with medication notes
+        if (entry.entry_type === 'daily_journal' && entry.ai_response) {
+          const ai = entry.ai_response as any;
+          if (ai.Medication && ai.Medication.trim() !== '') {
+            // For now, we display the whole journal entry in the meds list 
+            // if it contains medication info. The user can see their daily dose log here.
+            processedEntries.push(entry);
+          }
         }
       });
       
-      setMedicationEntries(filteredMeds);
+      setMedicationEntries(processedEntries);
       setIsLoading(false);
     }
     

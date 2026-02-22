@@ -21,7 +21,7 @@ describe('ScriptsList', () => {
         Notes: 'Dr. Lee recommended 6 sessions'
       }),
       status: 'approved',
-      entry_type: 'agendas',
+      entry_type: 'journal',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       tags: [],
@@ -39,7 +39,7 @@ describe('ScriptsList', () => {
         Filled: true
       }),
       status: 'approved',
-      entry_type: 'agendas',
+      entry_type: 'journal',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       tags: [],

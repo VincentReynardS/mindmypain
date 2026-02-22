@@ -59,23 +59,41 @@ export default function ScriptsPage() {
       const { data: entries } = await supabase
         .from('journal_entries')
         .select('*')
-        .eq('user_id', personaId) // Strictly filter by persona
-        .eq('entry_type', 'agendas')
-        .like('content', '%"Name"%') // Efficiently prep-filter server-side
+        .eq('user_id', personaId) 
+        .in('entry_type', ['journal', 'daily_journal'])
         .order('created_at', { ascending: false });
 
-      const filteredScripts = ((entries as JournalEntry[]) || []).filter(entry => {
-        try {
-          const parsed = JSON.parse(entry.content || '{}');
-          // In our prototype, if it has 'Name', we treat it as a Script or Referral 
-          // (Medications have 'Brand Name' or 'Generic Name', Appointments have specific other fields)
-          return parsed.Name !== undefined;
-        } catch {
-          return false;
+      const processedEntries: JournalEntry[] = [];
+      
+      ((entries as JournalEntry[]) || []).forEach(entry => {
+        // Pattern 1: Agenda with Script Name
+        if (entry.entry_type === 'journal') {
+          try {
+            const parsed = typeof entry.content === 'string' ? JSON.parse(entry.content || '{}') : entry.content;
+            if (parsed.Name) {
+              processedEntries.push(entry);
+              return;
+            }
+          } catch { /* ignore */ }
+        }
+
+        // Pattern 2: Daily Journal with extracted scripts
+        if (entry.entry_type === 'daily_journal' && entry.ai_response) {
+          const ai = entry.ai_response as any;
+          if (ai.Scripts && Array.isArray(ai.Scripts) && ai.Scripts.length > 0) {
+            ai.Scripts.forEach((script: any, idx: number) => {
+              processedEntries.push({
+                ...entry,
+                id: `${entry.id}_script_${idx}`,
+                content: JSON.stringify(script),
+                entry_type: 'journal'
+              });
+            });
+          }
         }
       });
       
-      setScriptEntries(filteredScripts);
+      setScriptEntries(processedEntries);
       setIsLoading(false);
     }
     

@@ -93,7 +93,7 @@ export function JournalEntryList() {
                 return <JournalEntryCard key={entry.id} entry={entry} />;
               }
 
-              if (entry.entry_type === "agendas") {
+              if (entry.entry_type === "journal") {
                 try {
                   const parsed = JSON.parse(entry.content || '{}');
                   

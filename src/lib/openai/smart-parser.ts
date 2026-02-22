@@ -7,25 +7,27 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const MODEL_ID = 'gpt-5.2';
+const MODEL_ID = 'gpt-4o';
 
 // === Intent Classification ===
 
 const INTENT_CLASSIFICATION_PROMPT = `
 You are an intelligent medical triage assistant for a chronic pain patient's journal.
-Your task is to classify the patient's unstructured journal entry into one of the following categories:
-- "appointment": The user is talking about a current or upcoming doctor's visit, consultation, or health practitioner appointment.
-- "medication": The user is discussing taking a medication, changing a dosage, or noting a side effect.
-- "script": The user is specifically talking about a prescription to be filled, a referral to be given, or a script they received.
-- "agenda": A general entry about their pain, feelings, or questions that don't fit the above categories.
+Your task is to classify the patient's unstructured journal entry.
 
-Output MUST be valid JSON with the following structure:
-{
-  "intent": "<appointment | medication | script | agenda>"
-}
+Categories:
+- "appointment": The user is discussing a doctor's visit, consultation, therapist, or any health practitioner meeting.
+- "medication": The user is discussing taking a medication, dosage, or side effect.
+- "script": The user is talking about prescriptions or referrals.
+- "journal": A multi-topic daily entry, a general narrative, or list-like tasks (previously called "agenda"). 
+- "agenda": Historically used for tasks, but now MAP THIS TO "journal".
+
+Rule: If the entry is PRIMARILY about an appointment, classify it as "appointment".
+Rule: For short, social, or ambiguous greetings (e.g., "hi", "hello", "test"), default to "journal".
+Output MUST be valid JSON: {"intent": "..."}
 `;
 
-export async function classifyIntent(text: string): Promise<'appointment' | 'medication' | 'script' | 'agenda'> {
+export async function classifyIntent(text: string): Promise<'appointment' | 'medication' | 'script' | 'journal' | 'agenda'> {
   if (!text || text.trim().length === 0) {
     throw new Error('Input text cannot be empty');
   }
@@ -47,10 +49,99 @@ export async function classifyIntent(text: string): Promise<'appointment' | 'med
     }
 
     const parsed = JSON.parse(content);
-    return parsed.intent || 'agenda';
+    return parsed.intent || 'journal'; // Fallback to journal
   } catch (error) {
     console.error('Error classifying intent:', error);
-    throw new Error(`Failed to classify intent from text: ${error instanceof Error ? error.message : String(error)}`);
+    return 'journal'; // Safe fallback
+  }
+}
+
+// === Parsing Daily Journal ===
+
+const MOOD_SCALE = [
+  'Excellent', 'Fantastic', 'Happy', 'Great', 'Good', 'Joyful', 
+  'Ok', 'Content', 'Grateful', 'Flat', 'Tired', 'Sad', 
+  'Annoyed', 'Frustrated', 'Anxious', 'Groggy', 'Sore', 
+  'Achy', 'Nauseated', 'Terrible', 'Sick', 'Angry'
+] as const;
+
+const DailyJournalResponseSchema = z.object({
+  Sleep: z.coerce.string().nullish(),
+  Pain: z.coerce.string().nullish(),
+  Feeling: z.coerce.string().nullish(),
+  Action: z.coerce.string().nullish(),
+  Grateful: z.coerce.string().nullish(),
+  Medication: z.coerce.string().nullish(),
+  Mood: z.string().nullish(), // Relaxed to string to prevent enum mismatch 500s
+  // Multi-intent support:
+  Appointments: z.array(z.object({
+    'Practitioner Name': z.string().nullish(),
+    'Visit Type': z.string().nullish(),
+    'Profession': z.string().nullish(),
+    'Date': z.string().nullish(),
+    'Time': z.string().nullish(),
+    'Location': z.string().nullish(),
+    'Reason': z.string().nullish(),
+    'Notes': z.string().nullish(),
+  })).nullish(),
+  Scripts: z.array(z.object({
+    'Name': z.string().nullish(),
+    'Details/Context': z.string().nullish(),
+    'Filled': z.boolean().nullish().default(false),
+  })).nullish(),
+});
+
+export type DailyJournalResponse = z.infer<typeof DailyJournalResponseSchema>;
+
+const DAILY_JOURNAL_SYSTEM_PROMPT = `
+You are an expert medical triage assistant helping chronic pain patients record their daily health journal.
+MINDmyPAIN users often merge multiple thoughts into one entry. Your task is to perform a comprehensive extraction.
+
+Output MUST be valid JSON with these keys:
+"Sleep", "Pain", "Feeling", "Action", "Grateful", "Medication", "Mood", "Appointments", "Scripts".
+
+Extraction Rules:
+1. HEALTH DATA:
+   - "Sleep": Hours or quality.
+   - "Pain": Score out of 10.
+   - "Mood": MUST be one of: ${MOOD_SCALE.join(', ')}.
+   - "Feeling", "Action", "Grateful", "Medication": Map relevant text.
+
+2. APPOINTMENTS (If mentioned):
+   - Extract into "Appointments" array. Use keys: "Practitioner Name", "Visit Type", "Profession", "Date", "Time", "Location", "Reason", "Notes".
+
+3. SCRIPTS (If mentioned):
+   - Extract prescription refills or referrals into "Scripts" array. Use keys: "Name" (e.g. "Panadol Script"), "Details/Context", "Filled" (default false).
+
+If a field or array is empty/not mentioned, set it to null or an empty array []. Be concise.
+`;
+
+export async function parseDailyJournal(text: string): Promise<DailyJournalResponse> {
+  if (!text || text.trim().length === 0) {
+    throw new Error('Input text cannot be empty');
+  }
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: MODEL_ID, 
+      messages: [
+        { role: 'system', content: DAILY_JOURNAL_SYSTEM_PROMPT },
+        { role: 'user', content: text },
+      ],
+      response_format: { type: 'json_object' },
+    });
+
+    const content = response.choices[0].message.content;
+
+    if (!content) {
+      throw new Error('No content received from AI');
+    }
+
+    const parsed = JSON.parse(content);
+    return DailyJournalResponseSchema.parse(parsed);
+  } catch (error) {
+    console.error('Error parsing daily journal:', error);
+    throw new Error(`Failed to parse daily journal from text: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 

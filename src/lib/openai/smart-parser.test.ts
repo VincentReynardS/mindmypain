@@ -38,12 +38,45 @@ describe('smart-parser', () => {
       expect(result).toBe('medication');
     });
 
-    it('should fall back to agenda if unclear', async () => {
+    it('should fall back to journal if unclear', async () => {
       mockCreate.mockResolvedValueOnce({
-        choices: [{ message: { content: JSON.stringify({ intent: 'agenda' }) } }],
+        choices: [{ message: { content: JSON.stringify({ intent: 'journal' }) } }],
       });
       const result = await classifyIntent('Need to call my mom');
-      expect(result).toBe('agenda');
+      expect(result).toBe('journal');
+    });
+  });
+
+  describe('parseDailyJournal', () => {
+    it('should parse text into daily journal format', async () => {
+      const mockResponse = {
+        Sleep: '8 hours',
+        Pain: '7',
+        Feeling: 'Tired but okay',
+        Action: 'Take a walk',
+        Grateful: 'My dog',
+        Medication: 'Panadol in morning',
+        Mood: 'Ok'
+      };
+
+      mockCreate.mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              content: JSON.stringify(mockResponse),
+            },
+          },
+        ],
+      });
+
+      const { parseDailyJournal } = await import('./smart-parser');
+      const result = await parseDailyJournal('Today is Monday. Slept 8 hours. Pain is 7 out of 10. Feeling tired but okay. I can take a walk to feel better. Grateful for my dog. Took Panadol in morning. Mood is ok.');
+
+      expect(result).toEqual(mockResponse);
+      expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({
+        model: 'gpt-4o',
+        response_format: { type: 'json_object' },
+      }));
     });
   });
 
@@ -71,7 +104,7 @@ describe('smart-parser', () => {
 
       expect(result).toEqual(mockResponse);
       expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({
-        model: 'gpt-5.2',
+        model: 'gpt-4o',
         response_format: { type: 'json_object' },
       }));
     });
@@ -123,8 +156,8 @@ describe('smart-parser', () => {
     });
   });
 
-  describe('parseAgenda', () => {
-    it('should parse text into agenda items', async () => {
+  describe('parseJournal', () => {
+    it('should parse text into journal items', async () => {
       const mockResponse = {
         agenda_items: [
           { category: 'Clinical', item: 'Knee pain' },
@@ -147,7 +180,7 @@ describe('smart-parser', () => {
 
       expect(result).toEqual(mockResponse);
       expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({
-        model: 'gpt-5.2',
+        model: 'gpt-4o',
         response_format: { type: 'json_object' },
       }));
     });
