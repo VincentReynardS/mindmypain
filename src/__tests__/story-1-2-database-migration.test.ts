@@ -147,7 +147,7 @@ describe('Seed Data: seed.sql', () => {
     });
 
     it('should include different entry types', () => {
-      // Sarah should have both raw_text and agenda/clinical_summary types
+      // Sarah should have both raw_text and journal/clinical_summary types
       expect(seedSql).toContain("'journal'");
       expect(seedSql).toContain("'clinical_summary'");
       expect(seedSql).toContain("'raw_text'");

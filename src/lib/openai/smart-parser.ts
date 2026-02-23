@@ -19,15 +19,15 @@ Categories:
 - "appointment": The user is discussing a doctor's visit, consultation, therapist, or any health practitioner meeting.
 - "medication": The user is discussing taking a medication, dosage, or side effect.
 - "script": The user is talking about prescriptions or referrals.
-- "journal": A multi-topic daily entry, a general narrative, or list-like tasks (previously called "agenda"). 
-- "agenda": Historically used for tasks, but now MAP THIS TO "journal".
+- "journal": A multi-topic daily entry, a general narrative, tasks, reminders, or any other content.
 
 Rule: If the entry is PRIMARILY about an appointment, classify it as "appointment".
 Rule: For short, social, or ambiguous greetings (e.g., "hi", "hello", "test"), default to "journal".
+Rule: When in doubt, always default to "journal".
 Output MUST be valid JSON: {"intent": "..."}
 `;
 
-export async function classifyIntent(text: string): Promise<'appointment' | 'medication' | 'script' | 'journal' | 'agenda'> {
+export async function classifyIntent(text: string): Promise<'appointment' | 'medication' | 'script' | 'journal'> {
   if (!text || text.trim().length === 0) {
     throw new Error('Input text cannot be empty');
   }
@@ -143,7 +143,12 @@ export async function parseJournal(text: string): Promise<JournalResponse> {
     return JournalResponseSchema.parse(parsed);
   } catch (error) {
     console.error('Error parsing journal:', error);
-    throw new Error(`Failed to parse journal from text: ${error instanceof Error ? error.message : String(error)}`);
+    // Fallback: preserve raw text in Feeling + Note instead of throwing
+    return JournalResponseSchema.parse({
+      Sleep: null, Pain: null, Feeling: text.substring(0, 500),
+      Action: null, Grateful: null, Medication: null, Mood: null,
+      Note: text, Appointments: null, Scripts: null,
+    });
   }
 }
 

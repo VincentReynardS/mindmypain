@@ -26,14 +26,14 @@ INSERT INTO journal_entries (user_id, content, transcription, status, entry_type
   now() - INTERVAL '7 days'
 ),
 
--- Entry 2: Appointment prep agenda (6 days ago)
+-- Entry 2: Appointment preparation (6 days ago)
 (
   'sarah',
   'Need to prepare for Dr. Chen appointment next week. Want to discuss: 1) Lyrica dosage - is 150mg still right? 2) Physio referral for aqua therapy 3) The new burning sensation in my left hand 4) Whether we should try a nerve block again.',
   'Need to prepare for Dr. Chen appointment next week. Want to discuss: 1) Lyrica dosage - is 150mg still right? 2) Physio referral for aqua therapy 3) The new burning sensation in my left hand 4) Whether we should try a nerve block again.',
   'approved',
   'journal',
-  '{"Practitioner Name": "Dr. Chen", "Visit Type": "Follow-up Prep", "agenda_items": [{"category": "Medication Review", "item": "Lyrica 150mg dosage reassessment"}, {"category": "Referral", "item": "Physiotherapy - aqua therapy"}, {"category": "New Symptom", "item": "Burning sensation in left hand"}, {"category": "Treatment Option", "item": "Nerve block reconsideration"}]}',
+  '{"Practitioner Name": "Dr. Chen", "Visit Type": "Follow-up Prep", "preparation_items": [{"category": "Medication Review", "item": "Lyrica 150mg dosage reassessment"}, {"category": "Referral", "item": "Physiotherapy - aqua therapy"}, {"category": "New Symptom", "item": "Burning sensation in left hand"}, {"category": "Treatment Option", "item": "Nerve block reconsideration"}]}',
   ARRAY['Appointment', 'Medication', 'Physiotherapy', 'Symptoms'],
   '{"appointment_date": "2026-02-25", "doctor": "Dr. Chen"}',
   now() - INTERVAL '6 days'
@@ -198,7 +198,7 @@ INSERT INTO journal_entries (user_id, content, transcription, status, entry_type
   'OK so I need to sort out: the medical certificate for work, ask about Cymbalta dosage, the burning in my neck and shoulders, whether I should see a physio, why am I so tired all the time, is this going to get worse, can I still exercise, my friend said try turmeric but that sounds like nonsense',
   'approved',
   'journal',
-  '{"Practitioner Name": "Rheumatologist", "Visit Type": "Review Prep", "agenda_items": [{"category": "Admin/Work", "item": "Medical certificate for employer"}, {"category": "Medication", "item": "Cymbalta dosage and concerns"}, {"category": "Symptoms", "item": "Burning in neck and shoulders"}, {"category": "Referral", "item": "Physiotherapy assessment"}, {"category": "Fatigue", "item": "Persistent tiredness investigation"}, {"category": "Prognosis", "item": "Disease progression questions"}, {"category": "Lifestyle", "item": "Exercise safety and guidelines"}, {"category": "Alternative", "item": "Supplement inquiry (turmeric)"}]}',
+  '{"Practitioner Name": "Rheumatologist", "Visit Type": "Review Prep", "preparation_items": [{"category": "Admin/Work", "item": "Medical certificate for employer"}, {"category": "Medication", "item": "Cymbalta dosage and concerns"}, {"category": "Symptoms", "item": "Burning in neck and shoulders"}, {"category": "Referral", "item": "Physiotherapy assessment"}, {"category": "Fatigue", "item": "Persistent tiredness investigation"}, {"category": "Prognosis", "item": "Disease progression questions"}, {"category": "Lifestyle", "item": "Exercise safety and guidelines"}, {"category": "Alternative", "item": "Supplement inquiry (turmeric)"}]}',
   ARRAY['Appointment', 'Medication', 'Symptoms', 'Work', 'Exercise'],
   '{"items_count": 8, "mood": "overwhelmed but trying"}',
   now() - INTERVAL '4 days'

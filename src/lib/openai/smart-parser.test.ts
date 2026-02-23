@@ -113,11 +113,28 @@ describe('smart-parser', () => {
       await expect(parseJournal('')).rejects.toThrow('Input text cannot be empty');
     });
 
-    it('should handle API errors', async () => {
+    it('should return synthetic fallback response on API errors', async () => {
       mockCreate.mockRejectedValueOnce(new Error('API Error'));
 
       const { parseJournal } = await import('./smart-parser');
-      await expect(parseJournal('test')).rejects.toThrow('Failed to parse journal from text');
+      const result = await parseJournal('some test content');
+
+      expect(result.Note).toBe('some test content');
+      expect(result.Feeling).toBe('some test content');
+      expect(result.Sleep).toBeNull();
+      expect(result.Pain).toBeNull();
+      expect(result.Mood).toBeNull();
+    });
+
+    it('should truncate Feeling to 500 chars in fallback', async () => {
+      mockCreate.mockRejectedValueOnce(new Error('API Error'));
+
+      const longText = 'x'.repeat(600);
+      const { parseJournal } = await import('./smart-parser');
+      const result = await parseJournal(longText);
+
+      expect(result.Feeling).toHaveLength(500);
+      expect(result.Note).toBe(longText);
     });
   });
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createJournalEntry, updateJournalEntry, approveJournalEntry } from '@/app/actions/journal-actions';
+import { createJournalEntry, updateJournalEntry, approveJournalEntry, processJournalEntry } from '@/app/actions/journal-actions';
 import * as smartParser from '@/lib/openai/smart-parser';
 
 // Mock dependencies
@@ -159,6 +159,43 @@ describe('Journal Server Actions', () => {
       expect(mockFrom).toHaveBeenCalledWith('journal_entries');
       expect(mockUpdate).toHaveBeenCalledWith({ status: 'approved' });
       expect(mockChain.eq).toHaveBeenCalledWith('id', id);
+      expect(revalidatePath).toHaveBeenCalledWith('/journal');
+    });
+  });
+
+  describe('processJournalEntry', () => {
+    it('should fall back to synthetic ai_response when parser throws', async () => {
+      // processJournalEntry does: from().select().eq().single() for the fetch
+      // Override the select call to return a fresh chain that resolves the entry
+      mockSelect.mockReturnValueOnce({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({
+            data: { content: 'My pain is bad today', entry_type: 'raw_text' },
+            error: null,
+          }),
+        }),
+      });
+
+      // Mock classifyIntent to throw so we hit the catch block
+      const { classifyIntent } = await import('@/lib/openai/smart-parser');
+      vi.mocked(classifyIntent).mockRejectedValueOnce(new Error('API down'));
+
+      const result = await processJournalEntry('test-id');
+
+      expect(result).toEqual({ success: true });
+      // Should update with synthetic fallback response
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entry_type: 'journal',
+          status: 'draft',
+          ai_response: expect.objectContaining({
+            Note: 'My pain is bad today',
+            Feeling: 'My pain is bad today',
+            Sleep: null,
+            Pain: null,
+          }),
+        })
+      );
       expect(revalidatePath).toHaveBeenCalledWith('/journal');
     });
   });

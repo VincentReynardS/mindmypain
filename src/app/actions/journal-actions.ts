@@ -28,7 +28,7 @@ export async function createJournalEntry(
   const intent = await classifyIntent(content);
 
   // 2. For 'journal' intent, check if a raw_text entry for "today" already exists to append to
-  if (intent === 'journal' || intent === 'agenda') {
+  if (intent === 'journal') {
     const today = new Date().toISOString().split('T')[0];
 
     const { data: existingEntry } = await supabase
@@ -175,7 +175,6 @@ export async function processJournalEntry(id: string) {
         break;
       }
       case 'journal':
-      case 'agenda':
       default: {
         const { parseJournal } = await import('@/lib/openai/smart-parser');
         aiResponse = await parseJournal(entry.content || '');
@@ -205,7 +204,19 @@ export async function processJournalEntry(id: string) {
 
   } catch (err) {
     console.error('Process Entry Failed:', err, (err as Error).stack);
-    throw new Error('Failed to process entry with AI');
+    // Fallback: create synthetic ai_response so entry never stays as raw_text
+    const syntheticResponse = {
+      Sleep: null, Pain: null, Feeling: (entry.content || '').substring(0, 500),
+      Action: null, Grateful: null, Medication: null, Mood: null,
+      Note: entry.content || '', Appointments: null, Scripts: null,
+    };
+    const { error: fallbackError } = await supabase
+      .from('journal_entries')
+      .update({ entry_type: 'journal', ai_response: syntheticResponse, status: 'draft' } as never)
+      .eq('id', id);
+    if (fallbackError) throw new Error(fallbackError.message);
+    revalidatePath('/journal');
+    return { success: true };
   }
 }
 
