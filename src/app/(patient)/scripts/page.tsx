@@ -59,26 +59,35 @@ export default function ScriptsPage() {
       const { data: entries } = await supabase
         .from('journal_entries')
         .select('*')
-        .eq('user_id', personaId) 
+        .eq('user_id', personaId)
         .eq('entry_type', 'journal')
         .order('created_at', { ascending: false });
 
       const processedEntries: JournalEntry[] = [];
-      
+
       ((entries as JournalEntry[]) || []).forEach(entry => {
-        // Journal entries with script data in ai_response
-        if (entry.entry_type === 'journal' && entry.ai_response) {
-          const ai = entry.ai_response as any;
-          if (ai.Scripts && Array.isArray(ai.Scripts) && ai.Scripts.length > 0) {
-            ai.Scripts.forEach((script: any, idx: number) => {
-              processedEntries.push({
-                ...entry,
-                id: `${entry.id}_script_${idx}`,
-                content: JSON.stringify(script),
-                entry_type: 'journal'
-              });
+        if (!entry.ai_response) return;
+        const ai = entry.ai_response as any;
+
+        // Flat script object from parseScript()
+        if (ai.Name !== undefined && ai.Filled !== undefined) {
+          processedEntries.push({
+            ...entry,
+            content: JSON.stringify(ai),
+          });
+          return;
+        }
+
+        // Embedded array from parseJournal()
+        if (ai.Scripts && Array.isArray(ai.Scripts) && ai.Scripts.length > 0) {
+          ai.Scripts.forEach((script: any, idx: number) => {
+            processedEntries.push({
+              ...entry,
+              id: `${entry.id}_script_${idx}`,
+              content: JSON.stringify(script),
+              entry_type: 'journal'
             });
-          }
+          });
         }
       });
       
