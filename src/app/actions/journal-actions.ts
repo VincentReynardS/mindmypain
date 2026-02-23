@@ -33,17 +33,23 @@ export async function createJournalEntry(
 
     const { data: existingEntry } = await supabase
       .from('journal_entries')
-      .select('id, content, entry_type')
+      .select('id, content, entry_type, ai_response')
       .eq('user_id', userId)
-      .eq('entry_type', 'raw_text')
+      .in('entry_type', ['raw_text', 'journal'])
       .eq('status', 'draft')
       .filter('created_at', 'gte', `${today}T00:00:00Z`)
       .filter('created_at', 'lte', `${today}T23:59:59Z`)
       .order('created_at', { ascending: false })
       .limit(1)
-      .maybeSingle<{ id: string; content: string; entry_type: string }>();
+      .maybeSingle<{ id: string; content: string; entry_type: string; ai_response: Record<string, unknown> | null }>();
 
-    if (existingEntry) {
+    // Only merge into raw_text (unprocessed) or journal entries with journal-shaped ai_response.
+    // Appointments, medications, and scripts also get entry_type='journal' after processing,
+    // so we check for the 'Sleep' key to confirm it's actually a daily journal entry.
+    const isJournalShaped = existingEntry?.entry_type === 'raw_text' ||
+      (existingEntry?.entry_type === 'journal' && (!existingEntry.ai_response || 'Sleep' in existingEntry.ai_response));
+
+    if (existingEntry && isJournalShaped) {
       const updatedContent = `${existingEntry.content}\n\n${content}`;
       const { error: updateError } = await supabase
         .from('journal_entries')

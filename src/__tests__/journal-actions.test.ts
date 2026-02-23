@@ -39,6 +39,7 @@ import { revalidatePath } from 'next/cache';
 describe('Journal Server Actions', () => {
   const mockChain: any = {
     eq: vi.fn(),
+    in: vi.fn(),
     filter: vi.fn(),
     order: vi.fn(),
     limit: vi.fn(),
@@ -56,6 +57,7 @@ describe('Journal Server Actions', () => {
     };
 
     mockChain.eq.mockImplementation(hybridMock);
+    mockChain.in.mockImplementation(hybridMock);
     mockChain.filter.mockImplementation(hybridMock);
     mockChain.order.mockImplementation(hybridMock);
     mockChain.limit.mockImplementation(hybridMock);
@@ -105,6 +107,57 @@ describe('Journal Server Actions', () => {
         entry_type: 'raw_text'
       }));
       expect(revalidatePath).toHaveBeenCalledWith('/journal');
+    });
+
+    it('should APPEND to existing processed journal draft and reset to raw_text', async () => {
+      const { classifyIntent } = await import('@/lib/openai/smart-parser');
+      vi.mocked(classifyIntent).mockResolvedValue('journal');
+
+      mockMaybeSingle.mockResolvedValue({
+        data: {
+          id: 'existing-id',
+          content: 'Old content',
+          entry_type: 'journal',
+          ai_response: { Sleep: '7 hours', Pain: null, Mood: null, Feeling: null },
+        },
+        error: null
+      });
+
+      const result = await createJournalEntry('New content', 'user-123');
+
+      expect(result).toBe('existing-id');
+      expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({
+        content: 'Old content\n\nNew content',
+        entry_type: 'raw_text',
+        ai_response: null,
+      }));
+      expect(revalidatePath).toHaveBeenCalledWith('/journal');
+    });
+
+    it('should NOT merge into a processed appointment entry', async () => {
+      const { classifyIntent } = await import('@/lib/openai/smart-parser');
+      vi.mocked(classifyIntent).mockResolvedValue('journal');
+
+      // Query returns an appointment that was processed (entry_type='journal' but appointment-shaped ai_response)
+      mockMaybeSingle.mockResolvedValue({
+        data: {
+          id: 'appt-id',
+          content: 'Meet Dr. Chen',
+          entry_type: 'journal',
+          ai_response: { Date: 'next Tuesday', 'Practitioner Name': 'Dr. Chen', Reason: 'Lyrica dosage' },
+        },
+        error: null
+      });
+      mockSingle.mockResolvedValue({ data: { id: 'new-journal-id' }, error: null });
+
+      const result = await createJournalEntry('I slept 7 hours', 'user-123');
+
+      // Should create a new entry, not merge into the appointment
+      expect(result).toBe('new-journal-id');
+      expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({
+        entry_type: 'raw_text',
+        status: 'draft',
+      }));
     });
 
     it('should create NEW raw_text draft if none exists for today', async () => {
