@@ -198,5 +198,43 @@ describe('Journal Server Actions', () => {
       );
       expect(revalidatePath).toHaveBeenCalledWith('/journal');
     });
+
+    it('should fall back to synthetic ai_response when parser (not classifyIntent) throws', async () => {
+      // Setup: fetch returns a raw_text entry
+      mockSelect.mockReturnValueOnce({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({
+            data: { content: 'I need a Lyrica refill', entry_type: 'raw_text' },
+            error: null,
+          }),
+        }),
+      });
+
+      // classifyIntent succeeds with 'medication', but parseMedication will throw
+      const { classifyIntent } = await import('@/lib/openai/smart-parser');
+      vi.mocked(classifyIntent).mockResolvedValueOnce('medication');
+
+      // Mock parseMedication to throw
+      const smartParserModule = await import('@/lib/openai/smart-parser');
+      vi.spyOn(smartParserModule, 'parseMedication').mockRejectedValueOnce(new Error('Parser crashed'));
+
+      const result = await processJournalEntry('test-id');
+
+      expect(result).toEqual({ success: true });
+      // Should still produce a journal entry with synthetic fallback
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entry_type: 'journal',
+          status: 'draft',
+          ai_response: expect.objectContaining({
+            Note: 'I need a Lyrica refill',
+            Feeling: 'I need a Lyrica refill',
+            Sleep: null,
+            Pain: null,
+          }),
+        })
+      );
+      expect(revalidatePath).toHaveBeenCalledWith('/journal');
+    });
   });
 });

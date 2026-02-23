@@ -45,6 +45,12 @@ describe('smart-parser', () => {
       const result = await classifyIntent('Need to call my mom');
       expect(result).toBe('journal');
     });
+
+    it('should fall back to journal on API failure', async () => {
+      mockCreate.mockRejectedValueOnce(new Error('API Error'));
+      const result = await classifyIntent('asdfghjkl gibberish');
+      expect(result).toBe('journal');
+    });
   });
 
   describe('parseJournal', () => {
@@ -124,6 +130,8 @@ describe('smart-parser', () => {
       expect(result.Sleep).toBeNull();
       expect(result.Pain).toBeNull();
       expect(result.Mood).toBeNull();
+      expect(result.Appointments).toBeNull();
+      expect(result.Scripts).toBeNull();
     });
 
     it('should truncate Feeling to 500 chars in fallback', async () => {

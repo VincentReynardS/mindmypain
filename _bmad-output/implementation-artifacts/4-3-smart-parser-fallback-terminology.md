@@ -26,36 +26,36 @@ so that unrecognized inputs are safely filed under general notes.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Remove "agenda" from `classifyIntent` return type and prompt (AC: #4)
-  - [ ] 1.1: Update `INTENT_CLASSIFICATION_PROMPT` to remove "agenda" category entirely — only keep `journal | medication | appointment | script`
-  - [ ] 1.2: Update `classifyIntent()` return type to `Promise<'appointment' | 'medication' | 'script' | 'journal'>`
-  - [ ] 1.3: Remove `case 'agenda':` from `processJournalEntry` switch in `journal-actions.ts`
-  - [ ] 1.4: Remove `intent === 'agenda'` check from `createJournalEntry` in `journal-actions.ts` (just use `intent === 'journal'`)
-  - [ ] 1.5: Search and remove any remaining "agenda" references in `src/` (excluding test snapshots and migration SQL history)
+- [x] Task 1: Remove "agenda" from `classifyIntent` return type and prompt (AC: #4)
+  - [x] 1.1: Update `INTENT_CLASSIFICATION_PROMPT` to remove "agenda" category entirely — only keep `journal | medication | appointment | script`
+  - [x] 1.2: Update `classifyIntent()` return type to `Promise<'appointment' | 'medication' | 'script' | 'journal'>`
+  - [x] 1.3: Remove `case 'agenda':` from `processJournalEntry` switch in `journal-actions.ts`
+  - [x] 1.4: Remove `intent === 'agenda'` check from `createJournalEntry` in `journal-actions.ts` (just use `intent === 'journal'`)
+  - [x] 1.5: Search and remove any remaining "agenda" references in `src/` (excluding test snapshots and migration SQL history)
 
-- [ ] Task 2: Implement parser-level fallback in `parseJournal` (AC: #2, #3)
-  - [ ] 2.1: Wrap the `parseJournal` function's OpenAI call + Zod parse in a try-catch that returns a **synthetic fallback response** instead of throwing
-  - [ ] 2.2: The synthetic fallback must create a `JournalResponse` object with `Feeling` set to the raw text (first 500 chars) and `Note` set to the full raw text
-  - [ ] 2.3: All other fields (`Sleep`, `Pain`, `Mood`, `Grateful`, `Action`, `Medication`, `Appointments`, `Scripts`) must be `null` in the fallback
-  - [ ] 2.4: Log the original error with `console.error` but do NOT re-throw — return the synthetic response
+- [x] Task 2: Implement parser-level fallback in `parseJournal` (AC: #2, #3)
+  - [x] 2.1: Wrap the `parseJournal` function's OpenAI call + Zod parse in a try-catch that returns a **synthetic fallback response** instead of throwing
+  - [x] 2.2: The synthetic fallback must create a `JournalResponse` object with `Feeling` set to the raw text (first 500 chars) and `Note` set to the full raw text
+  - [x] 2.3: All other fields (`Sleep`, `Pain`, `Mood`, `Grateful`, `Action`, `Medication`, `Appointments`, `Scripts`) must be `null` in the fallback
+  - [x] 2.4: Log the original error with `console.error` but do NOT re-throw — return the synthetic response
 
-- [ ] Task 3: Implement process-level fallback in `processJournalEntry` (AC: #1, #5)
-  - [ ] 3.1: If `classifyIntent` returns an unrecognized value (not in `journal | medication | appointment | script`), treat as `'journal'`
-  - [ ] 3.2: Wrap the entire switch/parse logic in `processJournalEntry` in a try-catch
-  - [ ] 3.3: On ANY parser failure, create a synthetic `ai_response` (same shape as Task 2.2) and still update the entry to `entry_type = 'journal'` with `status = 'draft'`
-  - [ ] 3.4: Ensure the entry is NEVER left as `raw_text` after `processJournalEntry` is called — it must always transition to `journal`
+- [x] Task 3: Implement process-level fallback in `processJournalEntry` (AC: #1, #5)
+  - [x] 3.1: If `classifyIntent` returns an unrecognized value (not in `journal | medication | appointment | script`), treat as `'journal'`
+  - [x] 3.2: Wrap the entire switch/parse logic in `processJournalEntry` in a try-catch
+  - [x] 3.3: On ANY parser failure, create a synthetic `ai_response` (same shape as Task 2.2) and still update the entry to `entry_type = 'journal'` with `status = 'draft'`
+  - [x] 3.4: Ensure the entry is NEVER left as `raw_text` after `processJournalEntry` is called — it must always transition to `journal`
 
-- [ ] Task 4: Clean up seed data and migration comments (AC: #4)
-  - [ ] 4.1: Update `supabase/seed.sql` to replace "agenda" terminology in comments and JSON data (replace `"agenda_items"` key in seed JSON with appropriate alternative like `"preparation_items"`)
-  - [ ] 4.2: Leave migration SQL files untouched (they are historical records)
+- [x] Task 4: Clean up seed data and migration comments (AC: #4)
+  - [x] 4.1: Update `supabase/seed.sql` to replace "agenda" terminology in comments and JSON data (replace `"agenda_items"` key in seed JSON with appropriate alternative like `"preparation_items"`)
+  - [x] 4.2: Leave migration SQL files untouched (they are historical records)
 
-- [ ] Task 5: Update tests (AC: all)
-  - [ ] 5.1: Update `src/lib/openai/smart-parser.test.ts` — remove 'agenda' intent tests, add fallback behavior tests
-  - [ ] 5.2: Update `src/__tests__/journal-actions.test.ts` — add tests for process-level fallback (parser failure still produces valid entry)
-  - [ ] 5.3: Add test: `classifyIntent` with gibberish returns 'journal'
-  - [ ] 5.4: Add test: `parseJournal` with API failure returns synthetic response (not throw)
-  - [ ] 5.5: Add test: `processJournalEntry` with full parser failure still produces `entry_type = 'journal'`
-  - [ ] 5.6: Update `src/__tests__/story-1-2-database-migration.test.ts` line 150 comment referencing "agenda"
+- [x] Task 5: Update tests (AC: all)
+  - [x] 5.1: Update `src/lib/openai/smart-parser.test.ts` — remove 'agenda' intent tests, add fallback behavior tests
+  - [x] 5.2: Update `src/__tests__/journal-actions.test.ts` — add tests for process-level fallback (parser failure still produces valid entry)
+  - [x] 5.3: Add test: `classifyIntent` with gibberish returns 'journal'
+  - [x] 5.4: Add test: `parseJournal` with API failure returns synthetic response (not throw)
+  - [x] 5.5: Add test: `processJournalEntry` with full parser failure still produces `entry_type = 'journal'`
+  - [x] 5.6: Update `src/__tests__/story-1-2-database-migration.test.ts` line 150 comment referencing "agenda"
 
 - [ ] Task 6: Manual browser verification (AC: all)
   - [ ] 6.1: Start dev server, navigate to `/journal`
@@ -65,6 +65,10 @@ so that unrecognized inputs are safely filed under general notes.
   - [ ] 6.5: Verify existing seed data entries still render correctly
 
 ## Dev Notes
+
+### Design Trade-off: Journal-Shape Fallback for Non-Journal Intents
+
+When a non-journal parser (e.g., `parseMedication`, `parseAppointment`) throws, the process-level fallback creates a synthetic `JournalResponse` (journal shape) rather than the original intent's shape. This is intentional — the Glass Box pattern requires a valid `ai_response` to render, and the journal shape is the universal fallback that `SafeDailyJournalRender` can always display. The user can still see their raw text in the Feeling/Note fields and manually correct the entry.
 
 ### Architecture Patterns and Constraints
 
@@ -183,3 +187,12 @@ Claude Opus 4.6 (claude-opus-4-6)
 ### Completion Notes List
 
 ### File List
+
+| File | Change | Description |
+|------|--------|-------------|
+| `src/lib/openai/smart-parser.ts` | Modified | Removed 'agenda' from prompt and return type; added parser-level fallback in `parseJournal` with synthetic `JournalResponse` |
+| `src/app/actions/journal-actions.ts` | Modified | Removed 'agenda' handling in `createJournalEntry` and `processJournalEntry`; added process-level fallback catch block |
+| `src/lib/openai/smart-parser.test.ts` | Modified | Removed 'agenda' tests; added fallback behavior tests for `parseJournal` and `classifyIntent` API failure |
+| `src/__tests__/journal-actions.test.ts` | Modified | Added `processJournalEntry` fallback test (parser failure still produces valid journal entry) |
+| `src/__tests__/story-1-2-database-migration.test.ts` | Modified | Updated line 150 comment replacing "agenda" with "journal" |
+| `supabase/seed.sql` | Modified | Replaced "agenda_items" key with "preparation_items" in seed JSON data |
