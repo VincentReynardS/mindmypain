@@ -73,7 +73,7 @@ describe('Journal Server Actions', () => {
   });
 
   describe('createJournalEntry', () => {
-    it('should ALWAYS create a NEW record for appointment intent', async () => {
+    it('should ALWAYS create a NEW raw_text draft for appointment intent', async () => {
       const { classifyIntent } = await import('@/lib/openai/smart-parser');
       vi.mocked(classifyIntent).mockResolvedValue('appointment');
       mockSingle.mockResolvedValue({ data: { id: 'new-appt-id' }, error: null });
@@ -83,18 +83,18 @@ describe('Journal Server Actions', () => {
       expect(result).toBe('new-appt-id');
       expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({
         entry_type: 'raw_text',
-        status: 'approved'
+        status: 'draft'
       }));
       expect(revalidatePath).toHaveBeenCalledWith('/journal');
     });
 
-    it('should APPEND to existing journal entry if intent is journal', async () => {
+    it('should APPEND to existing raw_text draft if intent is journal', async () => {
       const { classifyIntent } = await import('@/lib/openai/smart-parser');
       vi.mocked(classifyIntent).mockResolvedValue('journal');
-      
-      mockMaybeSingle.mockResolvedValue({ 
-        data: { id: 'existing-id', content: 'Old content', entry_type: 'journal' }, 
-        error: null 
+
+      mockMaybeSingle.mockResolvedValue({
+        data: { id: 'existing-id', content: 'Old content', entry_type: 'raw_text' },
+        error: null
       });
 
       const result = await createJournalEntry('New content', 'user-123');
@@ -102,15 +102,15 @@ describe('Journal Server Actions', () => {
       expect(result).toBe('existing-id');
       expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({
         content: 'Old content\n\nNew content',
-        entry_type: 'journal'
+        entry_type: 'raw_text'
       }));
       expect(revalidatePath).toHaveBeenCalledWith('/journal');
     });
 
-    it('should create NEW journal entry if none exists for today', async () => {
+    it('should create NEW raw_text draft if none exists for today', async () => {
       const { classifyIntent } = await import('@/lib/openai/smart-parser');
       vi.mocked(classifyIntent).mockResolvedValue('journal');
-      
+
       mockMaybeSingle.mockResolvedValue({ data: null, error: null });
       mockSingle.mockResolvedValue({ data: { id: 'new-journal-id' }, error: null });
 
@@ -118,7 +118,7 @@ describe('Journal Server Actions', () => {
 
       expect(result).toBe('new-journal-id');
       expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({
-        entry_type: 'journal',
+        entry_type: 'raw_text',
         status: 'draft'
       }));
       expect(revalidatePath).toHaveBeenCalledWith('/journal');

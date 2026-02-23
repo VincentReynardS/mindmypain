@@ -16,8 +16,7 @@ export type JournalEntryType =
   | "raw_text"
   | "journal"
   | "clinical_summary"
-  | "insight_card"
-  | "daily_journal";
+  | "insight_card";
 
 export interface Database {
   public: {

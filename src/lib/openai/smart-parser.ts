@@ -65,7 +65,7 @@ const MOOD_SCALE = [
   'Achy', 'Nauseated', 'Terrible', 'Sick', 'Angry'
 ] as const;
 
-const DailyJournalResponseSchema = z.object({
+const JournalResponseSchema = z.object({
   Sleep: z.coerce.string().nullish(),
   Pain: z.coerce.string().nullish(),
   Feeling: z.coerce.string().nullish(),
@@ -73,6 +73,7 @@ const DailyJournalResponseSchema = z.object({
   Grateful: z.coerce.string().nullish(),
   Medication: z.coerce.string().nullish(),
   Mood: z.string().nullish(), // Relaxed to string to prevent enum mismatch 500s
+  Note: z.coerce.string().nullish(),
   // Multi-intent support:
   Appointments: z.array(z.object({
     'Practitioner Name': z.string().nullish(),
@@ -91,14 +92,14 @@ const DailyJournalResponseSchema = z.object({
   })).nullish(),
 });
 
-export type DailyJournalResponse = z.infer<typeof DailyJournalResponseSchema>;
+export type JournalResponse = z.infer<typeof JournalResponseSchema>;
 
-const DAILY_JOURNAL_SYSTEM_PROMPT = `
+const JOURNAL_SYSTEM_PROMPT = `
 You are an expert medical triage assistant helping chronic pain patients record their daily health journal.
 MINDmyPAIN users often merge multiple thoughts into one entry. Your task is to perform a comprehensive extraction.
 
 Output MUST be valid JSON with these keys:
-"Sleep", "Pain", "Feeling", "Action", "Grateful", "Medication", "Mood", "Appointments", "Scripts".
+"Sleep", "Pain", "Feeling", "Action", "Grateful", "Medication", "Mood", "Note", "Appointments", "Scripts".
 
 Extraction Rules:
 1. HEALTH DATA:
@@ -106,6 +107,7 @@ Extraction Rules:
    - "Pain": Score out of 10.
    - "Mood": MUST be one of: ${MOOD_SCALE.join(', ')}.
    - "Feeling", "Action", "Grateful", "Medication": Map relevant text.
+   - "Note": Catch-all for any content that doesn't fit the structured fields above (e.g. tasks, reminders, general thoughts).
 
 2. APPOINTMENTS (If mentioned):
    - Extract into "Appointments" array. Use keys: "Practitioner Name", "Visit Type", "Profession", "Date", "Time", "Location", "Reason", "Notes".
@@ -116,16 +118,16 @@ Extraction Rules:
 If a field or array is empty/not mentioned, set it to null or an empty array []. Be concise.
 `;
 
-export async function parseDailyJournal(text: string): Promise<DailyJournalResponse> {
+export async function parseJournal(text: string): Promise<JournalResponse> {
   if (!text || text.trim().length === 0) {
     throw new Error('Input text cannot be empty');
   }
 
   try {
     const response = await openai.chat.completions.create({
-      model: MODEL_ID, 
+      model: MODEL_ID,
       messages: [
-        { role: 'system', content: DAILY_JOURNAL_SYSTEM_PROMPT },
+        { role: 'system', content: JOURNAL_SYSTEM_PROMPT },
         { role: 'user', content: text },
       ],
       response_format: { type: 'json_object' },
@@ -138,72 +140,10 @@ export async function parseDailyJournal(text: string): Promise<DailyJournalRespo
     }
 
     const parsed = JSON.parse(content);
-    return DailyJournalResponseSchema.parse(parsed);
+    return JournalResponseSchema.parse(parsed);
   } catch (error) {
-    console.error('Error parsing daily journal:', error);
-    throw new Error(`Failed to parse daily journal from text: ${error instanceof Error ? error.message : String(error)}`);
-  }
-}
-
-// === Parsing Agendas ===
-
-const AgendaItemSchema = z.object({
-  category: z.string(),
-  item: z.string()
-});
-
-export type AgendaItem = z.infer<typeof AgendaItemSchema>;
-
-const AgendaResponseSchema = z.object({
-  agenda_items: z.array(AgendaItemSchema),
-  questions: z.array(z.string()).optional()
-});
-
-export type AgendaResponse = z.infer<typeof AgendaResponseSchema>;
-
-const SYSTEM_PROMPT = `
-You are an expert medical scribe and organizer helping chronic pain patients.
-Your task is to analyze unstructured journal entries and organize them into clear, actionable agenda items.
-
-Output MUST be valid JSON with the following structure:
-{
-  "agenda_items": [
-    { "category": "Clinical", "item": "Right knee pain flared up" },
-    { "category": "Admin", "item": "Call Dr. Smith for refill" }
-  ],
-  "questions": [ "Ask about increasing Lyrica dosage" ]
-}
-
-Categories can be: Clinical, Admin, Medication, Lifestyle, Question.
-Keep items concise.
-`;
-
-export async function parseAgenda(text: string): Promise<AgendaResponse> {
-  if (!text || text.trim().length === 0) {
-    throw new Error('Input text cannot be empty');
-  }
-
-  try {
-    const response = await openai.chat.completions.create({
-      model: MODEL_ID, 
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: text },
-      ],
-      response_format: { type: 'json_object' },
-    });
-
-    const content = response.choices[0].message.content;
-
-    if (!content) {
-      throw new Error('No content received from AI');
-    }
-
-    const parsed = JSON.parse(content);
-    return AgendaResponseSchema.parse(parsed);
-  } catch (error) {
-    console.error('Error parsing agenda:', error);
-    throw new Error(`Failed to parse agenda from text: ${error instanceof Error ? error.message : String(error)}`);
+    console.error('Error parsing journal:', error);
+    throw new Error(`Failed to parse journal from text: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 

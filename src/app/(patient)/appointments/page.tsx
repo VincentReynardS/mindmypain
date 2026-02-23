@@ -45,34 +45,22 @@ export default function AppointmentsPage() {
         .from('journal_entries')
         .select('*')
         .eq('user_id', personaId) 
-        .in('entry_type', ['journal', 'daily_journal'])
+        .eq('entry_type', 'journal')
         .order('created_at', { ascending: false });
 
       const processedEntries: JournalEntry[] = [];
       
       ((entries as JournalEntry[]) || []).forEach(entry => {
-        // Pattern 1: Pure Agenda Entry
-        if (entry.entry_type === 'journal') {
-          try {
-            const parsed = typeof entry.content === 'string' ? JSON.parse(entry.content || '{}') : entry.content;
-            if (parsed['Practitioner Name'] || parsed['Visit Type']) {
-              processedEntries.push(entry);
-              return;
-            }
-          } catch { /* ignore */ }
-        }
-
-        // Pattern 2: Daily Journal with extracted appointments
-        if (entry.entry_type === 'daily_journal' && entry.ai_response) {
+        // Journal entries with appointment data in ai_response
+        if (entry.entry_type === 'journal' && entry.ai_response) {
           const ai = entry.ai_response as any;
           if (ai.Appointments && Array.isArray(ai.Appointments) && ai.Appointments.length > 0) {
-            // For each appointment found in the daily journal, create a virtual entry
             ai.Appointments.forEach((appt: any, idx: number) => {
               processedEntries.push({
                 ...entry,
-                id: `${entry.id}_appt_${idx}`, // Unique virtual ID
-                content: JSON.stringify(appt), // Prime the content for AppointmentGlassBox
-                entry_type: 'journal' // Treat as journal for rendering
+                id: `${entry.id}_appt_${idx}`,
+                content: JSON.stringify(appt),
+                entry_type: 'journal'
               });
             });
           }

@@ -15,10 +15,6 @@ const TYPE_BADGE_CONFIG: Record<
     label: "Journal",
     className: "bg-calm-purple-soft text-calm-purple",
   },
-  daily_journal: {
-    label: "Journal",
-    className: "bg-calm-teal-soft text-calm-teal",
-  },
   clinical_summary: {
     label: "Summary",
     className: "bg-calm-green-soft text-calm-green",

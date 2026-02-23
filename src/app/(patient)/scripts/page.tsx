@@ -60,25 +60,14 @@ export default function ScriptsPage() {
         .from('journal_entries')
         .select('*')
         .eq('user_id', personaId) 
-        .in('entry_type', ['journal', 'daily_journal'])
+        .eq('entry_type', 'journal')
         .order('created_at', { ascending: false });
 
       const processedEntries: JournalEntry[] = [];
       
       ((entries as JournalEntry[]) || []).forEach(entry => {
-        // Pattern 1: Agenda with Script Name
-        if (entry.entry_type === 'journal') {
-          try {
-            const parsed = typeof entry.content === 'string' ? JSON.parse(entry.content || '{}') : entry.content;
-            if (parsed.Name) {
-              processedEntries.push(entry);
-              return;
-            }
-          } catch { /* ignore */ }
-        }
-
-        // Pattern 2: Daily Journal with extracted scripts
-        if (entry.entry_type === 'daily_journal' && entry.ai_response) {
+        // Journal entries with script data in ai_response
+        if (entry.entry_type === 'journal' && entry.ai_response) {
           const ai = entry.ai_response as any;
           if (ai.Scripts && Array.isArray(ai.Scripts) && ai.Scripts.length > 0) {
             ai.Scripts.forEach((script: any, idx: number) => {

@@ -15,57 +15,127 @@ const TYPE_CONFIG: Record<JournalEntryType, { label: string; badgeClass: string 
   journal: { label: 'Journal', badgeClass: 'bg-calm-purple-soft text-calm-purple' },
   clinical_summary: { label: 'Summary', badgeClass: 'bg-calm-green-soft text-calm-green' },
   insight_card: { label: 'Insight', badgeClass: 'bg-calm-blue-soft text-calm-blue' },
-  daily_journal: { label: 'Journal', badgeClass: 'bg-calm-teal-soft text-calm-teal' },
 };
 
 function getDynamicBadge(entry: JournalEntry): { label: string; badgeClass: string } {
   const config = TYPE_CONFIG[entry.entry_type] || TYPE_CONFIG.raw_text;
-  
+
   if (entry.entry_type === 'journal' && entry.ai_response) {
     const ai = entry.ai_response;
-    if (ai['Practitioner Name'] || ai['Visit Type'] || ai.Appointments) {
-      return { label: 'Appointment', badgeClass: 'bg-amber-100 text-amber-800' };
+    if (ai['Practitioner Name'] || ai['Visit Type'] || ai.Date) {
+      return { label: 'Appointment', badgeClass: 'bg-indigo-100 text-indigo-700' };
     }
-    if (ai.Name || ai['Brand Name'] || ai.Scripts) {
+    if (ai['Brand Name'] || ai['Generic Name'] || ai.Dosage) {
+      return { label: 'Medication', badgeClass: 'bg-amber-100 text-amber-800' };
+    }
+    if (ai.Name && ai.Filled !== undefined) {
       return { label: 'Script', badgeClass: 'bg-calm-blue-soft text-calm-blue' };
     }
   }
-  
+
   return config;
 }
 
-function SafeJournalRender({ content, aiResponse }: { content: string; aiResponse?: any }) {
-  try {
-    const parsed = aiResponse || (content ? JSON.parse(content) : null);
-    
-    if (parsed && Array.isArray(parsed.agenda_items)) {
-      return (
-        <ul className="list-disc pl-5 space-y-1">
-          {parsed.agenda_items.map((item: any, idx: number) => (
-            <li key={idx}>
-              <span className="font-medium text-calm-primary">{item.category}:</span> {item.item}
-            </li>
-          ))}
-        </ul>
-      );
-    } else if (parsed && parsed.Name !== undefined) {
-      return (
-        <div className="space-y-1">
-          <p><span className="font-medium text-calm-primary">Script/Referral:</span> {parsed.Name}</p>
-          {parsed['Date Prescribed'] && <p><span className="font-medium text-calm-primary">Date:</span> {parsed['Date Prescribed']}</p>}
-          <p><span className="font-medium text-calm-primary">Status:</span> {parsed.Filled ? "Filled" : "To Be Filled"}</p>
-          {parsed.Notes && <p><span className="font-medium text-calm-primary">Notes:</span> {parsed.Notes}</p>}
-        </div>
-      );
-    }
-  } catch (_e) {
-    // Not JSON, fall back to text rendering
-  }
-  
-  return <>{content}</>;
+function SafeMedicationRender({ aiResponse }: { aiResponse: any }) {
+  const fields = [
+    { key: 'Brand Name', label: 'Brand Name' },
+    { key: 'Generic Name', label: 'Generic Name' },
+    { key: 'Dosage', label: 'Dosage' },
+    { key: 'Date Started', label: 'Date Started' },
+    { key: 'Reason', label: 'Reason' },
+    { key: 'Side Effects', label: 'Side Effects' },
+    { key: 'Feelings', label: 'Feelings' },
+    { key: 'Date Stopped', label: 'Date Stopped' },
+    { key: 'Stop Reason', label: 'Stop Reason' },
+    { key: 'Notes', label: 'Notes' },
+  ];
+
+  return (
+    <div className="space-y-2">
+      {fields.map(({ key, label }) => {
+        const val = aiResponse[key];
+        if (!val) return null;
+        return (
+          <div key={key} className="text-calm-text">
+            <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-0.5">{label}</span>
+            <div className="text-sm">{String(val)}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
-function SafeDailyJournalRender({ content, aiResponse }: { content: string; aiResponse?: any }) {
+function SafeAppointmentRender({ aiResponse }: { aiResponse: any }) {
+  const fields = [
+    { key: 'Practitioner Name', label: 'Practitioner' },
+    { key: 'Visit Type', label: 'Visit Type' },
+    { key: 'Profession', label: 'Profession' },
+    { key: 'Date', label: 'Date' },
+    { key: 'Location', label: 'Location' },
+    { key: 'Reason', label: 'Reason' },
+    { key: 'Questions', label: 'Questions to Ask' },
+    { key: 'Outcomes', label: 'Outcomes' },
+    { key: 'Follow-up Questions', label: 'Follow-up Questions' },
+    { key: 'Notes', label: 'Notes' },
+  ];
+
+  return (
+    <div className="space-y-2">
+      {fields.map(({ key, label }) => {
+        const val = aiResponse[key];
+        if (!val) return null;
+        return (
+          <div key={key} className="text-calm-text">
+            <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-0.5">{label}</span>
+            <div className="text-sm">{String(val)}</div>
+          </div>
+        );
+      })}
+      {aiResponse['Admin Needs'] && aiResponse['Admin Needs'].length > 0 && (
+        <div className="text-calm-text">
+          <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-1">Admin Needs</span>
+          <div className="flex flex-wrap gap-1">
+            {aiResponse['Admin Needs'].map((need: string, idx: number) => (
+              <span key={idx} className="bg-calm-surface text-calm-text text-xs px-2 py-1 rounded-md border border-calm-border">
+                {need}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SafeScriptRender({ aiResponse }: { aiResponse: any }) {
+  const fields = [
+    { key: 'Name', label: 'Script / Referral' },
+    { key: 'Date Prescribed', label: 'Date Prescribed' },
+    { key: 'Notes', label: 'Notes' },
+  ];
+
+  return (
+    <div className="space-y-2">
+      {fields.map(({ key, label }) => {
+        const val = aiResponse[key];
+        if (!val) return null;
+        return (
+          <div key={key} className="text-calm-text">
+            <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-0.5">{label}</span>
+            <div className="text-sm">{String(val)}</div>
+          </div>
+        );
+      })}
+      <div className="text-calm-text">
+        <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-0.5">Status</span>
+        <div className="text-sm">{aiResponse.Filled ? 'Filled' : 'To Be Filled'}</div>
+      </div>
+    </div>
+  );
+}
+
+function SafeHealthJournalRender({ content, aiResponse }: { content: string; aiResponse?: any }) {
   try {
     const parsed = aiResponse || (content ? JSON.parse(content) : null);
     
@@ -82,6 +152,7 @@ function SafeDailyJournalRender({ content, aiResponse }: { content: string; aiRe
       { key: 'Grateful', label: 'Grateful For' },
       { key: 'Medication', label: 'Medications' },
       { key: 'Mood', label: 'Mood' },
+      { key: 'Note', label: 'Note' },
     ];
 
     return (
@@ -242,12 +313,21 @@ export function GlassBoxCard({ entry, onUpdate, onApprove }: GlassBoxCardProps) 
       </div>
       
       <div className="whitespace-pre-wrap text-sm text-calm-text leading-relaxed">
-        {entry.entry_type === "journal" ? (
-          <SafeJournalRender content={entry.content} aiResponse={entry.ai_response} />
+        {entry.entry_type === "journal" && entry.ai_response ? (
+          // Dispatch to the right renderer based on ai_response shape
+          entry.ai_response['Brand Name'] || entry.ai_response['Generic Name'] || entry.ai_response.Dosage ? (
+            <SafeMedicationRender aiResponse={entry.ai_response} />
+          ) : entry.ai_response['Practitioner Name'] || entry.ai_response['Visit Type'] ? (
+            <SafeAppointmentRender aiResponse={entry.ai_response} />
+          ) : entry.ai_response.Name && entry.ai_response.Filled !== undefined ? (
+            <SafeScriptRender aiResponse={entry.ai_response} />
+          ) : (
+            <SafeHealthJournalRender content={entry.content} aiResponse={entry.ai_response} />
+          )
+        ) : entry.entry_type === "journal" ? (
+          <SafeHealthJournalRender content={entry.content} aiResponse={entry.ai_response} />
         ) : entry.entry_type === "clinical_summary" ? (
           <SafeClinicalSummaryRender content={entry.content || ''} />
-        ) : entry.entry_type === "daily_journal" ? (
-          <SafeDailyJournalRender content={entry.content || ''} aiResponse={entry.ai_response} />
         ) : (
           entry.content
         )}

@@ -45,29 +45,16 @@ export default function MedicationsPage() {
         .from('journal_entries')
         .select('*')
         .eq('user_id', personaId) 
-        .in('entry_type', ['journal', 'daily_journal'])
+        .eq('entry_type', 'journal')
         .order('created_at', { ascending: false });
 
       const processedEntries: JournalEntry[] = [];
       
       ((entries as JournalEntry[]) || []).forEach(entry => {
-        // Pattern 1: Agenda with Brand Name (Direct medication record)
-        if (entry.entry_type === 'journal') {
-          try {
-            const parsed = typeof entry.content === 'string' ? JSON.parse(entry.content || '{}') : entry.content;
-            if (parsed['Brand Name'] || parsed['Generic Name'] || parsed['Dosage']) {
-              processedEntries.push(entry);
-              return;
-            }
-          } catch { /* ignore */ }
-        }
-
-        // Pattern 2: Daily Journal with medication notes
-        if (entry.entry_type === 'daily_journal' && entry.ai_response) {
+        // Journal entries with medication data in ai_response
+        if (entry.entry_type === 'journal' && entry.ai_response) {
           const ai = entry.ai_response as any;
           if (ai.Medication && ai.Medication.trim() !== '') {
-            // For now, we display the whole journal entry in the meds list 
-            // if it contains medication info. The user can see their daily dose log here.
             processedEntries.push(entry);
           }
         }

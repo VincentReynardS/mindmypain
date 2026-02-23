@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { parseAgenda, generateClinicalSummary, parseMedication, parseScript, classifyIntent, parseAppointment } from './smart-parser';
+import { generateClinicalSummary, parseMedication, parseScript, classifyIntent, parseAppointment } from './smart-parser';
 
 // Hoist the mock function so it's available in vi.mock
 const { mockCreate } = vi.hoisted(() => {
@@ -47,8 +47,8 @@ describe('smart-parser', () => {
     });
   });
 
-  describe('parseDailyJournal', () => {
-    it('should parse text into daily journal format', async () => {
+  describe('parseJournal', () => {
+    it('should parse text into journal format with health fields', async () => {
       const mockResponse = {
         Sleep: '8 hours',
         Pain: '7',
@@ -56,7 +56,8 @@ describe('smart-parser', () => {
         Action: 'Take a walk',
         Grateful: 'My dog',
         Medication: 'Panadol in morning',
-        Mood: 'Ok'
+        Mood: 'Ok',
+        Note: null
       };
 
       mockCreate.mockResolvedValueOnce({
@@ -69,14 +70,54 @@ describe('smart-parser', () => {
         ],
       });
 
-      const { parseDailyJournal } = await import('./smart-parser');
-      const result = await parseDailyJournal('Today is Monday. Slept 8 hours. Pain is 7 out of 10. Feeling tired but okay. I can take a walk to feel better. Grateful for my dog. Took Panadol in morning. Mood is ok.');
+      const { parseJournal } = await import('./smart-parser');
+      const result = await parseJournal('Today is Monday. Slept 8 hours. Pain is 7 out of 10. Feeling tired but okay. I can take a walk to feel better. Grateful for my dog. Took Panadol in morning. Mood is ok.');
 
       expect(result).toEqual(mockResponse);
       expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({
         model: 'gpt-4o',
         response_format: { type: 'json_object' },
       }));
+    });
+
+    it('should parse text with a Note field for catch-all content', async () => {
+      const mockResponse = {
+        Sleep: null,
+        Pain: null,
+        Feeling: null,
+        Action: null,
+        Grateful: null,
+        Medication: null,
+        Mood: null,
+        Note: 'Need to buy groceries and call my mom'
+      };
+
+      mockCreate.mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              content: JSON.stringify(mockResponse),
+            },
+          },
+        ],
+      });
+
+      const { parseJournal } = await import('./smart-parser');
+      const result = await parseJournal('Need to buy groceries and call my mom');
+
+      expect(result.Note).toBe('Need to buy groceries and call my mom');
+    });
+
+    it('should throw error for empty input', async () => {
+      const { parseJournal } = await import('./smart-parser');
+      await expect(parseJournal('')).rejects.toThrow('Input text cannot be empty');
+    });
+
+    it('should handle API errors', async () => {
+      mockCreate.mockRejectedValueOnce(new Error('API Error'));
+
+      const { parseJournal } = await import('./smart-parser');
+      await expect(parseJournal('test')).rejects.toThrow('Failed to parse journal from text');
     });
   });
 
@@ -153,46 +194,6 @@ describe('smart-parser', () => {
       mockCreate.mockResolvedValueOnce({ choices: [{ message: { content: JSON.stringify(mockResponse) } }] });
       const result = await parseScript('Got a physio referral today');
       expect(result).toEqual(mockResponse);
-    });
-  });
-
-  describe('parseJournal', () => {
-    it('should parse text into journal items', async () => {
-      const mockResponse = {
-        agenda_items: [
-          { category: 'Clinical', item: 'Knee pain' },
-          { category: 'Admin', item: 'Buy milk' }
-        ],
-        questions: ['Is this normal?']
-      };
-
-      mockCreate.mockResolvedValueOnce({
-        choices: [
-          {
-            message: {
-              content: JSON.stringify(mockResponse),
-            },
-          },
-        ],
-      });
-
-      const result = await parseAgenda('My knee hurts and I need milk. Is this normal?');
-
-      expect(result).toEqual(mockResponse);
-      expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({
-        model: 'gpt-4o',
-        response_format: { type: 'json_object' },
-      }));
-    });
-
-    it('should throw error for empty input', async () => {
-      await expect(parseAgenda('')).rejects.toThrow('Input text cannot be empty');
-    });
-
-    it('should handle API errors for agenda parsing', async () => {
-      mockCreate.mockRejectedValueOnce(new Error('API Error'));
-
-      await expect(parseAgenda('test')).rejects.toThrow('Failed to parse agenda from text');
     });
   });
 
