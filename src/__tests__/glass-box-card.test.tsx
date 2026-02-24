@@ -29,17 +29,11 @@ describe('GlassBoxCard Component', () => {
   it('should implement edit mode logic', () => {
     expect(glassBoxCardSource).toContain('isEditing');
     expect(glassBoxCardSource).toContain('setIsEditing');
-    expect(glassBoxCardSource).toContain('textarea'); // Uses textarea for editing
   });
 
   it('should implement approve logic', () => {
     expect(glassBoxCardSource).toContain('handleApprove');
     expect(glassBoxCardSource).toContain('onApprove(entry.id)');
-  });
-
-  it('should implement update logic', () => {
-    expect(glassBoxCardSource).toContain('handleSave');
-    expect(glassBoxCardSource).toContain('onUpdate(entry.id, editedContent)');
   });
 
   it('should have Type Config for different entry types', () => {
@@ -56,5 +50,33 @@ describe('GlassBoxCard Component', () => {
   it('should use badges for entry type', () => {
     expect(glassBoxCardSource).toContain('entry_type');
     expect(glassBoxCardSource).toContain('badgeClass');
+  });
+
+  it('should import shape-aware editor forms', () => {
+    expect(glassBoxCardSource).toContain('JournalEditForm');
+    expect(glassBoxCardSource).toContain('MedicationEditForm');
+    expect(glassBoxCardSource).toContain('AppointmentEditForm');
+    expect(glassBoxCardSource).toContain('ScriptEditForm');
+    expect(glassBoxCardSource).toContain('ClinicalSummaryEditForm');
+  });
+
+  it('should detect ai_response shapes for edit dispatch', () => {
+    expect(glassBoxCardSource).toContain('detectAiResponseShape');
+    expect(glassBoxCardSource).toContain("'medication'");
+    expect(glassBoxCardSource).toContain("'appointment'");
+    expect(glassBoxCardSource).toContain("'script'");
+    expect(glassBoxCardSource).toContain("'clinical_summary'");
+  });
+
+  it('should accept onUpdateAiResponse prop', () => {
+    expect(glassBoxCardSource).toContain('onUpdateAiResponse');
+  });
+
+  it('should always show Edit button including for approved entries', () => {
+    expect(glassBoxCardSource).toContain("setIsEditing(true)");
+  });
+
+  it('should have 44px minimum touch targets on buttons', () => {
+    expect(glassBoxCardSource).toContain("minHeight: '44px'");
   });
 });

@@ -3,11 +3,17 @@
 import { useState } from 'react';
 import { JournalEntry, JournalEntryType } from '@/types/database';
 import { SafeClinicalSummaryRender } from './renderers/safe-clinical-summary-render';
+import { JournalEditForm } from './editors/journal-edit-form';
+import { MedicationEditForm } from './editors/medication-edit-form';
+import { AppointmentEditForm } from './editors/appointment-edit-form';
+import { ScriptEditForm } from './editors/script-edit-form';
+import { ClinicalSummaryEditForm } from './editors/clinical-summary-edit-form';
 
 interface GlassBoxCardProps {
   entry: JournalEntry;
   onUpdate: (id: string, content: string) => Promise<void>;
   onApprove: (id: string) => Promise<void>;
+  onUpdateAiResponse?: (id: string, aiResponse: object, contentText: string) => Promise<void>;
 }
 
 const TYPE_CONFIG: Record<JournalEntryType, { label: string; badgeClass: string }> = {
@@ -16,6 +22,8 @@ const TYPE_CONFIG: Record<JournalEntryType, { label: string; badgeClass: string 
   clinical_summary: { label: 'Summary', badgeClass: 'bg-calm-green-soft text-calm-green' },
   insight_card: { label: 'Insight', badgeClass: 'bg-calm-blue-soft text-calm-blue' },
 };
+
+type AiResponseShape = 'medication' | 'appointment' | 'script' | 'clinical_summary' | 'journal';
 
 function getDynamicBadge(entry: JournalEntry): { label: string; badgeClass: string } {
   const config = TYPE_CONFIG[entry.entry_type] || TYPE_CONFIG.raw_text;
@@ -34,6 +42,18 @@ function getDynamicBadge(entry: JournalEntry): { label: string; badgeClass: stri
   }
 
   return config;
+}
+
+function detectAiResponseShape(entry: JournalEntry): AiResponseShape {
+  if (entry.entry_type === 'clinical_summary') return 'clinical_summary';
+  if (entry.ai_response) {
+    const ai = entry.ai_response;
+    if (ai['Practitioner Name'] || ai['Visit Type']) return 'appointment';
+    if (ai['Brand Name'] || ai['Generic Name'] || ai.Dosage) return 'medication';
+    if (ai.Name && ai.Filled !== undefined) return 'script';
+    if (ai.chief_complaint) return 'clinical_summary';
+  }
+  return 'journal';
 }
 
 function SafeMedicationRender({ aiResponse }: { aiResponse: any }) {
@@ -138,7 +158,7 @@ function SafeScriptRender({ aiResponse }: { aiResponse: any }) {
 function SafeHealthJournalRender({ content, aiResponse }: { content: string; aiResponse?: any }) {
   try {
     const parsed = aiResponse || (content ? JSON.parse(content) : null);
-    
+
     if (!parsed || typeof parsed !== 'object') {
        return <>{content}</>;
     }
@@ -211,14 +231,13 @@ function SafeHealthJournalRender({ content, aiResponse }: { content: string; aiR
 }
 
 
-export function GlassBoxCard({ entry, onUpdate, onApprove }: GlassBoxCardProps) {
+export function GlassBoxCard({ entry, onUpdate, onApprove, onUpdateAiResponse }: GlassBoxCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(entry.content);
   const [isSaving, setIsSaving] = useState(false);
 
-  // ... (existing code for TYPE_CONFIG, handleSave, handleApprove, handleCancel, isEditing check) ...
-
   const config = getDynamicBadge(entry);
+  const isApproved = entry.status === "approved";
 
   const handleSave = async () => {
     try {
@@ -226,7 +245,21 @@ export function GlassBoxCard({ entry, onUpdate, onApprove }: GlassBoxCardProps) 
       await onUpdate(entry.id, editedContent);
       setIsEditing(false);
     } catch (error) {
-      // Fail silently for now, or add toast later
+      // Fail silently for now
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleAiResponseSave = async (aiResponse: object, contentText: string) => {
+    try {
+      setIsSaving(true);
+      if (onUpdateAiResponse) {
+        await onUpdateAiResponse(entry.id, aiResponse, contentText);
+      }
+      setIsEditing(false);
+    } catch (error) {
+      // Fail silently for now
     } finally {
       setIsSaving(false);
     }
@@ -237,7 +270,7 @@ export function GlassBoxCard({ entry, onUpdate, onApprove }: GlassBoxCardProps) 
       setIsSaving(true);
       await onApprove(entry.id);
     } catch (error) {
-      // Fail silently for now, or add toast later
+      // Fail silently for now
     } finally {
       setIsSaving(false);
     }
@@ -248,7 +281,27 @@ export function GlassBoxCard({ entry, onUpdate, onApprove }: GlassBoxCardProps) 
     setIsEditing(false);
   };
 
+  // Edit mode: dispatch to shape-aware form editors
   if (isEditing) {
+    const shape = detectAiResponseShape(entry);
+
+    // If we have ai_response and a matching editor, use the structured form
+    if (entry.ai_response && onUpdateAiResponse) {
+      switch (shape) {
+        case 'journal':
+          return <JournalEditForm aiResponse={entry.ai_response} onSave={handleAiResponseSave} onCancel={handleCancel} isSaving={isSaving} />;
+        case 'medication':
+          return <MedicationEditForm aiResponse={entry.ai_response} onSave={handleAiResponseSave} onCancel={handleCancel} isSaving={isSaving} />;
+        case 'appointment':
+          return <AppointmentEditForm aiResponse={entry.ai_response} onSave={handleAiResponseSave} onCancel={handleCancel} isSaving={isSaving} />;
+        case 'script':
+          return <ScriptEditForm aiResponse={entry.ai_response} onSave={handleAiResponseSave} onCancel={handleCancel} isSaving={isSaving} />;
+        case 'clinical_summary':
+          return <ClinicalSummaryEditForm aiResponse={entry.ai_response} onSave={handleAiResponseSave} onCancel={handleCancel} isSaving={isSaving} />;
+      }
+    }
+
+    // Fallback: plain textarea for entries without ai_response (original behavior)
     return (
       <div className="rounded-lg bg-calm-surface-raised p-4 shadow-sm border border-calm-border">
         <label className="mb-4 block text-sm font-medium text-calm-text">
@@ -265,6 +318,7 @@ export function GlassBoxCard({ entry, onUpdate, onApprove }: GlassBoxCardProps) 
             onClick={handleCancel}
             disabled={isSaving}
             className="rounded-md px-3 py-1.5 text-sm font-medium text-calm-text-muted hover:bg-calm-surface"
+            style={{ minHeight: '44px' }}
           >
             Cancel
           </button>
@@ -272,6 +326,7 @@ export function GlassBoxCard({ entry, onUpdate, onApprove }: GlassBoxCardProps) 
             onClick={handleSave}
             disabled={isSaving}
             className="rounded-md bg-calm-blue px-3 py-1.5 text-sm font-medium text-white hover:bg-opacity-90 disabled:opacity-50"
+            style={{ minHeight: '44px' }}
           >
             {isSaving ? "Saving..." : "Save"}
           </button>
@@ -279,8 +334,6 @@ export function GlassBoxCard({ entry, onUpdate, onApprove }: GlassBoxCardProps) 
       </div>
     );
   }
-
-  const isApproved = entry.status === "approved";
 
   return (
     <div className={`rounded-lg bg-calm-surface-raised p-4 shadow-sm border-l-4 ${isApproved ? "border-calm-green" : "border-calm-primary"} transition-all`}>
@@ -297,6 +350,7 @@ export function GlassBoxCard({ entry, onUpdate, onApprove }: GlassBoxCardProps) 
           <button
             onClick={() => setIsEditing(true)}
             className="rounded-md px-3 py-1.5 text-xs font-medium text-calm-text hover:bg-calm-surface"
+            style={{ minHeight: '44px' }}
           >
             Edit
           </button>
@@ -305,13 +359,14 @@ export function GlassBoxCard({ entry, onUpdate, onApprove }: GlassBoxCardProps) 
               onClick={handleApprove}
               disabled={isSaving}
               className="rounded-md bg-calm-green px-3 py-1.5 text-xs font-medium text-white hover:bg-opacity-90 disabled:opacity-50"
+              style={{ minHeight: '44px' }}
             >
               {isSaving ? "Approving..." : "Approve"}
             </button>
           )}
         </div>
       </div>
-      
+
       <div className="whitespace-pre-wrap text-sm text-calm-text leading-relaxed">
         {entry.entry_type === "journal" && entry.ai_response ? (
           // Dispatch to the right renderer based on ai_response shape
@@ -326,8 +381,8 @@ export function GlassBoxCard({ entry, onUpdate, onApprove }: GlassBoxCardProps) 
           )
         ) : entry.entry_type === "journal" ? (
           <SafeHealthJournalRender content={entry.content} aiResponse={entry.ai_response} />
-        ) : entry.entry_type === "clinical_summary" ? (
-          <SafeClinicalSummaryRender content={entry.content || ''} />
+        ) : entry.entry_type === "clinical_summary" && entry.ai_response ? (
+          <SafeClinicalSummaryRender aiResponse={entry.ai_response} />
         ) : (
           entry.content
         )}

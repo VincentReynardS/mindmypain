@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createJournalEntry, updateJournalEntry, approveJournalEntry, processJournalEntry } from '@/app/actions/journal-actions';
+import { createJournalEntry, updateJournalEntry, approveJournalEntry, processJournalEntry, updateJournalAiResponse } from '@/app/actions/journal-actions';
 import * as smartParser from '@/lib/openai/smart-parser';
 
 // Mock dependencies
@@ -288,6 +288,44 @@ describe('Journal Server Actions', () => {
         })
       );
       expect(revalidatePath).toHaveBeenCalledWith('/journal');
+    });
+  });
+
+  describe('updateJournalAiResponse', () => {
+    it('should update both ai_response and content columns', async () => {
+      const aiResponse = { Sleep: '8 hours', Pain: '3/10', Feeling: 'Good', Action: null, Grateful: null, Medication: null, Mood: 'Good', Note: null, Appointments: null, Scripts: null };
+      const contentText = 'Sleep: 8 hours\nPain: 3/10\nMood: Good\nFeeling: Good';
+
+      await updateJournalAiResponse('entry-123', aiResponse, contentText);
+
+      expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({
+        ai_response: aiResponse,
+        content: contentText,
+      }));
+      expect(revalidatePath).toHaveBeenCalledWith('/journal');
+      expect(revalidatePath).toHaveBeenCalledWith('/appointments');
+      expect(revalidatePath).toHaveBeenCalledWith('/medications');
+      expect(revalidatePath).toHaveBeenCalledWith('/scripts');
+    });
+
+    it('should NOT change entry status', async () => {
+      const aiResponse = { Sleep: '8 hours' };
+      await updateJournalAiResponse('entry-123', aiResponse, 'Sleep: 8 hours');
+
+      // The update call should NOT contain a status field
+      const updateArg = mockUpdate.mock.calls[0][0];
+      expect(updateArg).not.toHaveProperty('status');
+    });
+
+    it('should throw on Supabase error', async () => {
+      const errorChain = { ...mockFrom(), update: mockUpdate };
+      const hybridError = () => {
+        const p = Promise.resolve({ data: null, error: { message: 'DB error' } });
+        return Object.assign(p, { eq: vi.fn().mockReturnValue(p) });
+      };
+      mockUpdate.mockReturnValue(hybridError());
+
+      await expect(updateJournalAiResponse('entry-123', {}, '')).rejects.toThrow('DB error');
     });
   });
 });

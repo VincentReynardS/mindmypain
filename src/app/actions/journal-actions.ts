@@ -226,6 +226,31 @@ export async function processJournalEntry(id: string) {
   }
 }
 
+export async function updateJournalAiResponse(
+  id: string,
+  aiResponse: object,
+  contentText: string
+) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from('journal_entries')
+    .update({
+      ai_response: aiResponse,
+      content: contentText,
+    } as never)
+    .eq('id', id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath('/journal');
+  revalidatePath('/appointments');
+  revalidatePath('/medications');
+  revalidatePath('/scripts');
+}
+
 export async function updateScriptOrReferralEntry(id: string, isFilled: boolean) {
   const supabase = await createClient();
 

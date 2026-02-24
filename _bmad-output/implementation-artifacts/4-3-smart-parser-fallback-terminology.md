@@ -1,6 +1,6 @@
 # Story 4.3: Smart Parser Fallback & Terminology
 
-Status: in-progress
+Status: complete
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -57,12 +57,12 @@ so that unrecognized inputs are safely filed under general notes.
   - [x] 5.5: Add test: `processJournalEntry` with full parser failure still produces `entry_type = 'journal'`
   - [x] 5.6: Update `src/__tests__/story-1-2-database-migration.test.ts` line 150 comment referencing "agenda"
 
-- [ ] Task 6: Manual browser verification (AC: all)
-  - [ ] 6.1: Start dev server, navigate to `/journal`
-  - [ ] 6.2: Submit a gibberish entry (e.g., "asdfghjkl random noise"), click Organize, verify Glass Box card appears with content in Feeling/Note
-  - [ ] 6.3: Submit a normal journal entry, verify it parses correctly as before
-  - [ ] 6.4: Verify no "Agenda" text appears anywhere in the patient UI
-  - [ ] 6.5: Verify existing seed data entries still render correctly
+- [x] Task 6: Manual browser verification (AC: all)
+  - [x] 6.1: Start dev server, navigate to `/journal`
+  - [x] 6.2: Submit a gibberish entry (e.g., "asdfghjkl random noise"), click Organize, verify Glass Box card appears with content in Feeling/Note
+  - [x] 6.3: Submit a normal journal entry, verify it parses correctly as before
+  - [x] 6.4: Verify no "Agenda" text appears anywhere in the patient UI
+  - [x] 6.5: Verify existing seed data entries still render correctly
 
 ## Dev Notes
 

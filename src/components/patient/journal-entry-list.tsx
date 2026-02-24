@@ -15,7 +15,7 @@ import { groupEntriesByDate } from "@/lib/utils/date-helpers";
 import { DateGroupHeader } from "./date-group-header";
 import { JournalEntryCard } from "./journal-entry-card";
 import { GlassBoxCard } from "@/components/shared/glass-box/glass-box-card";
-import { updateJournalEntry, approveJournalEntry } from "@/app/actions/journal-actions";
+import { updateJournalEntry, approveJournalEntry, updateJournalAiResponse } from "@/app/actions/journal-actions";
 
 import { useUserStore } from "@/lib/stores/user-store";
 
@@ -103,6 +103,10 @@ export function JournalEntryList() {
                   onApprove={async (id) => {
                     approveEntry(id);
                     await approveJournalEntry(id);
+                  }}
+                  onUpdateAiResponse={async (id, aiResponse, contentText) => {
+                    updateEntry(id, { ai_response: aiResponse, content: contentText });
+                    await updateJournalAiResponse(id, aiResponse, contentText);
                   }}
                 />
               );
