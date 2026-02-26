@@ -383,13 +383,56 @@ So that I can easily recall information like "When was my last pain flare?".
 - **Then** the interface should respond contextually based on their approved journal entries
 - **And** the UI should resemble a clean messaging/chat interface, supporting conversational turns.
 
-# Epic 5: The Wizard's Dashboard & Scenario Control (Deferred)
+# Epic 5: Feedback Fixes & UX Polish
 
-**Goal**: Enable the Researcher to monitor live sessions and trigger specific "Scenario Responses" or edit text in real-time. (Delayed from Epic 3 due to pivot).
+**Goal**: Address targeted feedback from Epic 4 to improve UX polish and data correctness before starting the Wizard dashboard work.
+**User Outcome**: Patients get a smoother chat experience, clearer action labeling, and correct script status across views.
+**FRs covered**: FR_PR1, FR_SJ4
+
+### Story 5.1: Chat Follow-up Suggestions
+
+As a patient user,
+I want 2-3 suggested follow-up questions after each AI response,
+So that I can continue the conversation without thinking too hard.
+
+**Acceptance Criteria:**
+- **Given** the assistant responds in `/chat`
+- **When** the response is rendered
+- **Then** 2-3 follow-up suggestions appear as chips under the last assistant message
+- **And** clicking a chip sends that question as the next user message
+- **And** suggestions are derived from the assistant response context
+
+### Story 5.2: Replace "Approve" with "Add"
+
+As a patient user,
+I want the Glass Box action labeled "Add" instead of "Approve",
+So that the action feels less clinical and more welcoming.
+
+**Acceptance Criteria:**
+- **Given** any Glass Box card in the patient UI
+- **When** the primary action is displayed
+- **Then** it reads "Add" instead of "Approve"
+- **And** no underlying behavior changes (status still transitions to approved)
+
+### Story 5.3: Script "Filled" Status Persists Across Views
+
+As a patient user,
+I want the Filled status of scripts to persist across the Scripts and Journal views,
+So that the checklist reflects the true state everywhere.
+
+**Acceptance Criteria:**
+- **Given** a script entry is toggled to Filled in `/scripts`
+- **When** I return to `/journal`
+- **Then** the script status remains Filled in the Glass Box view
+- **And** the status persists after refresh
+
+# Epic 6: The Wizard's Dashboard & Scenario Control (Deferred)
+
+**Goal**: Enable the Researcher to monitor live sessions and trigger specific "Scenario Responses" or edit text in real-time. (Deferred).
 **User Outcome**: (Researcher) Can invisibly drive the workshop scenarios. (Patient) Receives intelligent, context-aware responses that feel like a "Magic" AI.
 **FRs covered**: FR_WD1, FR_WD2, FR_WD3
 
-### Story 5.1: Researcher Dashboard Overview
+### Story 6.1: Researcher Dashboard Overview
 
 As a researcher,
 I want a dashboard where I can see the active session for "Sarah" or "Michael",
@@ -403,7 +446,7 @@ So that I can monitor their inputs in real-time.
 - **And** It should show the current connection status (Online/Offline)
 - **And** Must adhere to `@simulated-auth-only` principles for viewing across users.
 
-### Story 5.2: Live Stream & Real-time Updates
+### Story 6.2: Live Stream & Real-time Updates
 
 As a researcher,
 I want incoming patient logs to appear instantly (<500ms),
@@ -415,7 +458,7 @@ So that I can respond quickly and maintain the illusion of a fast AI.
 - **Then** the new entry should appear at the top of the feed immediately (Supabase Realtime)
 - **And** A visual indicator should flash to grab my attention (NFR_USE2)
 
-### Story 5.3: Wizard Intervention Actions (Edit/Scenario Trigger)
+### Story 6.3: Wizard Intervention Actions (Edit/Scenario Trigger)
 
 As a researcher,
 I want to edit the AI-generated draft before the patient sees it,
@@ -428,7 +471,7 @@ So that I can correct hallucinations or improve the tone.
 - **And** I can type new content or correct form fields
 - **And** Clicking "Push to Patient" should update the `journal_entries` status to `pending_review` (visible to patient)
 
-### Story 5.4: Pre-Canned Response Library
+### Story 6.4: Pre-Canned Response Library
 
 As a researcher,
 I want a library of pre-written responses for the specific workshop scenarios,
@@ -437,11 +480,11 @@ So that I don't have to type long medical summaries in 7 minutes.
 **Acceptance Criteria:**
 - **Given** I am responding to an input
 - **When** I click the "Scenario Library" button
-- **Then** a modal should open with options matched to the structured schemas (e.g. `[New Appointment Pattern]`, `[Medication Review Alert]`)
+- **Then** a modal should open with options matched to the structured schemas (e.g., `[New Appointment Pattern]`, `[Medication Review Alert]`)
 - **And** Selecting one should auto-fill the response editor with the scripted text/json
 - **And** I can still make minor edits before pushing
 
-### Story 5.5: "Thinking State" Indication
+### Story 6.5: "Thinking State" Indication
 
 As a patient user,
 I want to see a "AI is thinking..." animation while the researcher is preparing a response,
@@ -452,72 +495,6 @@ So that I know the system hasn't crashed.
 - **When** the entry status is `draft` (backend state)
 - **Then** the patient UI should show a "pulsing brain" or "Thinking..." skeleton loader
 - **And** It should persist until the status changes to `pending_review`
-
-# Epic 5: The Wizard's Dashboard & Scenario Control (Deferred)
-
-**Goal**: Enable the Researcher to monitor live sessions and trigger specific "Scenario Responses" or edit text in real-time. (Delayed from Epic 3 due to pivot).
-**User Outcome**: (Researcher) Can invisibly drive the workshop scenarios. (Patient) Receives intelligent, context-aware responses that feel like a "Magic" AI.
-**FRs covered**: FR_WD1, FR_WD2, FR_WD3
-
-### Story 5.1: Researcher Dashboard Overview
-
-As a researcher,
-I want a dashboard where I can see the active session for "Sarah" or "Michael",
-So that I can monitor their inputs in real-time.
-
-**Acceptance Criteria:**
-- **Given** the user is on `/app/dashboard`
-- **When** the page loads
-- **Then** they should see two panels: "Active Patient: Sarah" and "History Log"
-- **And** The interface should clearly distinguish between 'User Input' (Left) and 'AI Response' (Right)
-- **And** It should show the current connection status (Online/Offline)
-- **And** Must adhere to `@simulated-auth-only` principles for viewing across users.
-
-### Story 5.2: Live Stream & Real-time Updates
-
-As a researcher,
-I want incoming patient logs to appear instantly (<500ms),
-So that I can respond quickly and maintain the illusion of a fast AI.
-
-**Acceptance Criteria:**
-- **Given** the dashboard is open
-- **When** a patient submits a new log via Epic 2/3 forms
-- **Then** the new entry should appear at the top of the feed immediately (Supabase Realtime)
-- **And** A visual indicator should flash to grab my attention (NFR_USE2)
-
-### Story 5.3: Wizard Intervention Actions (Edit/Scenario Trigger)
-
-As a researcher,
-I want to edit the AI-generated draft before the patient sees it,
-So that I can correct hallucinations or improve the tone.
-
-**Acceptance Criteria:**
-- **Given** a new drafted response appears in the dashboard
-- **When** I click "Edit"
-- **Then** the text area (or structured JSON form) should become editable
-- **And** I can type new content or correct form fields
-- **And** Clicking "Push to Patient" should update the `journal_entries` status to `pending_review` (visible to patient)
-
-### Story 5.4: Pre-Canned Response Library
-
-As a researcher,
-I want a library of pre-written responses for the specific workshop scenarios,
-So that I don't have to type long medical summaries in 7 minutes.
-
-**Acceptance Criteria:**
-- **Given** I am responding to an input
-- **When** I click the "Scenario Library" button
-- **Then** a modal should open with options matched to the structured schemas (e.g. `[New Appointment Pattern]`, `[Medication Review Alert]`)
-- **And** Selecting one should auto-fill the response editor with the scripted text/json
-- **And** I can still make minor edits before pushing
-
-### Story 5.5: "Thinking State" Indication
-
-As a patient user,
-I want to see a "AI is thinking..." animation while the researcher is preparing a response,
-So that I know the system hasn't crashed.
-
-**Acceptance Criteria:**
 - **Given** the researcher is editing/typing a response (dashboard active)
 - **When** the entry status is `draft` (backend state)
 - **Then** the patient UI should show a "pulsing brain" or "Thinking..." skeleton loader

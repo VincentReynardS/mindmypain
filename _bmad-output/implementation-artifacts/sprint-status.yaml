@@ -72,9 +72,15 @@ development_status:
   epic-4-retrospective: optional
 
   epic-5: backlog
-  5-1-researcher-dashboard-overview: backlog
-  5-2-live-stream-real-time-updates: backlog
-  5-3-wizard-intervention-actions-edit-scenario-trigger: backlog
-  5-4-pre-canned-response-library: backlog
-  5-5-thinking-state-indication: backlog
+  5-1-chat-follow-up-suggestions: backlog
+  5-2-glass-box-approve-to-add: backlog
+  5-3-scripts-filled-status-persistence: backlog
   epic-5-retrospective: optional
+
+  epic-6: backlog
+  6-1-researcher-dashboard-overview: backlog
+  6-2-live-stream-real-time-updates: backlog
+  6-3-wizard-intervention-actions-edit-scenario-trigger: backlog
+  6-4-pre-canned-response-library: backlog
+  6-5-thinking-state-indication: backlog
+  epic-6-retrospective: optional
