@@ -55,4 +55,14 @@ describe("PatientBottomNav Component", () => {
     );
     expect(source).toMatch(/lucide-react/);
   });
+
+  it('should include Ask tab linking to /chat', () => {
+    const source = fs.readFileSync(
+      path.resolve(__dirname, "../components/patient/bottom-nav.tsx"),
+      "utf-8"
+    );
+    expect(source).toContain('href: "/chat"');
+    expect(source).toContain('"Ask"');
+    expect(source).toContain("MessageCircle");
+  });
 });

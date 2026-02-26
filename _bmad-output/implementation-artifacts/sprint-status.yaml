@@ -67,8 +67,8 @@ development_status:
   4-1-guest-persona-safe-mode: done
   4-2-journal-data-model-accuracy: done
   4-3-smart-parser-fallback-terminology: done
-  4-4-glassboxcard-edit-state-fix: review
-  4-5-proactive-recall-chat-interface: backlog
+  4-4-glassboxcard-edit-state-fix: done
+  4-5-proactive-recall-chat-interface: done
   epic-4-retrospective: optional
 
   epic-5: backlog
