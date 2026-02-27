@@ -23,6 +23,11 @@ export default function ChatPage() {
   const personaId = useUserStore((s) => s.personaId);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const isSubmittingRef = useRef(false);
+  const lastAssistantIndex = [...messages]
+    .map((msg, idx) => ({ msg, idx }))
+    .filter(({ msg }) => msg.role === "assistant")
+    .at(-1)?.idx ?? -1;
 
   // Clear chat when persona changes
   useEffect(() => {
@@ -35,6 +40,7 @@ export default function ChatPage() {
   }, [messages, isLoading]);
 
   async function handleSubmit(text: string) {
+    if (isSubmittingRef.current || isLoading) return;
     if (!personaId) return;
 
     const history = messages.map((m) => ({
@@ -43,6 +49,7 @@ export default function ChatPage() {
     }));
 
     addMessage({ role: "user", content: text });
+    isSubmittingRef.current = true;
     setLoading(true);
     setError(null);
 
@@ -63,14 +70,24 @@ export default function ChatPage() {
       }
 
       const data = await res.json();
-      addMessage({ role: "assistant", content: data.answer });
+      addMessage({
+        role: "assistant",
+        content: data.answer,
+        followUps: Array.isArray(data.followUps) ? data.followUps : undefined,
+      });
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Something went wrong";
       setError(message);
     } finally {
+      isSubmittingRef.current = false;
       setLoading(false);
     }
+  }
+
+  function handleSuggestionClick(suggestion: string) {
+    if (isSubmittingRef.current || isLoading) return;
+    void handleSubmit(suggestion);
   }
 
   return (
@@ -103,9 +120,22 @@ export default function ChatPage() {
           </div>
         )}
 
-        {messages.map((msg, i) => (
-          <ChatMessage key={i} role={msg.role} content={msg.content} />
-        ))}
+        {messages.map((msg, i) => {
+          const isLastAssistant =
+            msg.role === "assistant" && i === lastAssistantIndex;
+
+          return (
+            <ChatMessage
+              key={i}
+              role={msg.role}
+              content={msg.content}
+              followUps={isLastAssistant ? msg.followUps : undefined}
+              onSuggestionClick={
+                isLastAssistant ? handleSuggestionClick : undefined
+              }
+            />
+          );
+        })}
 
         {isLoading && (
           <div className="flex justify-start">

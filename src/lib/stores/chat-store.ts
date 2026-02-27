@@ -3,6 +3,7 @@ import { create } from "zustand";
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+  followUps?: string[];
 }
 
 export interface ChatState {

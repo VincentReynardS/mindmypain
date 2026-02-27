@@ -29,13 +29,21 @@ describe("Chat Store", () => {
   it("should append messages in order", () => {
     const { addMessage } = useChatStore.getState();
     addMessage({ role: "user", content: "Q1" });
-    addMessage({ role: "assistant", content: "A1" });
+    addMessage({
+      role: "assistant",
+      content: "A1",
+      followUps: ["What changed since yesterday?", "Show recent pain entries"],
+    });
     addMessage({ role: "user", content: "Q2" });
 
     const msgs = useChatStore.getState().messages;
     expect(msgs).toHaveLength(3);
     expect(msgs[0].role).toBe("user");
     expect(msgs[1].role).toBe("assistant");
+    expect(msgs[1].followUps).toEqual([
+      "What changed since yesterday?",
+      "Show recent pain entries",
+    ]);
     expect(msgs[2].content).toBe("Q2");
   });
 

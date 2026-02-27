@@ -78,6 +78,50 @@ describe("Chat UI Components", () => {
       const bubble = container.querySelector("[class*='bg-calm-blue-soft']");
       expect(bubble).not.toBeNull();
     });
+
+    it("should render follow-up chips for assistant messages", () => {
+      render(
+        <ChatMessage
+          role="assistant"
+          content="Bot msg"
+          followUps={["What changed?", "Show recent entries"]}
+        />
+      );
+
+      expect(screen.getByRole("button", { name: "What changed?" })).toBeDefined();
+      expect(
+        screen.getByRole("button", { name: "Show recent entries" })
+      ).toBeDefined();
+    });
+
+    it("should not render follow-up chips for user messages", () => {
+      render(
+        <ChatMessage
+          role="user"
+          content="User msg"
+          followUps={["Should not appear"]}
+        />
+      );
+
+      expect(
+        screen.queryByRole("button", { name: "Should not appear" })
+      ).toBeNull();
+    });
+
+    it("should call suggestion click callback when chip is clicked", () => {
+      const onSuggestionClick = vi.fn();
+      render(
+        <ChatMessage
+          role="assistant"
+          content="Bot msg"
+          followUps={["Ask about sleep"]}
+          onSuggestionClick={onSuggestionClick}
+        />
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Ask about sleep" }));
+      expect(onSuggestionClick).toHaveBeenCalledWith("Ask about sleep");
+    });
   });
 
   describe("ChatInput component — source guardrails", () => {
@@ -176,6 +220,11 @@ describe("Chat UI Components", () => {
 
     it("should fetch from /api/chat", () => {
       expect(chatPageSource).toContain("/api/chat");
+    });
+
+    it("should include a synchronous in-flight submit guard", () => {
+      expect(chatPageSource).toContain("isSubmittingRef");
+      expect(chatPageSource).toMatch(/isSubmittingRef\.current \|\| isLoading/);
     });
 
     it("should display empty state text", () => {
