@@ -94,7 +94,7 @@ describe('MedicationGlassBox', () => {
     });
   });
 
-  it('calls onApprove when Approve is clicked', async () => {
+  it('calls onApprove when Add is clicked', async () => {
     render(
       <MedicationGlassBox 
         entry={mockEntry} 
@@ -103,10 +103,23 @@ describe('MedicationGlassBox', () => {
       />
     );
 
-    fireEvent.click(screen.getByText('Approve'));
+    fireEvent.click(screen.getByText('Add'));
 
     await waitFor(() => {
       expect(mockOnApprove).toHaveBeenCalledWith('test-id');
     });
+  });
+
+  it('does not show Add action for approved entries', () => {
+    render(
+      <MedicationGlassBox
+        entry={{ ...mockEntry, status: 'approved' }}
+        onUpdate={mockOnUpdate}
+        onApprove={mockOnApprove}
+      />
+    );
+
+    expect(screen.queryByText('Add')).toBeNull();
+    expect(screen.getByText('Added')).toBeTruthy();
   });
 });

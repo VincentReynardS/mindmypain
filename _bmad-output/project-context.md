@@ -31,3 +31,9 @@ This file contains critical rules and specific architectural deviations from sta
 - **Context:** The developer prefers to manually control version control history and branching to maintain a clean and coherent timeline.
 - **Rule:** AI agents MUST NEVER run `git commit`, `git checkout -b`, or create/modify branches automatically. You may run `git status` or `git diff` for situational awareness, but do not alter the repository state.
 - **Why:** To prevent fragmented, unintended, or poorly described commits from cluttering the project's git history.
+
+### 6. Glass Box Status Language
+
+- **Rule:** In patient-facing UI, display the completed draft status as **"Added"**.
+- **Rule:** Keep persisted/backend status value as **`approved`** (no schema or enum rename).
+- **Why:** "Added" is friendlier UX copy, while `approved` remains the stable technical status used by existing data flows and logic.

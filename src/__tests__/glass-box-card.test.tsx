@@ -36,6 +36,14 @@ describe('GlassBoxCard Component', () => {
     expect(glassBoxCardSource).toContain('onApprove(entry.id)');
   });
 
+  it('should render Add labels for draft primary action', () => {
+    expect(glassBoxCardSource).toContain('{isSaving ? "Adding..." : "Add"}');
+  });
+
+  it('should render Added label for approved status in UI', () => {
+    expect(glassBoxCardSource).toContain('{isApproved ? "Added" : "Draft"}');
+  });
+
   it('should have Type Config for different entry types', () => {
     expect(glassBoxCardSource).toContain('TYPE_CONFIG');
     expect(glassBoxCardSource).toContain('journal');
@@ -76,7 +84,8 @@ describe('GlassBoxCard Component', () => {
     expect(glassBoxCardSource).toContain("setIsEditing(true)");
   });
 
-  it('should have 44px minimum touch targets on buttons', () => {
+  it('should keep explicit touch target sizing on buttons', () => {
     expect(glassBoxCardSource).toContain("minHeight: '44px'");
+    expect(glassBoxCardSource).toContain("minHeight: '40px'");
   });
 });

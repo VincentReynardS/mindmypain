@@ -252,7 +252,7 @@ export function AppointmentGlassBox({ entry, onUpdate, onApprove }: AppointmentG
             Appointment
           </span>
           <span className={`text-xs ${isApproved ? "text-calm-green font-medium" : "text-calm-text-muted"}`}>
-            {isApproved ? "Approved" : "Draft"}
+            {isApproved ? "Added" : "Draft"}
           </span>
         </div>
         <div className="flex gap-2">
@@ -268,9 +268,9 @@ export function AppointmentGlassBox({ entry, onUpdate, onApprove }: AppointmentG
               onClick={handleApprove}
               disabled={isSaving}
               className="rounded-md bg-calm-green px-3 py-1.5 text-xs font-medium text-white hover:bg-opacity-90 disabled:opacity-50"
-              style={{ minHeight: '44px' }}
+              style={{ minHeight: '40px' }}
             >
-              {isSaving ? "Approving..." : "Approve"}
+              {isSaving ? "Adding..." : "Add"}
             </button>
           )}
         </div>
