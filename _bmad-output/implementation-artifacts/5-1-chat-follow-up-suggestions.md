@@ -1,6 +1,6 @@
 # Story 5.1: Chat Follow-up Suggestions
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -133,6 +133,7 @@ so that I can continue the conversation without thinking too hard.
 ### Git Intelligence Summary
 
 Recent commit pattern shows chat work is localized and test-backed:
+
 - `a7b6d5a`: Added current chat feature with route, page, components, store, tests.
 - `cc8bec8`: Reinforced shape-aware editing and broad regression test strategy.
 - `7c9518c`: Seed data updates; chat context remains tied to approved entries.
@@ -149,6 +150,7 @@ Implementation implication: keep this story narrowly scoped to chat response con
 ### Project Context Reference
 
 Critical project rules to preserve:
+
 - No real auth/session checks for prototype personas.
 - Keep calm token-based UI styling.
 - No git commit/branch creation from agent workflows.
@@ -178,7 +180,7 @@ Critical project rules to preserve:
 
 ## Story Completion Status
 
-- Status set to `review`.
+- Status set to `done`.
 - Story implemented with structured follow-up chip generation and click-to-send chat behavior.
 
 ## Dev Agent Record
