@@ -1,5 +1,5 @@
 /**
- * User Store - Manages simulated persona selection (Sarah/Michael/Guest)
+ * User Store - Manages simulated persona selection (Sarah/Michael/Guest/Kim)
  *
  * Architecture: Zustand store following the pattern:
  * - Export raw store creator for testing
@@ -14,7 +14,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
-export type PersonaId = "sarah" | "michael" | "guest" | string;
+export type PersonaId = "sarah" | "michael" | "guest" | "kim" | string;
 
 export interface UserState {
   personaId: PersonaId | null;
@@ -38,21 +38,26 @@ export const useUserStore = create<UserState>()(
         // If guest, create a transient unique ID to prevent database collisions
         // across multiple users testing the prototype simultaneously.
         const actualId = id === "guest" ? `guest_${Date.now()}_${Math.random().toString(36).substring(2, 9)}` : id;
-        
+
         let iconBg = "bg-calm-surface-raised";
         let iconText = "text-calm-text-muted";
-        
+
         if (id === "sarah") {
            iconBg = "bg-calm-blue-soft";
            iconText = "text-calm-blue";
         } else if (id === "michael") {
            iconBg = "bg-calm-green-soft";
            iconText = "text-calm-green";
+        } else if (id === "kim") {
+           iconBg = "bg-calm-teal-soft";
+           iconText = "text-calm-teal";
         }
-        
+
+        const personaName = id === "guest" ? "Guest" : id === "kim" ? "Kim" : actualId.charAt(0).toUpperCase() + actualId.slice(1);
+
         set({
           personaId: actualId,
-          personaName: id === "guest" ? "Guest" : actualId.charAt(0).toUpperCase() + actualId.slice(1),
+          personaName,
           personaIconBg: iconBg,
           personaIconText: iconText,
           isSelected: true,
