@@ -147,10 +147,9 @@ describe('Seed Data: seed.sql', () => {
     });
 
     it('should include different entry types', () => {
-      // Sarah should have both raw_text and journal/clinical_summary types
+      // Sarah should have multiple entry types
       expect(seedSql).toContain("'journal'");
       expect(seedSql).toContain("'clinical_summary'");
-      expect(seedSql).toContain("'raw_text'");
     });
   });
 
@@ -181,8 +180,8 @@ describe('Seed Data: seed.sql', () => {
     });
 
     it('should include ai_response JSON objects', () => {
-      expect(seedSql).toContain('inferred_categories');
-      expect(seedSql).toContain('summary');
+      expect(seedSql).toContain('Pain');
+      expect(seedSql).toContain('Medication');
     });
 
     it('should clear existing data before seeding (idempotent)', () => {

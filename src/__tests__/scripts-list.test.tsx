@@ -107,4 +107,25 @@ describe('ScriptsList', () => {
       expect(buttons[0].hasAttribute('disabled')).toBe(false);
     });
   });
+  it('updates toggle state labels correctly when entries prop changes', () => {
+    const { rerender } = render(<ScriptsList entries={mockEntries} onToggleFilled={mockToggleFilled} />);
+    
+    // Initially, one is "Filled" and one is "To Be Filled"
+    expect(screen.getByText('To Be Filled')).toBeDefined();
+    
+    const toggledEntries = [
+      {
+        ...mockEntries[0],
+        content: JSON.stringify({ ...JSON.parse(mockEntries[0].content || '{}'), Filled: true })
+      },
+      ...mockEntries.slice(1)
+    ];
+
+    rerender(<ScriptsList entries={toggledEntries} onToggleFilled={mockToggleFilled} />);
+    
+    // Now both should be "Filled" and "To Be Filled" should not be present
+    // The "Filled" label is inside a span, plus the script item itself might be named "Physiotherapy Referral"
+    // We check that "To Be Filled" is gone.
+    expect(screen.queryByText('To Be Filled')).toBeNull();
+  });
 });

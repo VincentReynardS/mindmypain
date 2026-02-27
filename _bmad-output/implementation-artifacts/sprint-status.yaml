@@ -74,7 +74,7 @@ development_status:
   epic-5: in-progress
   5-1-chat-follow-up-suggestions: review
   5-2-glass-box-approve-to-add: done
-  5-3-scripts-filled-status-persistence: backlog
+  5-3-scripts-filled-status-persistence: done
   epic-5-retrospective: optional
 
   epic-6: backlog

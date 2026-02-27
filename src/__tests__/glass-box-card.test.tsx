@@ -88,4 +88,13 @@ describe('GlassBoxCard Component', () => {
     expect(glassBoxCardSource).toContain("minHeight: '44px'");
     expect(glassBoxCardSource).toContain("minHeight: '40px'");
   });
+  it('should render script array status in list', () => {
+    expect(glassBoxCardSource).toContain("script.Filled ? 'Filled' : 'To Be Filled'");
+    expect(glassBoxCardSource).toContain("bg-calm-green-soft");
+    expect(glassBoxCardSource).toContain("bg-calm-blue-soft");
+  });
+
+  it('should render script entry shape status', () => {
+    expect(glassBoxCardSource).toContain("aiResponse.Filled ? 'Filled' : 'To Be Filled'");
+  });
 });

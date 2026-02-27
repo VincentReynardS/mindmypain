@@ -212,11 +212,16 @@ function SafeHealthJournalRender({ content, aiResponse }: { content: string; aiR
         {parsed.Scripts && parsed.Scripts.length > 0 && (
           <div className="pt-2 border-t border-calm-border/30">
             <span className="font-semibold text-calm-primary block text-[10px] uppercase tracking-wider mb-2">Scripts/Referrals Found</span>
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               {parsed.Scripts.map((script: any, idx: number) => (
-                <div key={idx} className="flex items-center gap-2 text-xs py-1">
-                   <div className="h-1.5 w-1.5 rounded-full bg-calm-teal" />
-                   <span className="font-medium">{script.Name}</span>
+                <div key={idx} className="flex items-center justify-between text-xs py-1 border-b border-calm-border/10 last:border-0">
+                   <div className="flex items-center gap-2 pr-2">
+                     <div className="h-1.5 w-1.5 rounded-full bg-calm-teal shrink-0" />
+                     <span className="font-medium line-clamp-2">{script.Name}</span>
+                   </div>
+                   <span className={`shrink-0 px-2 py-0.5 rounded-full text-[9px] uppercase tracking-wider font-medium border ${script.Filled ? 'bg-calm-green-soft text-calm-green border-calm-green/20' : 'bg-calm-blue-soft text-calm-blue border-calm-blue/20'}`}>
+                      {script.Filled ? 'Filled' : 'To Be Filled'}
+                   </span>
                 </div>
               ))}
             </div>

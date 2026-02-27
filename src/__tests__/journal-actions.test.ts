@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createJournalEntry, updateJournalEntry, approveJournalEntry, processJournalEntry, updateJournalAiResponse } from '@/app/actions/journal-actions';
+import { createJournalEntry, updateJournalEntry, approveJournalEntry, processJournalEntry, updateJournalAiResponse, updateScriptOrReferralEntry } from '@/app/actions/journal-actions';
 import * as smartParser from '@/lib/openai/smart-parser';
 
 // Mock dependencies
@@ -192,9 +192,6 @@ describe('Journal Server Actions', () => {
     });
 
     it('should throw error if update fails', async () => {
-        mockMaybeSingle.mockResolvedValueOnce({ error: { message: 'DB Error' } });
-        // Setting up a failure on a terminal call is better
-        mockSingle.mockResolvedValueOnce({ error: { message: 'DB Error' } });
         // For updateJournalEntry, it awaits the chain which resolves via hybridMock
         // So we need to override hybridMock for this one
         mockChain.eq.mockResolvedValueOnce({ error: { message: 'DB Error' } });
@@ -326,6 +323,68 @@ describe('Journal Server Actions', () => {
       mockUpdate.mockReturnValue(hybridError());
 
       await expect(updateJournalAiResponse('entry-123', {}, '')).rejects.toThrow('DB error');
+    });
+  });
+  describe('updateScriptOrReferralEntry', () => {
+    it('should update nested Scripts array for virtual IDs', async () => {
+      // Mock the select call for virtual ID branch
+      mockSingle.mockResolvedValueOnce({
+        data: {
+          ai_response: {
+            Scripts: [{ Name: 'Panadol', Filled: false }, { Name: 'Nurofen', Filled: false }]
+          }
+        },
+        error: null
+      });
+
+      await updateScriptOrReferralEntry('realId123_script_1', true);
+
+      expect(mockFrom).toHaveBeenCalledWith('journal_entries');
+      expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({
+        ai_response: expect.objectContaining({
+          Scripts: [{ Name: 'Panadol', Filled: false }, { Name: 'Nurofen', Filled: true }]
+        })
+      }));
+      expect(mockChain.eq).toHaveBeenCalledWith('id', 'realId123');
+      expect(revalidatePath).toHaveBeenCalledWith('/scripts');
+      expect(revalidatePath).toHaveBeenCalledWith('/journal');
+    });
+
+    it('should update content JSON for legacy/flat script entries', async () => {
+      // Setup legacy fetch
+      mockSingle.mockResolvedValueOnce({
+        data: {
+          content: '{"Name":"Panadol","Filled":false,"Reason":"Pain"}',
+          ai_response: { Name: 'Panadol', Filled: false, Reason: 'Pain' }
+        },
+        error: null
+      });
+
+      await updateScriptOrReferralEntry('legacy-id-123', true);
+
+      expect(mockFrom).toHaveBeenCalledWith('journal_entries');
+      expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({
+        content: '{"Name":"Panadol","Filled":true,"Reason":"Pain"}',
+        ai_response: expect.objectContaining({ Filled: true })
+      }));
+      expect(mockChain.eq).toHaveBeenCalledWith('id', 'legacy-id-123');
+      expect(revalidatePath).toHaveBeenCalledWith('/scripts');
+      expect(revalidatePath).toHaveBeenCalledWith('/journal');
+    });
+
+    it('should handle invalid JSON gracefully for legacy entries', async () => {
+      mockSingle.mockResolvedValueOnce({
+        data: {
+          content: 'Not a JSON'
+        },
+        error: null
+      });
+
+      await updateScriptOrReferralEntry('legacy-id-456', true);
+
+      expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({
+        content: '{"Filled":true}'
+      }));
     });
   });
 });

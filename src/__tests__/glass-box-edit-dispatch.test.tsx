@@ -105,7 +105,7 @@ describe('GlassBoxCard Edit Dispatch', () => {
     render(<GlassBoxCard entry={entry} onUpdate={onUpdate} onApprove={onApprove} onUpdateAiResponse={onUpdateAiResponse} />);
 
     expect(screen.getByText('Edit')).toBeTruthy();
-    expect(screen.getByText('Approved')).toBeTruthy();
+    expect(screen.getByText('Added')).toBeTruthy();
   });
 
   it('should show Edit button for draft entries', () => {

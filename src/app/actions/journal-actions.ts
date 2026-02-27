@@ -259,16 +259,18 @@ export async function updateScriptOrReferralEntry(id: string, isFilled: boolean)
     const [realId, , indexStr] = id.split('_');
     const index = parseInt(indexStr, 10);
 
-    const { data: entry } = await supabase
+    const { data: entry, error: entryError } = await supabase
       .from('journal_entries')
       .select('ai_response')
       .eq('id', realId)
       .single<{ ai_response: any }>();
 
+    if (entryError || !entry) throw new Error(entryError?.message || 'Entry not found');
+
     if (entry?.ai_response?.Scripts) {
       const scripts = [...entry.ai_response.Scripts];
       if (scripts[index]) {
-        scripts[index].Filled = isFilled;
+        scripts[index] = { ...scripts[index], Filled: isFilled };
         const { error } = await supabase
           .from('journal_entries')
           .update({ ai_response: { ...entry.ai_response, Scripts: scripts } } as never)
@@ -278,15 +280,16 @@ export async function updateScriptOrReferralEntry(id: string, isFilled: boolean)
       }
     }
     revalidatePath('/scripts');
+    revalidatePath('/journal');
     return;
   }
 
   // Legacy/Normal Script Entry Update
   const { data: entry, error: fetchError } = await supabase
     .from('journal_entries')
-    .select('content')
+    .select('content, ai_response')
     .eq('id', id)
-    .single<{ content: string }>();
+    .single<{ content: string; ai_response: any }>();
     
   if (fetchError || !entry) {
     throw new Error('Entry not found');
@@ -304,10 +307,15 @@ export async function updateScriptOrReferralEntry(id: string, isFilled: boolean)
     Filled: isFilled
   });
 
+  const updatedAiResponse = entry.ai_response && entry.ai_response.Name ? {
+    ...entry.ai_response,
+    Filled: isFilled
+  } : entry.ai_response;
+
   const { error } = await supabase
     .from('journal_entries')
     // TODO: Regenerate types to fix inference
-    .update({ content: updatedContent } as never)
+    .update({ content: updatedContent, ai_response: updatedAiResponse } as never)
     .eq('id', id);
 
   if (error) {
@@ -315,4 +323,5 @@ export async function updateScriptOrReferralEntry(id: string, isFilled: boolean)
   }
 
   revalidatePath('/scripts');
+  revalidatePath('/journal');
 }
