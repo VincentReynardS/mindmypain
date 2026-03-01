@@ -15,7 +15,7 @@ import { groupEntriesByDate } from "@/lib/utils/date-helpers";
 import { DateGroupHeader } from "./date-group-header";
 import { JournalEntryCard } from "./journal-entry-card";
 import { GlassBoxCard } from "@/components/shared/glass-box/glass-box-card";
-import { updateJournalEntry, approveJournalEntry, updateJournalAiResponse } from "@/app/actions/journal-actions";
+import { updateJournalEntry, approveJournalEntry, updateJournalAiResponse, archiveJournalEntry } from "@/app/actions/journal-actions";
 
 import { useUserStore } from "@/lib/stores/user-store";
 
@@ -52,7 +52,13 @@ export function JournalEntryList() {
   const fetchEntries = useJournalStore((s) => s.fetchEntries);
   const updateEntry = useJournalStore((s) => s.updateEntry);
   const approveEntry = useJournalStore((s) => s.approveEntry);
+  const archiveEntryOptimistic = useJournalStore((s) => s.archiveEntry);
   const personaId = useUserStore((s) => s.personaId);
+
+  const handleArchive = async (id: string) => {
+    archiveEntryOptimistic(id);
+    await archiveJournalEntry(id);
+  };
 
   if (isLoading) {
     return <LoadingSkeleton />;
@@ -89,7 +95,7 @@ export function JournalEntryList() {
           <div className="flex flex-col gap-2">
             {groupEntries.map((entry) => {
               if (entry.entry_type === "raw_text") {
-                return <JournalEntryCard key={entry.id} entry={entry} />;
+                return <JournalEntryCard key={entry.id} entry={entry} onArchive={handleArchive} />;
               }
 
               return (
@@ -108,6 +114,7 @@ export function JournalEntryList() {
                     updateEntry(id, { ai_response: aiResponse, content: contentText });
                     await updateJournalAiResponse(id, aiResponse, contentText);
                   }}
+                  onArchive={handleArchive}
                 />
               );
             })}

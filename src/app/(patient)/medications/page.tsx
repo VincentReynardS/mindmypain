@@ -50,6 +50,7 @@ export default function MedicationsPage() {
         .select('*')
         .eq('user_id', personaId)
         .eq('entry_type', 'journal')
+        .neq('status', 'archived')
         .order('created_at', { ascending: false });
 
       const dedications: JournalEntry[] = [];

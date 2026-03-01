@@ -251,6 +251,93 @@ export async function updateJournalAiResponse(
   revalidatePath('/scripts');
 }
 
+export async function archiveJournalEntry(id: string) {
+  const supabase = await createClient();
+
+  // Fetch current status to preserve for restore
+  const { data: entry, error: fetchError } = await supabase
+    .from('journal_entries')
+    .select('status')
+    .eq('id', id)
+    .single<{ status: string }>();
+
+  if (fetchError || !entry) {
+    throw new Error(fetchError?.message || 'Entry not found');
+  }
+
+  const { error } = await supabase
+    .from('journal_entries')
+    .update({ status: 'archived', previous_status: entry.status } as never)
+    .eq('id', id);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath('/journal');
+  revalidatePath('/medications');
+  revalidatePath('/appointments');
+  revalidatePath('/scripts');
+}
+
+export async function restoreJournalEntry(id: string) {
+  const supabase = await createClient();
+
+  const { data: entry, error: fetchError } = await supabase
+    .from('journal_entries')
+    .select('previous_status')
+    .eq('id', id)
+    .single<{ previous_status: string | null }>();
+
+  if (fetchError || !entry) {
+    throw new Error(fetchError?.message || 'Entry not found');
+  }
+
+  const { error } = await supabase
+    .from('journal_entries')
+    .update({ status: entry.previous_status || 'draft', previous_status: null } as never)
+    .eq('id', id);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath('/journal');
+  revalidatePath('/medications');
+  revalidatePath('/appointments');
+  revalidatePath('/scripts');
+}
+
+export async function permanentlyDeleteJournalEntry(id: string) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from('journal_entries')
+    .delete()
+    .eq('id', id)
+    .eq('status', 'archived');
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath('/journal');
+  revalidatePath('/medications');
+  revalidatePath('/appointments');
+  revalidatePath('/scripts');
+}
+
+export async function bulkDeleteArchivedEntries(userId: string) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from('journal_entries')
+    .delete()
+    .eq('user_id', userId)
+    .eq('status', 'archived');
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath('/journal');
+  revalidatePath('/medications');
+  revalidatePath('/appointments');
+  revalidatePath('/scripts');
+}
+
 export async function updateScriptOrReferralEntry(id: string, isFilled: boolean) {
   const supabase = await createClient();
 

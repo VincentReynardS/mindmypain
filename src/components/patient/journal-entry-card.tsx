@@ -5,6 +5,7 @@ import { formatTime, truncateContent } from "@/lib/utils/date-helpers";
 import { Sparkles, Loader2 } from "lucide-react";
 import { processJournalEntry } from "@/app/actions/journal-actions";
 import { useJournalStore } from "@/lib/stores/journal-store";
+import { ArchiveConfirmPopover } from "@/components/shared/archive-confirm-popover";
 
 const TYPE_BADGE_CONFIG: Record<
   JournalEntryType,
@@ -27,9 +28,10 @@ const TYPE_BADGE_CONFIG: Record<
 
 interface JournalEntryCardProps {
   entry: JournalEntry;
+  onArchive?: (id: string) => Promise<void>;
 }
 
-export function JournalEntryCard({ entry }: JournalEntryCardProps) {
+export function JournalEntryCard({ entry, onArchive }: JournalEntryCardProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const fetchEntries = useJournalStore((s) => s.fetchEntries);
   const badge = TYPE_BADGE_CONFIG[entry.entry_type];
@@ -64,6 +66,9 @@ export function JournalEntryCard({ entry }: JournalEntryCardProps) {
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
+          {onArchive && (
+            <ArchiveConfirmPopover onArchive={() => onArchive(entry.id)} />
+          )}
           {entry.entry_type === "raw_text" && (
             <button
               onClick={handleOrganize}

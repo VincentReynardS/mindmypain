@@ -8,12 +8,14 @@ import { MedicationEditForm } from './editors/medication-edit-form';
 import { AppointmentEditForm } from './editors/appointment-edit-form';
 import { ScriptEditForm } from './editors/script-edit-form';
 import { ClinicalSummaryEditForm } from './editors/clinical-summary-edit-form';
+import { ArchiveConfirmPopover } from '@/components/shared/archive-confirm-popover';
 
 interface GlassBoxCardProps {
   entry: JournalEntry;
   onUpdate: (id: string, content: string) => Promise<void>;
   onApprove: (id: string) => Promise<void>;
   onUpdateAiResponse?: (id: string, aiResponse: object, contentText: string) => Promise<void>;
+  onArchive?: (id: string) => Promise<void>;
 }
 
 const TYPE_CONFIG: Record<JournalEntryType, { label: string; badgeClass: string }> = {
@@ -236,11 +238,10 @@ function SafeHealthJournalRender({ content, aiResponse }: { content: string; aiR
 }
 
 
-export function GlassBoxCard({ entry, onUpdate, onApprove, onUpdateAiResponse }: GlassBoxCardProps) {
+export function GlassBoxCard({ entry, onUpdate, onApprove, onUpdateAiResponse, onArchive }: GlassBoxCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(entry.content);
   const [isSaving, setIsSaving] = useState(false);
-
   const config = getDynamicBadge(entry);
   const isApproved = entry.status === "approved";
 
@@ -351,7 +352,10 @@ export function GlassBoxCard({ entry, onUpdate, onApprove, onUpdateAiResponse }:
             {isApproved ? "Added" : "Draft"}
           </span>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          {onArchive && (
+            <ArchiveConfirmPopover onArchive={() => onArchive(entry.id)} disabled={isSaving} />
+          )}
           <button
             onClick={() => setIsEditing(true)}
             className="rounded-md px-3 py-1.5 text-xs font-medium text-calm-text hover:bg-calm-surface"

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createJournalEntry, updateJournalEntry, approveJournalEntry, processJournalEntry, updateJournalAiResponse, updateScriptOrReferralEntry } from '@/app/actions/journal-actions';
+import { createJournalEntry, updateJournalEntry, approveJournalEntry, processJournalEntry, updateJournalAiResponse, updateScriptOrReferralEntry, archiveJournalEntry, restoreJournalEntry, permanentlyDeleteJournalEntry, bulkDeleteArchivedEntries } from '@/app/actions/journal-actions';
 import * as smartParser from '@/lib/openai/smart-parser';
 
 // Mock dependencies
@@ -13,6 +13,7 @@ const mockFilter = vi.fn();
 const mockOrder = vi.fn();
 const mockLimit = vi.fn();
 const mockMaybeSingle = vi.fn();
+const mockDelete = vi.fn();
 
 // Mock Supabase
 vi.mock('@/lib/supabase/server', () => ({
@@ -67,7 +68,9 @@ describe('Journal Server Actions', () => {
       insert: mockInsert,
       select: mockSelect,
       update: mockUpdate,
+      delete: mockDelete,
     });
+    mockDelete.mockReturnValue(mockChain);
     
     mockInsert.mockReturnValue(mockChain);
     mockSelect.mockReturnValue(mockChain);
@@ -385,6 +388,94 @@ describe('Journal Server Actions', () => {
       expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({
         content: '{"Filled":true}'
       }));
+    });
+  });
+
+  describe('archiveJournalEntry', () => {
+    it('should save current status to previous_status and set archived', async () => {
+      // First call: select().eq().single() to fetch current status
+      mockSelect.mockReturnValueOnce({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({
+            data: { status: 'approved' },
+            error: null,
+          }),
+        }),
+      });
+
+      await archiveJournalEntry('entry-1');
+
+      expect(mockFrom).toHaveBeenCalledWith('journal_entries');
+      expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({
+        status: 'archived',
+        previous_status: 'approved',
+      }));
+      expect(revalidatePath).toHaveBeenCalledWith('/journal');
+      expect(revalidatePath).toHaveBeenCalledWith('/medications');
+      expect(revalidatePath).toHaveBeenCalledWith('/appointments');
+      expect(revalidatePath).toHaveBeenCalledWith('/scripts');
+    });
+  });
+
+  describe('restoreJournalEntry', () => {
+    it('should restore previous_status and clear column', async () => {
+      mockSelect.mockReturnValueOnce({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({
+            data: { previous_status: 'approved' },
+            error: null,
+          }),
+        }),
+      });
+
+      await restoreJournalEntry('entry-1');
+
+      expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({
+        status: 'approved',
+        previous_status: null,
+      }));
+      expect(revalidatePath).toHaveBeenCalledWith('/journal');
+    });
+
+    it('should default to draft if previous_status is null', async () => {
+      mockSelect.mockReturnValueOnce({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({
+            data: { previous_status: null },
+            error: null,
+          }),
+        }),
+      });
+
+      await restoreJournalEntry('entry-2');
+
+      expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({
+        status: 'draft',
+        previous_status: null,
+      }));
+    });
+  });
+
+  describe('permanentlyDeleteJournalEntry', () => {
+    it('should hard delete a single entry', async () => {
+      await permanentlyDeleteJournalEntry('entry-1');
+
+      expect(mockFrom).toHaveBeenCalledWith('journal_entries');
+      expect(mockDelete).toHaveBeenCalled();
+      expect(mockChain.eq).toHaveBeenCalledWith('id', 'entry-1');
+      expect(revalidatePath).toHaveBeenCalledWith('/journal');
+    });
+  });
+
+  describe('bulkDeleteArchivedEntries', () => {
+    it('should hard delete all archived entries for user', async () => {
+      await bulkDeleteArchivedEntries('user-123');
+
+      expect(mockFrom).toHaveBeenCalledWith('journal_entries');
+      expect(mockDelete).toHaveBeenCalled();
+      expect(mockChain.eq).toHaveBeenCalledWith('user_id', 'user-123');
+      expect(mockChain.eq).toHaveBeenCalledWith('status', 'archived');
+      expect(revalidatePath).toHaveBeenCalledWith('/journal');
     });
   });
 });

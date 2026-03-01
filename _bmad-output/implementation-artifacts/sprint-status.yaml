@@ -79,7 +79,7 @@ development_status:
 
   epic-6: in-progress
   6-1-kims-account: done
-  6-2-archive-feature: backlog
+  6-2-archive-feature: done
   6-3-state-management-optimistic-ui-refactor: backlog
   epic-6-retrospective: optional
 

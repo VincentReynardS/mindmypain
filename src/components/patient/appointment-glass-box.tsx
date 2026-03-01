@@ -33,9 +33,17 @@ function parseContent(content: string): AppointmentData {
   }
 }
 
+function resolveAppointmentData(entry: JournalEntry): AppointmentData {
+  const ai = entry.ai_response as AppointmentData | null;
+  if (ai && (ai['Practitioner Name'] || ai['Visit Type'] || ai.Date)) {
+    return ai;
+  }
+  return parseContent(entry.content);
+}
+
 export function AppointmentGlassBox({ entry, onUpdate, onApprove }: AppointmentGlassBoxProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState<AppointmentData>(parseContent(entry.content));
+  const [formData, setFormData] = useState<AppointmentData>(resolveAppointmentData(entry));
   const [isSaving, setIsSaving] = useState(false);
 
   const isApproved = entry.status === "approved";
@@ -64,7 +72,7 @@ export function AppointmentGlassBox({ entry, onUpdate, onApprove }: AppointmentG
   };
 
   const handleCancel = () => {
-    setFormData(parseContent(entry.content));
+    setFormData(resolveAppointmentData(entry));
     setIsEditing(false);
   };
 
@@ -242,11 +250,24 @@ export function AppointmentGlassBox({ entry, onUpdate, onApprove }: AppointmentG
     );
   }
 
-  const data = parseContent(entry.content);
+  const data = resolveAppointmentData(entry);
+
+  const fields: { key: keyof AppointmentData; label: string }[] = [
+    { key: 'Practitioner Name', label: 'Practitioner' },
+    { key: 'Visit Type', label: 'Visit Type' },
+    { key: 'Profession', label: 'Profession' },
+    { key: 'Date', label: 'Date' },
+    { key: 'Location', label: 'Location' },
+    { key: 'Reason', label: 'Reason' },
+    { key: 'Questions', label: 'Questions to Ask' },
+    { key: 'Outcomes', label: 'Outcomes' },
+    { key: 'Follow-up Questions', label: 'Follow-up Questions' },
+    { key: 'Notes', label: 'Notes' },
+  ];
 
   return (
     <div className={`rounded-lg bg-calm-surface-raised p-4 shadow-sm border-l-4 ${isApproved ? "border-calm-green" : "border-calm-primary"} transition-all`}>
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="rounded-full px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-700">
             Appointment
@@ -275,91 +296,32 @@ export function AppointmentGlassBox({ entry, onUpdate, onApprove }: AppointmentG
           )}
         </div>
       </div>
-      
-      <div className="space-y-3 text-sm text-calm-text leading-relaxed">
-        {data.Date && (
-           <div className="flex justify-between border-b border-calm-border pb-1">
-             <span className="font-medium text-calm-text-muted text-xs uppercase tracking-wider">Date</span>
-             <span>{data.Date}</span>
-           </div>
-        )}
-        {(data.Profession || data['Practitioner Name']) && (
-           <div className="flex justify-between border-b border-calm-border pb-1">
-             <span className="font-medium text-calm-text-muted text-xs uppercase tracking-wider">Practitioner</span>
-             <span className="font-semibold text-calm-primary text-right">
-               {data['Practitioner Name']}{data['Practitioner Name'] && data.Profession ? ' - ' : ''}{data.Profession}
-             </span>
-           </div>
-        )}
-        
-        {data.Reason && (
-          <div className="pt-1">
-             <span className="block font-medium text-calm-text-muted text-xs uppercase tracking-wider mb-1">Reason</span>
-             <p>{data.Reason}</p>
-          </div>
-        )}
 
-        {data['Admin Needs'] && data['Admin Needs'].length > 0 && (
-           <div className="pt-1">
-             <span className="block font-medium text-calm-text-muted text-xs uppercase tracking-wider mb-2">Admin Needs</span>
-             <div className="flex flex-wrap gap-1">
-               {data['Admin Needs'].map((need, idx) => (
-                 <span key={idx} className="bg-calm-surface text-calm-text text-xs px-2 py-1 rounded-md border border-calm-border">
-                   {need}
-                 </span>
-               ))}
-             </div>
-          </div>
-        )}
-
-        {Object.entries(data).map(([key, value]) => {
-          if (['Date', 'Profession', 'Practitioner Name', 'Reason', 'Admin Needs', 'Visit Type', 'Location'].includes(key)) return null;
-          if (!value) return null;
-          
-          const formattedKey = key.replace(/_/g, ' ');
-          let displayValue: React.ReactNode = String(value);
-          
-          if (typeof value === 'object') {
-            if (Array.isArray(value)) {
-              displayValue = (
-                <ul className="list-disc pl-5 space-y-1">
-                  {value.map((item, index) => (
-                    <li key={index}>
-                      {typeof item === 'object' && item !== null ? (
-                        <div className="space-y-1">
-                          {Object.entries(item).map(([k, v]) => (
-                            <div key={k}>
-                              <span className="font-medium text-calm-text-muted">{k.replace(/_/g, ' ')}:</span> {String(v)}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        String(item)
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              );
-            } else {
-              displayValue = (
-                <div className="space-y-1">
-                  {Object.entries(value).map(([k, v]) => (
-                    <div key={k}>
-                      <span className="font-medium text-calm-text-muted">{k.replace(/_/g, ' ')}:</span> {String(v)}
-                    </div>
-                  ))}
-                </div>
-              );
-            }
-          }
-
-          return (
-             <div key={key} className="pt-1">
-               <span className="block font-medium text-calm-text-muted text-xs uppercase tracking-wider mb-1">{formattedKey}</span>
-               <div className="whitespace-pre-wrap">{displayValue}</div>
+      <div className="whitespace-pre-wrap text-sm text-calm-text leading-relaxed">
+        <div className="space-y-2">
+          {fields.map(({ key, label }) => {
+            const val = data[key];
+            if (!val) return null;
+            return (
+              <div key={key} className="text-calm-text">
+                <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-0.5">{label}</span>
+                <div className="text-sm">{String(val)}</div>
+              </div>
+            );
+          })}
+          {data['Admin Needs'] && data['Admin Needs'].length > 0 && (
+            <div className="text-calm-text">
+              <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-1">Admin Needs</span>
+              <div className="flex flex-wrap gap-1">
+                {data['Admin Needs'].map((need: string, idx: number) => (
+                  <span key={idx} className="bg-calm-surface text-calm-text text-xs px-2 py-1 rounded-md border border-calm-border">
+                    {need}
+                  </span>
+                ))}
+              </div>
             </div>
-          );
-        })}
+          )}
+        </div>
       </div>
     </div>
   );

@@ -10,7 +10,7 @@
  * @see architecture.md - Data Architecture (Decision 1)
  */
 
-export type JournalEntryStatus = "draft" | "pending_review" | "approved";
+export type JournalEntryStatus = "draft" | "pending_review" | "approved" | "archived";
 
 export type JournalEntryType =
   | "raw_text"
@@ -35,6 +35,7 @@ export interface Database {
           ai_response: any | null;
           tags: string[];
           metadata: any | null;
+          previous_status: string | null;
         };
         Insert: {
           id?: string;
@@ -49,6 +50,7 @@ export interface Database {
           ai_response?: any | null;
           tags?: string[];
           metadata?: any | null;
+          previous_status?: string | null;
         };
         Update: {
           id?: string;
@@ -63,6 +65,7 @@ export interface Database {
           ai_response?: any | null;
           tags?: string[];
           metadata?: any | null;
+          previous_status?: string | null;
         };
       };
     };
