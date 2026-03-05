@@ -7,12 +7,12 @@ const mockFrom = vi.fn();
 const mockInsert = vi.fn();
 const mockSelect = vi.fn();
 const mockSingle = vi.fn();
+const mockMaybeSingle = vi.fn();
 const mockUpdate = vi.fn();
 const mockEq = vi.fn();
+const mockNeq = vi.fn();
 const mockFilter = vi.fn();
 const mockOrder = vi.fn();
-const mockLimit = vi.fn();
-const mockMaybeSingle = vi.fn();
 const mockDelete = vi.fn();
 
 // Mock Supabase
@@ -40,6 +40,7 @@ import { revalidatePath } from 'next/cache';
 describe('Journal Server Actions', () => {
   const mockChain: any = {
     eq: vi.fn(),
+    neq: vi.fn(),
     in: vi.fn(),
     filter: vi.fn(),
     order: vi.fn(),
@@ -58,11 +59,13 @@ describe('Journal Server Actions', () => {
     };
 
     mockChain.eq.mockImplementation(hybridMock);
+    mockChain.neq.mockImplementation(hybridMock);
     mockChain.in.mockImplementation(hybridMock);
     mockChain.filter.mockImplementation(hybridMock);
     mockChain.order.mockImplementation(hybridMock);
     mockChain.limit.mockImplementation(hybridMock);
     mockChain.select.mockImplementation(hybridMock);
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
 
     mockFrom.mockReturnValue({
       insert: mockInsert,
@@ -78,10 +81,9 @@ describe('Journal Server Actions', () => {
   });
 
   describe('createJournalEntry', () => {
-    it('should ALWAYS create a NEW raw_text draft for appointment intent', async () => {
-      const { classifyIntent } = await import('@/lib/openai/smart-parser');
-      vi.mocked(classifyIntent).mockResolvedValue('appointment');
+    it('should create a NEW raw_text draft when no same-day draft exists', async () => {
       mockSingle.mockResolvedValue({ data: { id: 'new-appt-id' }, error: null });
+      mockMaybeSingle.mockResolvedValueOnce({ data: null, error: null });
 
       const result = await createJournalEntry('Met with Dr. Smith', 'user-123');
 
@@ -93,64 +95,38 @@ describe('Journal Server Actions', () => {
       expect(revalidatePath).toHaveBeenCalledWith('/journal');
     });
 
-    it('should APPEND to existing raw_text draft if intent is journal', async () => {
-      const { classifyIntent } = await import('@/lib/openai/smart-parser');
-      vi.mocked(classifyIntent).mockResolvedValue('journal');
-
+    it('should APPEND to existing raw_text draft for same-day raw_text input', async () => {
       mockMaybeSingle.mockResolvedValue({
-        data: { id: 'existing-id', content: 'Old content', entry_type: 'raw_text' },
-        error: null
+        data: { id: 'existing-id', content: 'Old content' },
+        error: null,
       });
 
       const result = await createJournalEntry('New content', 'user-123');
 
       expect(result).toBe('existing-id');
       expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({
-        content: 'Old content\n\nNew content',
-        entry_type: 'raw_text'
+        content: 'Old content\n\nNew content'
       }));
       expect(revalidatePath).toHaveBeenCalledWith('/journal');
     });
 
-    it('should APPEND to existing processed journal draft and reset to raw_text', async () => {
-      const { classifyIntent } = await import('@/lib/openai/smart-parser');
-      vi.mocked(classifyIntent).mockResolvedValue('journal');
-
-      mockMaybeSingle.mockResolvedValue({
-        data: {
-          id: 'existing-id',
-          content: 'Old content',
-          entry_type: 'journal',
-          ai_response: { Sleep: '7 hours', Pain: null, Mood: null, Feeling: null },
-        },
-        error: null
-      });
+    it('should NOT merge into existing processed journal draft', async () => {
+      mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+      mockSingle.mockResolvedValue({ data: { id: 'new-journal-id' }, error: null });
 
       const result = await createJournalEntry('New content', 'user-123');
 
-      expect(result).toBe('existing-id');
-      expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({
-        content: 'Old content\n\nNew content',
+      expect(result).toBe('new-journal-id');
+      expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({
         entry_type: 'raw_text',
-        ai_response: null,
+        status: 'draft',
       }));
       expect(revalidatePath).toHaveBeenCalledWith('/journal');
     });
 
     it('should NOT merge into a processed appointment entry', async () => {
-      const { classifyIntent } = await import('@/lib/openai/smart-parser');
-      vi.mocked(classifyIntent).mockResolvedValue('journal');
-
       // Query returns an appointment that was processed (entry_type='journal' but appointment-shaped ai_response)
-      mockMaybeSingle.mockResolvedValue({
-        data: {
-          id: 'appt-id',
-          content: 'Meet Dr. Chen',
-          entry_type: 'journal',
-          ai_response: { Date: 'next Tuesday', 'Practitioner Name': 'Dr. Chen', Reason: 'Lyrica dosage' },
-        },
-        error: null
-      });
+      mockMaybeSingle.mockResolvedValue({ data: null, error: null });
       mockSingle.mockResolvedValue({ data: { id: 'new-journal-id' }, error: null });
 
       const result = await createJournalEntry('I slept 7 hours', 'user-123');
@@ -164,9 +140,6 @@ describe('Journal Server Actions', () => {
     });
 
     it('should create NEW raw_text draft if none exists for today', async () => {
-      const { classifyIntent } = await import('@/lib/openai/smart-parser');
-      vi.mocked(classifyIntent).mockResolvedValue('journal');
-
       mockMaybeSingle.mockResolvedValue({ data: null, error: null });
       mockSingle.mockResolvedValue({ data: { id: 'new-journal-id' }, error: null });
 
@@ -176,6 +149,20 @@ describe('Journal Server Actions', () => {
       expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({
         entry_type: 'raw_text',
         status: 'draft'
+      }));
+      expect(revalidatePath).toHaveBeenCalledWith('/journal');
+    });
+
+    it('should NOT attempt same-day merge for clinical_summary entry type', async () => {
+      mockSingle.mockResolvedValue({ data: { id: 'new-summary-id' }, error: null });
+
+      const result = await createJournalEntry('Summarize this for doctor', 'user-123', 'clinical_summary');
+
+      expect(result).toBe('new-summary-id');
+      expect(mockMaybeSingle).not.toHaveBeenCalled();
+      expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({
+        entry_type: 'raw_text',
+        status: 'draft',
       }));
       expect(revalidatePath).toHaveBeenCalledWith('/journal');
     });
@@ -288,6 +275,397 @@ describe('Journal Server Actions', () => {
         })
       );
       expect(revalidatePath).toHaveBeenCalledWith('/journal');
+    });
+
+    it('should fall back to synthetic ai_response when parser returns only non-meaningful values', async () => {
+      mockSelect.mockReturnValueOnce({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({
+            data: { content: 'Need a referral please', entry_type: 'raw_text' },
+            error: null,
+          }),
+        }),
+      });
+
+      const { classifyIntent } = await import('@/lib/openai/smart-parser');
+      vi.mocked(classifyIntent).mockResolvedValueOnce('script');
+
+      const smartParserModule = await import('@/lib/openai/smart-parser');
+      vi.spyOn(smartParserModule, 'parseScript').mockResolvedValueOnce({ Filled: false });
+
+      const result = await processJournalEntry('test-id');
+
+      expect(result).toEqual({ success: true });
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entry_type: 'journal',
+          status: 'draft',
+          ai_response: expect.objectContaining({
+            Note: 'Need a referral please',
+            Sleep: null,
+            Pain: null,
+          }),
+        })
+      );
+      expect(revalidatePath).toHaveBeenCalledWith('/journal');
+    });
+
+    it('should preserve parser response when it contains meaningful values', async () => {
+      mockSelect.mockReturnValueOnce({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({
+            data: { content: 'Need a physio referral', entry_type: 'raw_text' },
+            error: null,
+          }),
+        }),
+      });
+
+      const { classifyIntent } = await import('@/lib/openai/smart-parser');
+      vi.mocked(classifyIntent).mockResolvedValueOnce('script');
+
+      const smartParserModule = await import('@/lib/openai/smart-parser');
+      vi.spyOn(smartParserModule, 'parseScript').mockResolvedValueOnce({
+        Name: 'Physio referral',
+        Filled: false,
+      });
+
+      const result = await processJournalEntry('test-id');
+
+      expect(result).toEqual({ success: true });
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entry_type: 'journal',
+          status: 'draft',
+          ai_response: expect.objectContaining({
+            Name: 'Physio referral',
+            Filled: false,
+          }),
+        })
+      );
+      expect(revalidatePath).toHaveBeenCalledWith('/journal');
+    });
+
+    it('should not attempt journal-merge when intent is non-journal with sparse parser output', async () => {
+      mockSelect.mockReturnValueOnce({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'raw-entry-id',
+              user_id: 'user-123',
+              created_at: '2026-03-05T08:00:00Z',
+              status: 'draft',
+              content: 'Need follow-up soon',
+              entry_type: 'raw_text',
+            },
+            error: null,
+          }),
+        }),
+      });
+
+      const { classifyIntent } = await import('@/lib/openai/smart-parser');
+      vi.mocked(classifyIntent).mockResolvedValueOnce('appointment');
+
+      const smartParserModule = await import('@/lib/openai/smart-parser');
+      vi.spyOn(smartParserModule, 'parseAppointment').mockResolvedValueOnce({
+        Reason: 'Need follow-up soon',
+      } as any);
+
+      const result = await processJournalEntry('raw-entry-id');
+
+      expect(result).toEqual({ success: true });
+      expect(mockChain.limit).not.toHaveBeenCalled();
+      expect(mockDelete).not.toHaveBeenCalled();
+      expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({
+        entry_type: 'journal',
+        status: 'draft',
+        ai_response: expect.objectContaining({
+          Reason: 'Need follow-up soon',
+        }),
+      }));
+      expect(mockChain.eq).toHaveBeenCalledWith('id', 'raw-entry-id');
+    });
+
+    it('should merge into existing same-day journal draft when organized result is journal-shaped', async () => {
+      // 1) Fetch current raw entry
+      mockSelect.mockReturnValueOnce({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'raw-entry-id',
+              user_id: 'user-123',
+              created_at: '2026-03-05T08:00:00Z',
+              status: 'draft',
+              content: 'I slept for 7 hours',
+              entry_type: 'raw_text',
+            },
+            error: null,
+          }),
+        }),
+      });
+
+      // 2) Intent + parser returns journal-shape
+      const { classifyIntent } = await import('@/lib/openai/smart-parser');
+      vi.mocked(classifyIntent).mockResolvedValueOnce('journal');
+
+      const smartParserModule = await import('@/lib/openai/smart-parser');
+      vi.spyOn(smartParserModule, 'parseJournal')
+        .mockResolvedValueOnce({
+          Sleep: '7 hours',
+          Pain: null,
+          Feeling: null,
+          Action: null,
+          Grateful: null,
+          Medication: null,
+          Mood: null,
+          Note: null,
+          Appointments: [],
+          Scripts: [],
+        } as any)
+        .mockResolvedValueOnce({
+          Sleep: '7 hours',
+          Pain: null,
+          Feeling: null,
+          Action: null,
+          Grateful: null,
+          Medication: null,
+          Mood: null,
+          Note: 'Merged note',
+          Appointments: [],
+          Scripts: [],
+        } as any);
+
+      // 3) Existing same-day journal candidate for merge
+      mockChain.limit.mockResolvedValueOnce({
+        data: [{
+          id: 'existing-journal-id',
+          content: "At Adrian's appointment, 180 Cash, add to finance section.",
+          status: 'draft',
+          ai_response: { Sleep: null, Pain: null, Note: 'Finance reminder' },
+        }],
+        error: null,
+      });
+
+      const result = await processJournalEntry('raw-entry-id');
+
+      expect(result).toEqual({ success: true });
+      expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({
+        content: "At Adrian's appointment, 180 Cash, add to finance section.\n\nI slept for 7 hours",
+        entry_type: 'journal',
+        status: 'draft',
+        ai_response: expect.objectContaining({ Note: 'Merged note' }),
+      }));
+      expect(mockChain.eq).toHaveBeenCalledWith('id', 'existing-journal-id');
+      expect(mockDelete).toHaveBeenCalled();
+      expect(mockChain.eq).toHaveBeenCalledWith('id', 'raw-entry-id');
+      expect(revalidatePath).toHaveBeenCalledWith('/journal');
+    });
+
+    it('should merge into existing same-day approved journal entry and keep it approved', async () => {
+      // 1) Fetch current raw entry
+      mockSelect.mockReturnValueOnce({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'raw-entry-id',
+              user_id: 'user-123',
+              created_at: '2026-03-05T08:00:00Z',
+              status: 'draft',
+              content: 'I slept for 7 hours',
+              entry_type: 'raw_text',
+            },
+            error: null,
+          }),
+        }),
+      });
+
+      // 2) Intent + parser returns journal-shape
+      const { classifyIntent } = await import('@/lib/openai/smart-parser');
+      vi.mocked(classifyIntent).mockResolvedValueOnce('journal');
+
+      const smartParserModule = await import('@/lib/openai/smart-parser');
+      vi.spyOn(smartParserModule, 'parseJournal')
+        .mockResolvedValueOnce({
+          Sleep: '7 hours',
+          Pain: null,
+          Feeling: null,
+          Action: null,
+          Grateful: null,
+          Medication: null,
+          Mood: null,
+          Note: null,
+          Appointments: [],
+          Scripts: [],
+        } as any)
+        .mockResolvedValueOnce({
+          Sleep: '7 hours',
+          Pain: null,
+          Feeling: null,
+          Action: null,
+          Grateful: null,
+          Medication: null,
+          Mood: null,
+          Note: 'Merged into approved',
+          Appointments: [],
+          Scripts: [],
+        } as any);
+
+      // 3) Existing same-day approved journal candidate for merge
+      mockChain.limit.mockResolvedValueOnce({
+        data: [{
+          id: 'approved-journal-id',
+          content: 'Older approved journal content.',
+          status: 'approved',
+          ai_response: { Sleep: '8', Note: 'Earlier note' },
+        }],
+        error: null,
+      });
+
+      const result = await processJournalEntry('raw-entry-id');
+
+      expect(result).toEqual({ success: true });
+      expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({
+        content: 'Older approved journal content.\n\nI slept for 7 hours',
+        entry_type: 'journal',
+        status: 'approved',
+        ai_response: expect.objectContaining({ Note: 'Merged into approved' }),
+      }));
+      expect(mockChain.eq).toHaveBeenCalledWith('id', 'approved-journal-id');
+      expect(mockDelete).toHaveBeenCalled();
+      expect(mockChain.eq).toHaveBeenCalledWith('id', 'raw-entry-id');
+    });
+
+    it('should not run synthetic fallback if merge target update succeeds but source delete fails', async () => {
+      mockSelect.mockReturnValueOnce({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'raw-entry-id',
+              user_id: 'user-123',
+              created_at: '2026-03-05T08:00:00Z',
+              status: 'draft',
+              content: 'I slept for 7 hours',
+              entry_type: 'raw_text',
+            },
+            error: null,
+          }),
+        }),
+      });
+
+      const { classifyIntent } = await import('@/lib/openai/smart-parser');
+      vi.mocked(classifyIntent).mockResolvedValueOnce('journal');
+
+      const smartParserModule = await import('@/lib/openai/smart-parser');
+      vi.spyOn(smartParserModule, 'parseJournal')
+        .mockResolvedValueOnce({
+          Sleep: '7 hours',
+          Pain: null,
+          Feeling: null,
+          Action: null,
+          Grateful: null,
+          Medication: null,
+          Mood: null,
+          Note: null,
+          Appointments: [],
+          Scripts: [],
+        } as any)
+        .mockResolvedValueOnce({
+          Sleep: '7 hours',
+          Pain: null,
+          Feeling: null,
+          Action: null,
+          Grateful: null,
+          Medication: null,
+          Mood: null,
+          Note: 'Merged note',
+          Appointments: [],
+          Scripts: [],
+        } as any);
+
+      mockChain.limit.mockResolvedValueOnce({
+        data: [{
+          id: 'existing-journal-id',
+          content: 'Existing note',
+          status: 'draft',
+          ai_response: { Sleep: null, Note: 'Existing note' },
+        }],
+        error: null,
+      });
+
+      const deleteEq = vi.fn()
+        .mockResolvedValueOnce({ data: null, error: { message: 'Delete failed' } })
+        .mockResolvedValueOnce({ data: null, error: null });
+      mockDelete
+        .mockReturnValueOnce({ eq: deleteEq })
+        .mockReturnValueOnce({ eq: deleteEq });
+
+      const result = await processJournalEntry('raw-entry-id');
+
+      expect(result).toEqual({ success: true });
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+      expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({
+        content: 'Existing note\n\nI slept for 7 hours',
+        entry_type: 'journal',
+        status: 'draft',
+      }));
+      expect(mockDelete).toHaveBeenCalledTimes(2);
+      expect(deleteEq).toHaveBeenCalledWith('id', 'raw-entry-id');
+    });
+
+    it('should not merge into appointment-shaped same-day entries', async () => {
+      // 1) Fetch current raw entry
+      mockSelect.mockReturnValueOnce({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'raw-entry-id',
+              user_id: 'user-123',
+              created_at: '2026-03-05T08:00:00Z',
+              status: 'draft',
+              content: 'I slept for 7 hours',
+              entry_type: 'raw_text',
+            },
+            error: null,
+          }),
+        }),
+      });
+
+      // 2) Intent + parser returns journal-shape
+      const { classifyIntent } = await import('@/lib/openai/smart-parser');
+      vi.mocked(classifyIntent).mockResolvedValueOnce('journal');
+      const smartParserModule = await import('@/lib/openai/smart-parser');
+      vi.spyOn(smartParserModule, 'parseJournal').mockResolvedValueOnce({
+        Sleep: '7 hours',
+        Pain: null,
+        Feeling: null,
+        Action: null,
+        Grateful: null,
+        Medication: null,
+        Mood: null,
+        Note: null,
+        Appointments: [],
+        Scripts: [],
+      } as any);
+
+      // 3) Same-day candidates exist but all appointment-shaped
+      mockChain.limit.mockResolvedValueOnce({
+        data: [{
+          id: 'appointment-id',
+          content: 'Need to meet Dr. Chen',
+          status: 'draft',
+          ai_response: { Date: 'next Tuesday', 'Practitioner Name': 'Dr. Chen' },
+        }],
+        error: null,
+      });
+
+      const result = await processJournalEntry('raw-entry-id');
+
+      expect(result).toEqual({ success: true });
+      // Falls back to regular "update this row" path
+      expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({
+        entry_type: 'journal',
+        status: 'draft',
+      }));
+      expect(mockChain.eq).toHaveBeenCalledWith('id', 'raw-entry-id');
     });
   });
 

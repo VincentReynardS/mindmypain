@@ -22,53 +22,46 @@ export async function createJournalEntry(
   entryType: 'raw_text' | 'clinical_summary' = 'raw_text'
 ) {
   const supabase = await createClient();
-  const { classifyIntent } = await import('@/lib/openai/smart-parser');
 
-  // 1. Classify intent to decide on appending logic
-  const intent = await classifyIntent(content);
-
-  // 2. For 'journal' intent, check if a raw_text entry for "today" already exists to append to
-  if (intent === 'journal') {
+  // 1. For raw input, append only to an existing same-day RAW draft.
+  // Do not merge into already-organized journal entries here; journal-to-journal
+  // consolidation is handled at organize-time after final shape is known.
+  if (entryType === 'raw_text') {
     const today = new Date().toISOString().split('T')[0];
 
-    const { data: existingEntry } = await supabase
+    const { data: existingRawDraft, error: findError } = await supabase
       .from('journal_entries')
-      .select('id, content, entry_type, ai_response')
+      .select('id, content')
       .eq('user_id', userId)
-      .in('entry_type', ['raw_text', 'journal'])
+      .eq('entry_type', 'raw_text')
       .eq('status', 'draft')
       .filter('created_at', 'gte', `${today}T00:00:00Z`)
       .filter('created_at', 'lte', `${today}T23:59:59Z`)
       .order('created_at', { ascending: false })
       .limit(1)
-      .maybeSingle<{ id: string; content: string; entry_type: string; ai_response: Record<string, unknown> | null }>();
+      .maybeSingle<{ id: string; content: string }>();
 
-    // Only merge into raw_text (unprocessed) or journal entries with journal-shaped ai_response.
-    // Appointments, medications, and scripts also get entry_type='journal' after processing,
-    // so we check for the 'Sleep' key to confirm it's actually a daily journal entry.
-    const isJournalShaped = existingEntry?.entry_type === 'raw_text' ||
-      (existingEntry?.entry_type === 'journal' && (!existingEntry.ai_response || 'Sleep' in existingEntry.ai_response));
+    if (findError) throw new Error(findError.message);
 
-    if (existingEntry && isJournalShaped) {
-      const updatedContent = `${existingEntry.content}\n\n${content}`;
+    if (existingRawDraft) {
+      const updatedContent = `${existingRawDraft.content}\n\n${content}`;
       const { error: updateError } = await supabase
         .from('journal_entries')
         .update({
           content: updatedContent,
           status: 'draft',
           entry_type: 'raw_text',
-          ai_response: null,
         } as never)
-        .eq('id', existingEntry.id);
+        .eq('id', existingRawDraft.id);
 
       if (updateError) throw new Error(updateError.message);
 
       revalidatePath('/journal');
-      return existingEntry.id;
+      return existingRawDraft.id;
     }
   }
 
-  // 3. Create new raw_text entry — user will click Organize to classify and parse
+  // 2. Create new raw_text entry — user will click Organize to classify and parse
   const newEntry: NewJournalEntry = {
     user_id: userId,
     content,
@@ -145,13 +138,14 @@ export async function approveJournalEntry(id: string) {
 
 export async function processJournalEntry(id: string) {
   const supabase = await createClient();
+  let mergeTargetUpdated = false;
 
   // 1. Fetch current content
   const { data: entry, error: fetchError } = await supabase
     .from('journal_entries')
-    .select('content, entry_type')
+    .select('id, user_id, created_at, status, content, entry_type')
     .eq('id', id)
-    .single<{ content: string; entry_type: string }>();
+    .single<{ id: string; user_id: string; created_at: string; status: string; content: string; entry_type: string }>();
 
   if (fetchError || !entry) {
     throw new Error('Entry not found');
@@ -188,6 +182,108 @@ export async function processJournalEntry(id: string) {
       }
     }
 
+    const hasMeaningfulData = (value: unknown): boolean => {
+      if (value === null || value === undefined) return false;
+      if (typeof value === 'string') return value.trim().length > 0;
+      if (typeof value === 'number') return true;
+      if (typeof value === 'boolean') return value;
+      if (Array.isArray(value)) return value.some(hasMeaningfulData);
+      if (typeof value === 'object') {
+        return Object.values(value as Record<string, unknown>).some(hasMeaningfulData);
+      }
+      return false;
+    };
+
+    // Safety net: if the parser returned mostly-empty data, ensure raw text is preserved.
+    // This handles misclassification (e.g. intent='appointment' but parseAppointment returns
+    // sparse data that won't render in any card renderer).
+    let usedJournalSafetyNet = false;
+    if (aiResponse && typeof aiResponse === 'object') {
+      if (!hasMeaningfulData(aiResponse)) {
+        aiResponse = {
+          Sleep: null, Pain: null, Feeling: null,
+          Action: null, Grateful: null, Medication: null, Mood: null,
+          Note: entry.content || '', Appointments: null, Scripts: null,
+        };
+        usedJournalSafetyNet = true;
+      }
+    }
+
+    const isJournalDisplayShape = (response: Record<string, unknown>): boolean => {
+      const journalKeys = new Set([
+        'Sleep', 'Pain', 'Feeling', 'Action', 'Grateful', 'Medication', 'Mood', 'Note',
+        'Appointments', 'Scripts',
+      ]);
+      const keys = Object.keys(response);
+      if (keys.length === 0) return false;
+      const hasKnownJournalKey = keys.some((key) => journalKeys.has(key));
+      const hasForeignKey = keys.some((key) => !journalKeys.has(key));
+      return hasKnownJournalKey && !hasForeignKey;
+    };
+
+    // Optional merge-on-organize: if this resolves to a Journal shape, merge into an
+    // existing same-day Journal draft instead of creating another Journal card.
+    const shouldAttemptJournalMerge =
+      (intent === 'journal' || usedJournalSafetyNet) &&
+      aiResponse &&
+      typeof aiResponse === 'object' &&
+      isJournalDisplayShape(aiResponse as Record<string, unknown>);
+
+    if (shouldAttemptJournalMerge) {
+      if (entry.user_id && entry.created_at) {
+        const entryDay = new Date(entry.created_at).toISOString().split('T')[0];
+
+        const { data: sameDayJournalDrafts, error: sameDayError } = await supabase
+          .from('journal_entries')
+          .select('id, content, status, ai_response')
+          .eq('user_id', entry.user_id)
+          .in('status', ['draft', 'approved'])
+          .eq('entry_type', 'journal')
+          .neq('id', id)
+          .filter('created_at', 'gte', `${entryDay}T00:00:00Z`)
+          .filter('created_at', 'lte', `${entryDay}T23:59:59Z`)
+          .order('created_at', { ascending: false })
+          .limit(20);
+
+        if (sameDayError) throw new Error(sameDayError.message);
+
+        const mergeTarget = (sameDayJournalDrafts ?? []).find((candidate) => {
+          if (!candidate.ai_response || typeof candidate.ai_response !== 'object') return true;
+          return isJournalDisplayShape(candidate.ai_response as Record<string, unknown>);
+        }) as { id: string; content: string | null; status: string } | undefined;
+
+        if (mergeTarget) {
+          const mergedContent = `${mergeTarget.content || ''}\n\n${entry.content || ''}`.trim();
+          const { parseJournal } = await import('@/lib/openai/smart-parser');
+          const mergedAiResponse = await parseJournal(mergedContent);
+
+          const { error: mergeUpdateError } = await supabase
+            .from('journal_entries')
+            .update({
+              content: mergedContent,
+              entry_type: 'journal',
+              // @ts-ignore - Supabase type definition mismatch for JSON fields
+              ai_response: mergedAiResponse,
+              status: mergeTarget.status === 'approved' ? 'approved' : 'draft',
+            } as never)
+            .eq('id', mergeTarget.id);
+
+          if (mergeUpdateError) throw new Error(mergeUpdateError.message);
+          mergeTargetUpdated = true;
+
+          const { error: deleteError } = await supabase
+            .from('journal_entries')
+            .delete()
+            .eq('id', id);
+
+          if (deleteError) throw new Error(`MERGE_DELETE_FAILED:${deleteError.message}`);
+
+          revalidatePath('/journal');
+          return { success: true };
+        }
+      }
+    }
+
     // 3. Update Entry with "Glass Box" state — all become entry_type='journal'
     const updatePayload: UpdateJournalEntry = {
       entry_type: 'journal',
@@ -209,6 +305,20 @@ export async function processJournalEntry(id: string) {
     return { success: true };
 
   } catch (err) {
+    if (mergeTargetUpdated) {
+      // Avoid rewriting source row with synthetic fallback after target merge succeeded.
+      // Best-effort cleanup only.
+      const { error: cleanupError } = await supabase
+        .from('journal_entries')
+        .delete()
+        .eq('id', id);
+      if (cleanupError) {
+        console.error('Post-merge cleanup failed:', cleanupError.message);
+      }
+      revalidatePath('/journal');
+      return { success: true };
+    }
+
     console.error('Process Entry Failed:', err, (err as Error).stack);
     // Fallback: create synthetic ai_response so entry never stays as raw_text
     const syntheticResponse = {

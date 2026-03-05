@@ -134,6 +134,41 @@ describe('smart-parser', () => {
       expect(result.Scripts).toBeNull();
     });
 
+    it('should preserve raw text in Note when AI returns all-null fields', async () => {
+      const allNullResponse = {
+        Sleep: null, Pain: null, Feeling: null, Action: null,
+        Grateful: null, Medication: null, Mood: null, Note: null,
+        Appointments: [], Scripts: [],
+      };
+
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: JSON.stringify(allNullResponse) } }],
+      });
+
+      const { parseJournal } = await import('./smart-parser');
+      const result = await parseJournal('Just testing the app today');
+
+      expect(result.Note).toBe('Just testing the app today');
+    });
+
+    it('should NOT override Note when AI returns at least one populated field', async () => {
+      const partialResponse = {
+        Sleep: null, Pain: '5', Feeling: null, Action: null,
+        Grateful: null, Medication: null, Mood: null, Note: null,
+        Appointments: [], Scripts: [],
+      };
+
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: JSON.stringify(partialResponse) } }],
+      });
+
+      const { parseJournal } = await import('./smart-parser');
+      const result = await parseJournal('Pain is about 5 today');
+
+      expect(result.Pain).toBe('5');
+      expect(result.Note).toBeNull();
+    });
+
     it('should truncate Feeling to 500 chars in fallback', async () => {
       mockCreate.mockRejectedValueOnce(new Error('API Error'));
 

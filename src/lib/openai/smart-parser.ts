@@ -107,7 +107,8 @@ Extraction Rules:
    - "Pain": Score out of 10.
    - "Mood": MUST be one of: ${MOOD_SCALE.join(', ')}.
    - "Feeling", "Action", "Grateful", "Medication": Map relevant text.
-   - "Note": Catch-all for any content that doesn't fit the structured fields above (e.g. tasks, reminders, general thoughts).
+   - "Note": Catch-all for ANY portion of the input that doesn't fit the structured fields above (e.g. tasks, reminders, financial notes, general thoughts). IMPORTANT: Even when other fields are populated, any remaining content that wasn't extracted into a specific field MUST go into "Note". Never discard user input.
+   - If input contains multiple note-like fragments (e.g. prior daily note + new update), merge them into ONE coherent "Note" that reads naturally, without duplication, while preserving important details.
 
 2. APPOINTMENTS (If mentioned):
    - Extract into "Appointments" array. Use keys: "Practitioner Name", "Visit Type", "Profession", "Date", "Time", "Location", "Reason", "Notes".
@@ -140,7 +141,27 @@ export async function parseJournal(text: string): Promise<JournalResponse> {
     }
 
     const parsed = JSON.parse(content);
-    return JournalResponseSchema.parse(parsed);
+    const result = JournalResponseSchema.parse(parsed);
+
+    // Fallback: if AI returned semantically empty data, preserve raw text in Note.
+    // This treats empty strings/arrays/objects and false booleans as non-meaningful.
+    const hasMeaningfulData = (value: unknown): boolean => {
+      if (value === null || value === undefined) return false;
+      if (typeof value === 'string') return value.trim().length > 0;
+      if (typeof value === 'number') return true;
+      if (typeof value === 'boolean') return value;
+      if (Array.isArray(value)) return value.some(hasMeaningfulData);
+      if (typeof value === 'object') {
+        return Object.values(value as Record<string, unknown>).some(hasMeaningfulData);
+      }
+      return false;
+    };
+
+    if (!hasMeaningfulData(result)) {
+      result.Note = text;
+    }
+
+    return result;
   } catch (error) {
     console.error('Error parsing journal:', error);
     // Fallback: preserve raw text in Feeling + Note instead of throwing
@@ -366,4 +387,3 @@ export async function parseAppointment(text: string): Promise<AppointmentData> {
     throw new Error(`Failed to parse appointment from text: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
-
