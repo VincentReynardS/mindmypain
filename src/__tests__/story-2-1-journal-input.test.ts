@@ -258,8 +258,8 @@ describe("Story 2.1: Journal Entry Input (Voice/Text)", () => {
   // -- ScribeControls duplicate guard --
 
   describe("ScribeControls duplicate transcription guard", () => {
-    it("should have a ref guard to prevent duplicate transcription", () => {
-      expect(scribeControlsSource).toContain("transcribedBlobRef");
+    it("should use the useTranscription hook (which contains the ref guard)", () => {
+      expect(scribeControlsSource).toContain("useTranscription");
     });
   });
 

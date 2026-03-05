@@ -2,13 +2,32 @@
  * @vitest-environment jsdom
  */
 import React from "react";
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import fs from "fs";
 import path from "path";
 
 import { ChatMessage } from "@/components/patient/chat-message";
 import { ChatInput } from "@/components/patient/chat-input";
+import { useAudioStore } from "@/lib/stores/audio-store";
+
+const { startRecordingMock, stopRecordingMock, useTranscriptionMock } =
+  vi.hoisted(() => ({
+    startRecordingMock: vi.fn(),
+    stopRecordingMock: vi.fn(),
+    useTranscriptionMock: vi.fn(),
+  }));
+
+vi.mock("@/hooks/use-audio-recorder", () => ({
+  useAudioRecorder: () => ({
+    startRecording: startRecordingMock,
+    stopRecording: stopRecordingMock,
+  }),
+}));
+
+vi.mock("@/hooks/use-transcription", () => ({
+  useTranscription: useTranscriptionMock,
+}));
 
 const chatPageSource = fs.readFileSync(
   path.resolve(__dirname, "../app/(patient)/chat/page.tsx"),
@@ -24,6 +43,13 @@ const chatInputSource = fs.readFileSync(
   path.resolve(__dirname, "../components/patient/chat-input.tsx"),
   "utf-8"
 );
+
+beforeEach(() => {
+  useAudioStore.getState().reset();
+  startRecordingMock.mockReset();
+  stopRecordingMock.mockReset();
+  useTranscriptionMock.mockReset();
+});
 
 describe("Chat UI Components", () => {
   describe("ChatMessage component — source guardrails", () => {
@@ -137,6 +163,42 @@ describe("Chat UI Components", () => {
       expect(chatInputSource).toContain("onSubmit");
       expect(chatInputSource).toContain("disabled");
     });
+
+    it("should import Mic icon for voice recording", () => {
+      expect(chatInputSource).toContain("Mic");
+    });
+
+    it("should import useAudioStore for audio state", () => {
+      expect(chatInputSource).toContain("useAudioStore");
+    });
+
+    it("should import useAudioRecorder for recording", () => {
+      expect(chatInputSource).toContain("useAudioRecorder");
+    });
+
+    it("should import useTranscription hook", () => {
+      expect(chatInputSource).toContain("useTranscription");
+    });
+
+    it("should have a >44px mic button touch target", () => {
+      // Mic button uses h-12 w-12 = 48px
+      expect(chatInputSource).toMatch(/h-12\s+w-12/);
+    });
+
+    it("should show stop button during recording", () => {
+      expect(chatInputSource).toContain("Stop recording");
+      expect(chatInputSource).toContain("Square");
+    });
+
+    it("should show processing state", () => {
+      expect(chatInputSource).toContain("Processing audio");
+      expect(chatInputSource).toContain("Loader2");
+    });
+
+    it("should have dynamic placeholder for voice states", () => {
+      expect(chatInputSource).toContain("Listening...");
+      expect(chatInputSource).toContain("Transcribing...");
+    });
   });
 
   describe("ChatInput component — behavioral", () => {
@@ -197,6 +259,89 @@ describe("Chat UI Components", () => {
       fireEvent.click(button);
 
       expect(onSubmit).toHaveBeenCalledWith("Click submit");
+    });
+  });
+
+  describe("ChatInput component — voice behavioral", () => {
+    it("should render mic button in idle state", () => {
+      render(<ChatInput onSubmit={vi.fn()} disabled={false} />);
+      expect(
+        screen.getByRole("button", { name: /start voice recording/i })
+      ).toBeDefined();
+    });
+
+    it("should show stop button when recording", () => {
+      render(<ChatInput onSubmit={vi.fn()} disabled={false} />);
+      // Set state after mount (reset() runs on mount)
+      act(() => {
+        useAudioStore.setState({ isRecording: true });
+      });
+      expect(
+        screen.getByRole("button", { name: /stop recording/i })
+      ).toBeDefined();
+      expect(
+        screen.queryByRole("button", { name: /start voice recording/i })
+      ).toBeNull();
+    });
+
+    it("should call startRecording when mic button is clicked", () => {
+      render(<ChatInput onSubmit={vi.fn()} disabled={false} />);
+      fireEvent.click(
+        screen.getByRole("button", { name: /start voice recording/i })
+      );
+      expect(startRecordingMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("should call stopRecording when stop button is clicked", () => {
+      render(<ChatInput onSubmit={vi.fn()} disabled={false} />);
+      act(() => {
+        useAudioStore.setState({ isRecording: true });
+      });
+      fireEvent.click(screen.getByRole("button", { name: /stop recording/i }));
+      expect(stopRecordingMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("should show processing spinner when processing", () => {
+      render(<ChatInput onSubmit={vi.fn()} disabled={false} />);
+      act(() => {
+        useAudioStore.setState({ isProcessing: true });
+      });
+      expect(screen.getByRole("status", { name: /processing audio/i })).toBeDefined();
+    });
+
+    it("should disable textarea during recording", () => {
+      render(<ChatInput onSubmit={vi.fn()} disabled={false} />);
+      act(() => {
+        useAudioStore.setState({ isRecording: true });
+      });
+      const textarea = screen.getByPlaceholderText("Listening...");
+      expect(textarea).toHaveProperty("disabled", true);
+    });
+
+    it("should show Transcribing placeholder during processing", () => {
+      render(<ChatInput onSubmit={vi.fn()} disabled={false} />);
+      act(() => {
+        useAudioStore.setState({ isProcessing: true });
+      });
+      expect(screen.getByPlaceholderText("Transcribing...")).toBeDefined();
+    });
+
+    it("should display audio error", () => {
+      render(<ChatInput onSubmit={vi.fn()} disabled={false} />);
+      act(() => {
+        useAudioStore.setState({ error: "Mic denied" });
+      });
+      expect(screen.getByRole("alert").textContent).toBe("Mic denied");
+    });
+
+    it("should pipe transcribed text into the chat input", () => {
+      render(<ChatInput onSubmit={vi.fn()} disabled={false} />);
+      act(() => {
+        useAudioStore.setState({ transcribedText: "Voice text" });
+      });
+      const textarea = screen.getByDisplayValue("Voice text");
+      expect(textarea).toBeDefined();
+      expect(useAudioStore.getState().transcribedText).toBe("");
     });
   });
 

@@ -14,10 +14,10 @@
  * @see ux-design-specification.md - "Frictionless Dump" (<2s to record)
  */
 
-import { useCallback, useEffect, useRef } from "react";
 import { Mic, Square, Loader2 } from "lucide-react";
 import { useAudioStore } from "@/lib/stores/audio-store";
 import { useAudioRecorder } from "@/hooks/use-audio-recorder";
+import { useTranscription } from "@/hooks/use-transcription";
 
 /** Format seconds into mm:ss */
 function formatDuration(seconds: number): string {
@@ -29,56 +29,11 @@ function formatDuration(seconds: number): string {
 export function ScribeControls() {
   const isRecording = useAudioStore((s) => s.isRecording);
   const isProcessing = useAudioStore((s) => s.isProcessing);
-  const audioBlob = useAudioStore((s) => s.audioBlob);
   const duration = useAudioStore((s) => s.duration);
   const error = useAudioStore((s) => s.error);
 
   const { startRecording, stopRecording } = useAudioRecorder();
-  const transcribedBlobRef = useRef<Blob | null>(null);
-
-  /**
-   * After recording stops and we have a blob, send it to Whisper.
-   */
-  const transcribeAudio = useCallback(async (blob: Blob) => {
-    const { setProcessing, setTranscribedText, setError } =
-      useAudioStore.getState();
-
-    setProcessing(true);
-    setError(null);
-
-    try {
-      const formData = new FormData();
-      formData.append("audio", blob, "recording.webm");
-
-      const response = await fetch("/api/scribe/process", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Transcription failed");
-      }
-
-      const data = await response.json();
-      setTranscribedText(data.text);
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Transcription failed";
-      setError(message);
-    } finally {
-      setProcessing(false);
-    }
-  }, []);
-
-  // When audioBlob becomes available after recording stops, transcribe it.
-  // Guard with ref to prevent duplicate transcription of the same blob.
-  useEffect(() => {
-    if (audioBlob && !isRecording && audioBlob !== transcribedBlobRef.current) {
-      transcribedBlobRef.current = audioBlob;
-      transcribeAudio(audioBlob);
-    }
-  }, [audioBlob, isRecording, transcribeAudio]);
+  useTranscription();
 
   return (
     <div className="flex flex-col items-center gap-3">
