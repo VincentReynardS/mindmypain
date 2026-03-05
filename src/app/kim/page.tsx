@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { LogIn } from "lucide-react";
 import { useUserStore } from "@/lib/stores/user-store";
 import { verifyKimPassword } from "./actions";
 
@@ -35,19 +36,25 @@ export default function KimLoginPage() {
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center bg-calm-surface px-4">
-      <div className="w-full max-w-sm rounded-2xl border border-calm-border bg-calm-surface-raised p-8">
+      <div className="w-full max-w-sm rounded-2xl border border-border bg-calm-surface-raised p-8">
         <h1 className="mb-6 text-center text-2xl font-bold text-calm-text">
           Kim&apos;s Account
         </h1>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <label htmlFor="password" className="sr-only">
+            Password
+          </label>
           <input
+            id="password"
+            name="password"
             type="password"
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Enter password"
             autoFocus
-            className="min-h-[44px] rounded-xl border border-calm-border bg-background px-4 py-2 text-calm-text placeholder:text-calm-text-muted focus:outline-none focus:ring-2 focus:ring-calm-primary"
+            className="min-h-[44px] rounded-xl border border-border bg-background px-4 py-2 text-calm-text placeholder:text-calm-text-muted focus:outline-none focus:ring-2 focus:ring-calm-teal"
           />
 
           {error && (
@@ -59,9 +66,10 @@ export default function KimLoginPage() {
           <button
             type="submit"
             disabled={loading || !password}
-            className="min-h-[44px] rounded-xl bg-calm-primary px-6 py-2 font-semibold text-white transition-colors duration-300 hover:bg-calm-primary/90 disabled:opacity-50"
+            className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-calm-teal px-6 py-2 font-semibold text-white transition-colors duration-300 hover:bg-calm-teal/90 disabled:opacity-50"
           >
-            {loading ? "Verifying..." : "Enter"}
+            <LogIn className="size-4" />
+            {loading ? "Logging in..." : "Login"}
           </button>
         </form>
       </div>

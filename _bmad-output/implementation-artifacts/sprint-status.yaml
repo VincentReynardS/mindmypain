@@ -80,10 +80,10 @@ development_status:
   epic-6: in-progress
   6-1-kims-account: done
   6-2-archive-feature: done
-  6-3-login-ux-refinement: ready-for-dev
-  6-4-smart-parser-fallback-bug-fix: ready-for-dev
-  6-5-voice-to-text-in-proactive-chat: ready-for-dev
-  6-6-hilarys-account: ready-for-dev
+  6-3-login-ux-refinement: done
+  6-4-smart-parser-fallback-bug-fix: backlog
+  6-5-voice-to-text-in-proactive-chat: backlog
+  6-6-hilarys-account: backlog
   6-7-state-management-optimistic-ui-refactor: backlog
   epic-6-retrospective: optional
 
