@@ -1,5 +1,5 @@
 /**
- * User Store - Manages simulated persona selection (Sarah/Michael/Guest/Kim)
+ * User Store - Manages simulated persona selection (Sarah/Michael/Guest/Kim/Hilary)
  *
  * Architecture: Zustand store following the pattern:
  * - Export raw store creator for testing
@@ -14,7 +14,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
-export type PersonaId = "sarah" | "michael" | "guest" | "kim" | string;
+export type PersonaId = "sarah" | "michael" | "guest" | "kim" | "hilary" | string;
 
 export interface UserState {
   personaId: PersonaId | null;
@@ -51,9 +51,12 @@ export const useUserStore = create<UserState>()(
         } else if (id === "kim") {
            iconBg = "bg-calm-teal-soft";
            iconText = "text-calm-teal";
+        } else if (id === "hilary") {
+           iconBg = "bg-calm-purple-soft";
+           iconText = "text-calm-purple";
         }
 
-        const personaName = id === "guest" ? "Guest" : id === "kim" ? "Kim" : actualId.charAt(0).toUpperCase() + actualId.slice(1);
+        const personaName = id === "guest" ? "Guest" : id === "kim" ? "Kim" : id === "hilary" ? "Hilary" : actualId.charAt(0).toUpperCase() + actualId.slice(1);
 
         set({
           personaId: actualId,

@@ -3,8 +3,8 @@
 /**
  * PersonaSelector - Landing page component for selecting a workshop persona.
  *
- * Renders two persona cards (Sarah & Michael) that set the global UserContext
- * via Zustand and navigate to /journal. No auth flow - simulated personas only.
+ * Renders public persona cards that set Zustand context and navigate to /journal.
+ * Protected researcher/test accounts are intentionally not listed here.
  *
  * @see architecture.md - Authentication & Security (Decision 2)
  * @see user-store.ts - PersonaId, selectPersona()
