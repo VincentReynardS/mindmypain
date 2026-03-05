@@ -460,7 +460,58 @@ So that I can manage my history and review archived items without permanently lo
 - **Then** the entry is soft-deleted and moved to an archived view
 - **And** I can permanently delete archived items individually or in bulk
 
-### Story 6.3: State Management & Optimistic UI Refactor
+### Story 6.3: Login UX Refinement
+
+As a user,
+I want a visible "Login" button on the login screen,
+So that I don't have to manually press 'enter' inside the text box when a password manager auto-fills the field.
+
+**Acceptance Criteria:**
+
+- **Given** the login screen
+- **When** I click the "Login" button after entering or auto-filling credentials
+- **Then** it authenticates without requiring a manual 'enter' keystroke inside the input field
+
+### Story 6.4: Smart Parser Fallback Bug Fix
+
+As a patient user,
+I want unrecognized entries to properly default to the general Notes field,
+So that I don't lose data when the AI cannot categorize an entry.
+
+**Acceptance Criteria:**
+
+- **Given** an unstructured voice/text input that doesn't fit specific categories
+- **When** the AI processes the entry
+- **Then** the content should default into a "Notes" or "Right now I am feeling" field
+- **And** the fields should not be empty upon review/edit
+
+### Story 6.5: Voice-to-Text in Proactive Chat
+
+As a patient user,
+I want to use voice-to-text natively within the chat interface,
+So that interacting with my past records is as frictionless as journaling.
+
+**Acceptance Criteria:**
+
+- **Given** the Proactive Recall / Chat interface
+- **When** I tap the microphone icon
+- **Then** it records voice and transcribes it directly into the chat input
+- **And** sending the transcribed query works seamlessly like text input
+
+### Story 6.6: Hilary's Account
+
+As a researcher,
+I want a specific account for "Hilary" that functions exactly like Kim's protected account,
+So that we can support an additional specific user context for testing.
+
+**Acceptance Criteria:**
+
+- **Given** the login screen
+- **When** I navigate to `/hilary` or select Hilary
+- **Then** I am prompted for a password
+- **And** upon successful entry, I am logged into Hilary's specific persona environment
+
+### Story 6.7: State Management & Optimistic UI Refactor
 
 As a developer,
 I want to refactor the Zustand store and optimistic UI logic,
