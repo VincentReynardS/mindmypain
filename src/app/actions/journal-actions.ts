@@ -14,7 +14,9 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { NewJournalEntry, UpdateJournalEntry } from '@/types/database';
+import { JournalEntry, NewJournalEntry, UpdateJournalEntry } from '@/types/database';
+
+type JournalMergeCandidate = Pick<JournalEntry, 'id' | 'content' | 'status' | 'ai_response'>;
 
 export async function createJournalEntry(
   content: string, 
@@ -247,10 +249,12 @@ export async function processJournalEntry(id: string) {
 
         if (sameDayError) throw new Error(sameDayError.message);
 
-        const mergeTarget = (sameDayJournalDrafts ?? []).find((candidate) => {
+        const journalCandidates: JournalMergeCandidate[] = sameDayJournalDrafts ?? [];
+
+        const mergeTarget = journalCandidates.find((candidate) => {
           if (!candidate.ai_response || typeof candidate.ai_response !== 'object') return true;
           return isJournalDisplayShape(candidate.ai_response as Record<string, unknown>);
-        }) as { id: string; content: string | null; status: string } | undefined;
+        });
 
         if (mergeTarget) {
           const mergedContent = `${mergeTarget.content || ''}\n\n${entry.content || ''}`.trim();
