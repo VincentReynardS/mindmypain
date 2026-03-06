@@ -65,7 +65,11 @@ describe('GlassBoxCard Component', () => {
     expect(glassBoxCardSource).toContain('MedicationEditForm');
     expect(glassBoxCardSource).toContain('AppointmentEditForm');
     expect(glassBoxCardSource).toContain('ScriptEditForm');
-    expect(glassBoxCardSource).toContain('ClinicalSummaryEditForm');
+  });
+
+  it('should not import removed clinical summary components', () => {
+    expect(glassBoxCardSource).not.toContain('SafeClinicalSummaryRender');
+    expect(glassBoxCardSource).not.toContain('ClinicalSummaryEditForm');
   });
 
   it('should detect ai_response shapes for edit dispatch', () => {
@@ -73,7 +77,6 @@ describe('GlassBoxCard Component', () => {
     expect(glassBoxCardSource).toContain("'medication'");
     expect(glassBoxCardSource).toContain("'appointment'");
     expect(glassBoxCardSource).toContain("'script'");
-    expect(glassBoxCardSource).toContain("'clinical_summary'");
   });
 
   it('should accept onUpdateAiResponse prop', () => {

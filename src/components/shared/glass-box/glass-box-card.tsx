@@ -2,12 +2,10 @@
 
 import { useState } from 'react';
 import { JournalEntry, JournalEntryType } from '@/types/database';
-import { SafeClinicalSummaryRender } from './renderers/safe-clinical-summary-render';
 import { JournalEditForm } from './editors/journal-edit-form';
 import { MedicationEditForm } from './editors/medication-edit-form';
 import { AppointmentEditForm } from './editors/appointment-edit-form';
 import { ScriptEditForm } from './editors/script-edit-form';
-import { ClinicalSummaryEditForm } from './editors/clinical-summary-edit-form';
 import { ArchiveConfirmPopover } from '@/components/shared/archive-confirm-popover';
 
 interface GlassBoxCardProps {
@@ -21,11 +19,11 @@ interface GlassBoxCardProps {
 const TYPE_CONFIG: Record<JournalEntryType, { label: string; badgeClass: string }> = {
   raw_text: { label: '', badgeClass: '' },
   journal: { label: 'Journal', badgeClass: 'bg-calm-purple-soft text-calm-purple' },
-  clinical_summary: { label: 'Summary', badgeClass: 'bg-calm-green-soft text-calm-green' },
+  clinical_summary: { label: '', badgeClass: '' },
   insight_card: { label: 'Insight', badgeClass: 'bg-calm-blue-soft text-calm-blue' },
 };
 
-type AiResponseShape = 'medication' | 'appointment' | 'script' | 'clinical_summary' | 'journal';
+type AiResponseShape = 'medication' | 'appointment' | 'script' | 'journal';
 
 function getDynamicBadge(entry: JournalEntry): { label: string; badgeClass: string } {
   const config = TYPE_CONFIG[entry.entry_type] || TYPE_CONFIG.raw_text;
@@ -47,13 +45,11 @@ function getDynamicBadge(entry: JournalEntry): { label: string; badgeClass: stri
 }
 
 function detectAiResponseShape(entry: JournalEntry): AiResponseShape {
-  if (entry.entry_type === 'clinical_summary') return 'clinical_summary';
   if (entry.ai_response) {
     const ai = entry.ai_response;
     if (ai['Practitioner Name'] || ai['Visit Type']) return 'appointment';
     if (ai['Brand Name'] || ai['Generic Name'] || ai.Dosage) return 'medication';
     if (ai.Name && ai.Filled !== undefined) return 'script';
-    if (ai.chief_complaint) return 'clinical_summary';
   }
   return 'journal';
 }
@@ -302,8 +298,6 @@ export function GlassBoxCard({ entry, onUpdate, onApprove, onUpdateAiResponse, o
           return <AppointmentEditForm aiResponse={entry.ai_response} onSave={handleAiResponseSave} onCancel={handleCancel} isSaving={isSaving} />;
         case 'script':
           return <ScriptEditForm aiResponse={entry.ai_response} onSave={handleAiResponseSave} onCancel={handleCancel} isSaving={isSaving} />;
-        case 'clinical_summary':
-          return <ClinicalSummaryEditForm aiResponse={entry.ai_response} onSave={handleAiResponseSave} onCancel={handleCancel} isSaving={isSaving} />;
       }
     }
 
@@ -390,8 +384,6 @@ export function GlassBoxCard({ entry, onUpdate, onApprove, onUpdateAiResponse, o
           )
         ) : entry.entry_type === "journal" ? (
           <SafeHealthJournalRender content={entry.content} aiResponse={entry.ai_response} />
-        ) : entry.entry_type === "clinical_summary" && entry.ai_response ? (
-          <SafeClinicalSummaryRender aiResponse={entry.ai_response} />
         ) : (
           entry.content
         )}

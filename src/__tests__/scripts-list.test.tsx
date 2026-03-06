@@ -29,6 +29,7 @@ describe('ScriptsList', () => {
       audio_url: null,
       ai_response: null,
       metadata: null,
+      previous_status: null,
     },
     {
       id: '2',
@@ -47,6 +48,7 @@ describe('ScriptsList', () => {
       audio_url: null,
       ai_response: null,
       metadata: null,
+      previous_status: null,
     }
   ];
 

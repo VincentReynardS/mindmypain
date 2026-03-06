@@ -85,7 +85,7 @@ development_status:
   6-5-voice-to-text-in-proactive-chat: done
   6-6-hilarys-account: done
   6-7-state-management-optimistic-ui-refactor: done
-   6-8-remove-save-as-doctor-summary-feature: backlog
+   6-8-remove-save-as-doctor-summary-feature: done
   6-9-refactor-data-model-to-remove-clinical-summary-entry-type: backlog
   epic-6-retrospective: optional
 

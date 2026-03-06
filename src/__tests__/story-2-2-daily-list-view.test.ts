@@ -56,6 +56,7 @@ function createMockEntry(
     ai_response: null,
     tags: [],
     metadata: null,
+    previous_status: null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     ...overrides,
@@ -276,6 +277,12 @@ describe("Story 2.2: Daily List View", () => {
       expect(journalEntryCardSource).toContain("journal");
       expect(journalEntryCardSource).toContain("clinical_summary");
       expect(journalEntryCardSource).toContain("insight_card");
+    });
+
+    it("should not render a Summary badge for clinical_summary (feature removed)", () => {
+      // clinical_summary badge config is set to null — no badge rendered
+      const match = journalEntryCardSource.match(/clinical_summary:\s*\{[^}]*label:\s*"Summary"/);
+      expect(match).toBeNull();
     });
 
     it("should import formatTime and truncateContent from date-helpers", () => {

@@ -21,6 +21,7 @@ function makeEntry(overrides: Partial<JournalEntry> = {}): JournalEntry {
     ai_response: null,
     tags: [],
     metadata: null,
+    previous_status: null,
     ...overrides,
   };
 }
@@ -75,7 +76,7 @@ describe('GlassBoxCard Edit Dispatch', () => {
     expect(screen.getByText('Editing Script / Referral')).toBeTruthy();
   });
 
-  it('should render ClinicalSummaryEditForm for clinical_summary entries', () => {
+  it('should fallback to JournalEditForm for clinical_summary entries (feature removed)', () => {
     const entry = makeEntry({
       entry_type: 'clinical_summary',
       ai_response: { chief_complaint: 'Back pain', medication_review: 'Panadol', patient_goal: 'Pain reduction' },
@@ -83,7 +84,8 @@ describe('GlassBoxCard Edit Dispatch', () => {
     render(<GlassBoxCard entry={entry} onUpdate={onUpdate} onApprove={onApprove} onUpdateAiResponse={onUpdateAiResponse} />);
 
     fireEvent.click(screen.getByText('Edit'));
-    expect(screen.getByText('Editing Clinical Summary')).toBeTruthy();
+    // Falls through to JournalEditForm since ClinicalSummaryEditForm was removed
+    expect(screen.getByText('Editing Daily Health Journal')).toBeTruthy();
   });
 
   it('should fallback to JournalEditForm for unrecognized ai_response shapes', () => {
