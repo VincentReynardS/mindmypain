@@ -25,10 +25,13 @@ export default function ArchivePage() {
   const fetchArchivedEntries = useJournalStore((s) => s.fetchArchivedEntries);
   const restoreEntry = useJournalStore((s) => s.restoreEntry);
   const removeEntry = useJournalStore((s) => s.removeEntry);
+  const getEntriesSnapshot = useJournalStore((s) => s.getEntriesSnapshot);
+  const restoreSnapshot = useJournalStore((s) => s.restoreSnapshot);
 
   const [showDeleteAll, setShowDeleteAll] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (personaId) {
@@ -37,14 +40,30 @@ export default function ArchivePage() {
   }, [personaId, fetchArchivedEntries]);
 
   const handleRestore = async (id: string) => {
+    const snapshot = getEntriesSnapshot();
     restoreEntry(id);
-    await restoreJournalEntry(id);
+    try {
+      await restoreJournalEntry(id);
+      setError(null);
+    } catch (err) {
+      console.error("Failed to restore entry:", err);
+      restoreSnapshot(snapshot);
+      setError("Failed to restore entry. Please try again.");
+    }
   };
 
   const handleDelete = async (id: string) => {
+    const snapshot = getEntriesSnapshot();
     removeEntry(id);
-    await permanentlyDeleteJournalEntry(id);
-    setConfirmDeleteId(null);
+    try {
+      await permanentlyDeleteJournalEntry(id);
+      setConfirmDeleteId(null);
+      setError(null);
+    } catch (err) {
+      console.error("Failed to delete entry:", err);
+      restoreSnapshot(snapshot);
+      setError("Failed to delete entry. Please try again.");
+    }
   };
 
   const handleDeleteAll = async () => {
@@ -91,6 +110,19 @@ export default function ArchivePage() {
           </button>
         )}
       </div>
+
+      {/* Error banner */}
+      {error && (
+        <div className="rounded-md bg-red-50 p-3 flex items-center justify-between border border-red-200">
+          <p className="text-sm text-red-600 font-medium">{error}</p>
+          <button onClick={() => setError(null)} className="text-red-600 hover:bg-red-100 p-1 rounded-full transition-colors">
+            <span className="sr-only">Dismiss</span>
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* Delete All overlay confirmation */}
       {showDeleteAll && (

@@ -17,22 +17,40 @@ export default function MedicationsPage() {
   const [medicationEntries, setMedicationEntries] = useState<JournalEntry[]>([]);
   const [medicationMentions, setMedicationMentions] = useState<MedicationMention[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const personaId = useUserStore((s) => s.personaId);
   const supabase = createClient();
 
-  // Optimistic update wrapper functions
+  // Note: snapshot captures render-time closure. Rapid concurrent mutations may
+  // rollback to an already-optimistic state. Acceptable for prototype scope.
   const handleUpdate = async (id: string, content: string) => {
+    const previousEntries = [...medicationEntries];
     setMedicationEntries(entries =>
       entries.map(e => e.id === id ? { ...e, content } : e)
     );
-    await updateMedicationEntry(id, content);
+    try {
+      await updateMedicationEntry(id, content);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to update medication:', err);
+      setMedicationEntries(previousEntries);
+      setError('Failed to update medication. Please try again.');
+    }
   };
 
   const handleApprove = async (id: string) => {
+    const previousEntries = [...medicationEntries];
     setMedicationEntries(entries =>
       entries.map(e => e.id === id ? { ...e, status: 'approved' } : e)
     );
-    await approveMedicationEntry(id);
+    try {
+      await approveMedicationEntry(id);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to approve medication:', err);
+      setMedicationEntries(previousEntries);
+      setError('Failed to approve medication. Please try again.');
+    }
   };
 
   useEffect(() => {
@@ -94,6 +112,23 @@ export default function MedicationsPage() {
           Your active medications and detailed regimen history.
         </p>
       </div>
+
+      {error && (
+        <div className="mb-4 rounded-md bg-red-50 p-3 flex items-center justify-between border border-red-200">
+          <div className="flex items-center gap-2">
+            <svg className="h-4 w-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <p className="text-sm text-red-600 font-medium">{error}</p>
+          </div>
+          <button onClick={() => setError(null)} className="text-red-600 hover:bg-red-100 p-1 rounded-full transition-colors">
+            <span className="sr-only">Dismiss</span>
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       <div className="space-y-6">
         {isLoading ? (

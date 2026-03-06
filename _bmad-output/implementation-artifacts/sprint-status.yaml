@@ -84,7 +84,7 @@ development_status:
   6-4-smart-parser-fallback-bug-fix: done
   6-5-voice-to-text-in-proactive-chat: done
   6-6-hilarys-account: done
-  6-7-state-management-optimistic-ui-refactor: backlog
+  6-7-state-management-optimistic-ui-refactor: done
   epic-6-retrospective: optional
 
   epic-7: backlog

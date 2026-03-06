@@ -10,6 +10,7 @@
  * @see 2-2-daily-list-view.md - Task 5
  */
 
+import { useState } from "react";
 import { useJournalStore } from "@/lib/stores/journal-store";
 import { groupEntriesByDate } from "@/lib/utils/date-helpers";
 import { DateGroupHeader } from "./date-group-header";
@@ -53,11 +54,22 @@ export function JournalEntryList() {
   const updateEntry = useJournalStore((s) => s.updateEntry);
   const approveEntry = useJournalStore((s) => s.approveEntry);
   const archiveEntryOptimistic = useJournalStore((s) => s.archiveEntry);
+  const getEntriesSnapshot = useJournalStore((s) => s.getEntriesSnapshot);
+  const restoreSnapshot = useJournalStore((s) => s.restoreSnapshot);
   const personaId = useUserStore((s) => s.personaId);
+  const [mutationError, setMutationError] = useState<string | null>(null);
 
   const handleArchive = async (id: string) => {
+    const snapshot = getEntriesSnapshot();
     archiveEntryOptimistic(id);
-    await archiveJournalEntry(id);
+    try {
+      await archiveJournalEntry(id);
+      setMutationError(null);
+    } catch (err) {
+      console.error("Failed to archive entry:", err);
+      restoreSnapshot(snapshot);
+      setMutationError("Failed to archive entry. Please try again.");
+    }
   };
 
   if (isLoading) {
@@ -89,6 +101,17 @@ export function JournalEntryList() {
 
   return (
     <div className="flex flex-col gap-1">
+      {mutationError && (
+        <div className="mb-2 rounded-md bg-red-50 p-3 flex items-center justify-between border border-red-200">
+          <p className="text-sm text-red-600 font-medium">{mutationError}</p>
+          <button onClick={() => setMutationError(null)} className="text-red-600 hover:bg-red-100 p-1 rounded-full transition-colors">
+            <span className="sr-only">Dismiss</span>
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
       {grouped.map(([label, groupEntries]) => (
         <div key={label}>
           <DateGroupHeader label={label} />
@@ -103,16 +126,40 @@ export function JournalEntryList() {
                   key={entry.id}
                   entry={entry}
                   onUpdate={async (id, content) => {
+                    const snapshot = getEntriesSnapshot();
                     updateEntry(id, { content });
-                    await updateJournalEntry(id, { content });
+                    try {
+                      await updateJournalEntry(id, { content });
+                      setMutationError(null);
+                    } catch (err) {
+                      console.error("Failed to update entry:", err);
+                      restoreSnapshot(snapshot);
+                      setMutationError("Failed to save changes. Please try again.");
+                    }
                   }}
                   onApprove={async (id) => {
+                    const snapshot = getEntriesSnapshot();
                     approveEntry(id);
-                    await approveJournalEntry(id);
+                    try {
+                      await approveJournalEntry(id);
+                      setMutationError(null);
+                    } catch (err) {
+                      console.error("Failed to approve entry:", err);
+                      restoreSnapshot(snapshot);
+                      setMutationError("Failed to approve entry. Please try again.");
+                    }
                   }}
                   onUpdateAiResponse={async (id, aiResponse, contentText) => {
+                    const snapshot = getEntriesSnapshot();
                     updateEntry(id, { ai_response: aiResponse, content: contentText });
-                    await updateJournalAiResponse(id, aiResponse, contentText);
+                    try {
+                      await updateJournalAiResponse(id, aiResponse, contentText);
+                      setMutationError(null);
+                    } catch (err) {
+                      console.error("Failed to update AI response:", err);
+                      restoreSnapshot(snapshot);
+                      setMutationError("Failed to update entry. Please try again.");
+                    }
                   }}
                   onArchive={handleArchive}
                 />

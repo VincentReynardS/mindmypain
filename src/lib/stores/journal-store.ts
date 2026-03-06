@@ -2,8 +2,8 @@
  * Journal Store - Manages journal entries for the current persona
  *
  * Architecture: Zustand store following the pattern:
- * - Export raw store creator for testing
- * - Export default hook for usage
+ * - Export hook for usage
+ * - Use getState()/setState() for testing
  * - ALWAYS use atomic selectors to prevent re-renders
  *
  * @see architecture.md - State Management (Decision 4)
@@ -30,6 +30,8 @@ export interface JournalState {
   removeEntry: (id: string) => void;
   setEntries: (entries: JournalEntry[]) => void;
   clearEntries: () => void;
+  getEntriesSnapshot: () => { entries: JournalEntry[]; archivedEntries: JournalEntry[] };
+  restoreSnapshot: (snapshot: { entries: JournalEntry[]; archivedEntries: JournalEntry[] }) => void;
 }
 
 export const useJournalStore = create<JournalState>()((set, get) => ({
@@ -142,5 +144,17 @@ export const useJournalStore = create<JournalState>()((set, get) => ({
 
   clearEntries: () => {
     set({ entries: [], archivedEntries: [], error: null });
+  },
+
+  getEntriesSnapshot: () => {
+    const { entries, archivedEntries } = get();
+    return {
+      entries: entries.map((e) => ({ ...e })),
+      archivedEntries: archivedEntries.map((e) => ({ ...e })),
+    };
+  },
+
+  restoreSnapshot: (snapshot) => {
+    set({ entries: snapshot.entries, archivedEntries: snapshot.archivedEntries });
   },
 }));
