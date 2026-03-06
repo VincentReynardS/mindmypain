@@ -81,8 +81,8 @@ FR_AP3: Epic 1 - Online Only
 FR_SC1: DESCOPED (Long-form Scribe)
 FR_SC2: DESCOPED (Scribe Processing)
 FR_SC3: DESCOPED (Meeting Summary - replaced by Short-form Scenario 2)
-FR_CS1: DESCOPED (App replaced by simple Glass Box Card)
-FR_CS2: DESCOPED (Edit replaced by simple Approve)
+FR_CS1: DESCOPED (App replaced by simple Glass Box Card and Chat)
+FR_CS2: DESCOPED (Edit replaced by simple Add/Approve)
 FR_CS3: DESCOPED (Approve)
 
 ## Epic List
@@ -602,3 +602,26 @@ So that I know the system hasn't crashed.
 - **When** the entry status is `draft` (backend state)
 - **Then** the patient UI should show a "pulsing brain" or "Thinking..." skeleton loader
 - **And** It should persist until the status changes to `pending_review`
+
+### Story 6.8: Remove "Save as Doctor Summary" Feature
+As a patient user,
+I do not want to see a specific "Save as Doctor Summary" feature, 
+So that I am not confused about how it differs from the proactive chat interface.
+
+**Acceptance Criteria:**
+- **Given** the active application views
+- **When** navigating through the journal or chat
+- **Then** any UI elements (buttons, forms, cards) related to generating or approving a "Doctor Summary" or "Clinical Summary" should be removed.
+- **And** the primary way to recall data for doctor visits is explicitly directed through the Proactive Chat interface.
+
+### Story 6.9: Refactor Data Model to Remove `clinical_summary` Type
+As a developer, 
+I want to remove the redundant `clinical_summary` data types and seed data,
+So that the database schema correctly reflects the active features of the application.
+
+**Acceptance Criteria:**
+- **Given** the database schema and seed data
+- **When** the "Save as Doctor Summary" feature is removed
+- **Then** the `clinical_summary` entry type should be removed from the `journal_entry_type` enum (or safely deprecated).
+- **And** any existing seed data (e.g., Sarah's Entry 4) should be converted to a standard `journal` entry or removed/updated to reflect the new structure.
+- **And** the `smart-parser.ts` logic must no longer attempt to classify inputs as `CLINICAL_SUMMARY`.
