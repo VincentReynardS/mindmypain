@@ -31,7 +31,6 @@ describe('Migration: 20260218000000_init_journal_entries.sql', () => {
       expect(migrationSql).toContain("CREATE TYPE journal_entry_type AS ENUM");
       expect(migrationSql).toContain("'raw_text'");
       expect(migrationSql).toContain("'journal'");
-      expect(migrationSql).toContain("'clinical_summary'");
       expect(migrationSql).toContain("'insight_card'");
     });
   });
@@ -149,7 +148,7 @@ describe('Seed Data: seed.sql', () => {
     it('should include different entry types', () => {
       // Sarah should have multiple entry types
       expect(seedSql).toContain("'journal'");
-      expect(seedSql).toContain("'clinical_summary'");
+      expect(seedSql).not.toContain("'clinical_summary'");
     });
   });
 
@@ -207,7 +206,7 @@ describe('TypeScript Types Match Migration', () => {
   });
 
   it('should have entry_type values matching migration enum', () => {
-    const migrationTypes = ['raw_text', 'journal', 'clinical_summary', 'insight_card'];
+    const migrationTypes = ['raw_text', 'journal', 'insight_card'];
     for (const type of migrationTypes) {
       expect(migrationSql).toContain(`'${type}'`);
     }

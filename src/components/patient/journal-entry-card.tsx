@@ -16,7 +16,6 @@ const TYPE_BADGE_CONFIG: Record<
     label: "Journal",
     className: "bg-calm-purple-soft text-calm-purple",
   },
-  clinical_summary: null,
   insight_card: {
     label: "Insight",
     className: "bg-calm-blue-soft text-calm-blue",

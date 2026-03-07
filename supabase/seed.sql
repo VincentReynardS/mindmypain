@@ -52,16 +52,16 @@ INSERT INTO journal_entries (user_id, content, transcription, status, entry_type
   now() - INTERVAL '5 days'
 ),
 
--- Entry 4: Clinical summary for doctor (4 days ago)
+-- Entry 4: Summary for doctor appointment (4 days ago)
 (
   'sarah',
   'I want to create a summary of the last 2 weeks for Dr. Chen. My pain has been averaging around 6-7, with two flares hitting 8+. The Lyrica seems less effective. Sleep is getting worse - maybe 4-5 hours most nights. The new left hand burning started about 10 days ago.',
   'I want to create a summary of the last 2 weeks for Dr. Chen. My pain has been averaging around 6-7, with two flares hitting 8+. The Lyrica seems less effective. Sleep is getting worse - maybe 4-5 hours most nights. The new left hand burning started about 10 days ago.',
   'approved',
-  'clinical_summary',
-  '{"chief_complaint": "Worsening pain control and new symptom onset. Pain averaging 6-7/10 with two flares hitting 8+. New burning sensation in left hand started approximately 10 days ago (intermittent pattern).", "medication_review": "Currently taking Lyrica 150mg daily (efficacy declining) and Panadol Osteo PRN (partial relief). Concern: Lyrica effectiveness appears to be decreasing. Sleep disrupted by pain, averaging 4-5 hours per night.", "patient_goal": "Better pain management, sleep improvement, investigate new hand symptoms. Summary prepared for Dr. Chen covering the past 2 weeks."}',
-  ARRAY['Clinical Summary', 'Pain', 'Medication', 'Sleep', 'New Symptoms'],
-  '{"summary_period": "2 weeks", "for_provider": "Dr. Chen"}',
+  'journal',
+  '{"Pain": "Averaging 6-7/10 with two flares hitting 8+. New burning sensation in left hand started approximately 10 days ago.", "Medication": "Lyrica 150mg daily — efficacy appears to be declining. Panadol Osteo PRN with partial relief.", "Sleep": "4-5 hours most nights, disrupted by pain.", "Note": "Summary for Dr. Chen covering the past 2 weeks. Wants better pain management, sleep improvement, and investigation of new hand symptoms."}',
+  ARRAY['Pain', 'Medication', 'Sleep', 'New Symptoms'],
+  '{"pain_level": 7, "medication": "Lyrica", "provider": "Dr. Chen"}',
   now() - INTERVAL '4 days'
 ),
 

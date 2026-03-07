@@ -47,7 +47,6 @@ describe('GlassBoxCard Component', () => {
   it('should have Type Config for different entry types', () => {
     expect(glassBoxCardSource).toContain('TYPE_CONFIG');
     expect(glassBoxCardSource).toContain('journal');
-    expect(glassBoxCardSource).toContain('clinical_summary');
     expect(glassBoxCardSource).toContain('insight_card');
   });
 

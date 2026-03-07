@@ -28,7 +28,7 @@ const ADMIN_NEEDS_OPTIONS = ['Referral', 'Prescription', 'Medical Certificate', 
 function parseContent(content: string): AppointmentData {
   try {
     return JSON.parse(content || '{}');
-  } catch (e) {
+  } catch {
     return { Notes: content }; // Fallback to raw text if not JSON
   }
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { JournalEntry, JournalEntryType } from '@/types/database';
+import { JsonObject, JournalEntry, JournalEntryType } from '@/types/database';
 import { JournalEditForm } from './editors/journal-edit-form';
 import { MedicationEditForm } from './editors/medication-edit-form';
 import { AppointmentEditForm } from './editors/appointment-edit-form';
@@ -12,31 +12,55 @@ interface GlassBoxCardProps {
   entry: JournalEntry;
   onUpdate: (id: string, content: string) => Promise<void>;
   onApprove: (id: string) => Promise<void>;
-  onUpdateAiResponse?: (id: string, aiResponse: object, contentText: string) => Promise<void>;
+  onUpdateAiResponse?: (id: string, aiResponse: JsonObject, contentText: string) => Promise<void>;
   onArchive?: (id: string) => Promise<void>;
 }
 
 const TYPE_CONFIG: Record<JournalEntryType, { label: string; badgeClass: string }> = {
   raw_text: { label: '', badgeClass: '' },
   journal: { label: 'Journal', badgeClass: 'bg-calm-purple-soft text-calm-purple' },
-  clinical_summary: { label: '', badgeClass: '' },
   insight_card: { label: 'Insight', badgeClass: 'bg-calm-blue-soft text-calm-blue' },
 };
 
 type AiResponseShape = 'medication' | 'appointment' | 'script' | 'journal';
+type RecordValue = string | number | boolean | null | JsonObject | RecordValue[];
+
+const asRecord = (value: unknown): Record<string, RecordValue> | null => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  return value as Record<string, RecordValue>;
+};
+
+const getString = (value: RecordValue | undefined): string | null => {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+};
+
+const getArray = (value: RecordValue | undefined): Record<string, RecordValue>[] => {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is Record<string, RecordValue> => !!item && typeof item === 'object' && !Array.isArray(item))
+    .map((item) => item as Record<string, RecordValue>);
+};
+
+const getStringArray = (value: RecordValue | undefined): string[] => {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
+};
 
 function getDynamicBadge(entry: JournalEntry): { label: string; badgeClass: string } {
   const config = TYPE_CONFIG[entry.entry_type] || TYPE_CONFIG.raw_text;
 
-  if (entry.entry_type === 'journal' && entry.ai_response) {
-    const ai = entry.ai_response;
-    if (ai['Practitioner Name'] || ai['Visit Type'] || ai.Date) {
+  if (entry.entry_type === 'journal') {
+    const ai = asRecord(entry.ai_response);
+    if (!ai) return config;
+    if (getString(ai['Practitioner Name']) || getString(ai['Visit Type']) || getString(ai.Date)) {
       return { label: 'Appointment', badgeClass: 'bg-indigo-100 text-indigo-700' };
     }
-    if (ai['Brand Name'] || ai['Generic Name'] || ai.Dosage) {
+    if (getString(ai['Brand Name']) || getString(ai['Generic Name']) || getString(ai.Dosage)) {
       return { label: 'Medication', badgeClass: 'bg-amber-100 text-amber-800' };
     }
-    if (ai.Name && ai.Filled !== undefined) {
+    if (getString(ai.Name) && typeof ai.Filled === 'boolean') {
       return { label: 'Script', badgeClass: 'bg-calm-blue-soft text-calm-blue' };
     }
   }
@@ -45,16 +69,15 @@ function getDynamicBadge(entry: JournalEntry): { label: string; badgeClass: stri
 }
 
 function detectAiResponseShape(entry: JournalEntry): AiResponseShape {
-  if (entry.ai_response) {
-    const ai = entry.ai_response;
-    if (ai['Practitioner Name'] || ai['Visit Type']) return 'appointment';
-    if (ai['Brand Name'] || ai['Generic Name'] || ai.Dosage) return 'medication';
-    if (ai.Name && ai.Filled !== undefined) return 'script';
-  }
+  const ai = asRecord(entry.ai_response);
+  if (!ai) return 'journal';
+  if (getString(ai['Practitioner Name']) || getString(ai['Visit Type'])) return 'appointment';
+  if (getString(ai['Brand Name']) || getString(ai['Generic Name']) || getString(ai.Dosage)) return 'medication';
+  if (getString(ai.Name) && typeof ai.Filled === 'boolean') return 'script';
   return 'journal';
 }
 
-function SafeMedicationRender({ aiResponse }: { aiResponse: any }) {
+function SafeMedicationRender({ aiResponse }: { aiResponse: Record<string, RecordValue> }) {
   const fields = [
     { key: 'Brand Name', label: 'Brand Name' },
     { key: 'Generic Name', label: 'Generic Name' },
@@ -72,11 +95,12 @@ function SafeMedicationRender({ aiResponse }: { aiResponse: any }) {
     <div className="space-y-2">
       {fields.map(({ key, label }) => {
         const val = aiResponse[key];
-        if (!val) return null;
+        const display = getString(val);
+        if (!display) return null;
         return (
           <div key={key} className="text-calm-text">
             <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-0.5">{label}</span>
-            <div className="text-sm">{String(val)}</div>
+            <div className="text-sm">{display}</div>
           </div>
         );
       })}
@@ -84,7 +108,7 @@ function SafeMedicationRender({ aiResponse }: { aiResponse: any }) {
   );
 }
 
-function SafeAppointmentRender({ aiResponse }: { aiResponse: any }) {
+function SafeAppointmentRender({ aiResponse }: { aiResponse: Record<string, RecordValue> }) {
   const fields = [
     { key: 'Practitioner Name', label: 'Practitioner' },
     { key: 'Visit Type', label: 'Visit Type' },
@@ -102,19 +126,20 @@ function SafeAppointmentRender({ aiResponse }: { aiResponse: any }) {
     <div className="space-y-2">
       {fields.map(({ key, label }) => {
         const val = aiResponse[key];
-        if (!val) return null;
+        const display = getString(val);
+        if (!display) return null;
         return (
           <div key={key} className="text-calm-text">
             <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-0.5">{label}</span>
-            <div className="text-sm">{String(val)}</div>
+            <div className="text-sm">{display}</div>
           </div>
         );
       })}
-      {aiResponse['Admin Needs'] && aiResponse['Admin Needs'].length > 0 && (
+      {getStringArray(aiResponse['Admin Needs']).length > 0 && (
         <div className="text-calm-text">
           <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-1">Admin Needs</span>
           <div className="flex flex-wrap gap-1">
-            {aiResponse['Admin Needs'].map((need: string, idx: number) => (
+            {getStringArray(aiResponse['Admin Needs']).map((need, idx: number) => (
               <span key={idx} className="bg-calm-surface text-calm-text text-xs px-2 py-1 rounded-md border border-calm-border">
                 {need}
               </span>
@@ -126,7 +151,7 @@ function SafeAppointmentRender({ aiResponse }: { aiResponse: any }) {
   );
 }
 
-function SafeScriptRender({ aiResponse }: { aiResponse: any }) {
+function SafeScriptRender({ aiResponse }: { aiResponse: Record<string, RecordValue> }) {
   const fields = [
     { key: 'Name', label: 'Script / Referral' },
     { key: 'Date Prescribed', label: 'Date Prescribed' },
@@ -137,11 +162,12 @@ function SafeScriptRender({ aiResponse }: { aiResponse: any }) {
     <div className="space-y-2">
       {fields.map(({ key, label }) => {
         const val = aiResponse[key];
-        if (!val) return null;
+        const display = getString(val);
+        if (!display) return null;
         return (
           <div key={key} className="text-calm-text">
             <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-0.5">{label}</span>
-            <div className="text-sm">{String(val)}</div>
+            <div className="text-sm">{display}</div>
           </div>
         );
       })}
@@ -153,84 +179,90 @@ function SafeScriptRender({ aiResponse }: { aiResponse: any }) {
   );
 }
 
-function SafeHealthJournalRender({ content, aiResponse }: { content: string; aiResponse?: any }) {
+function parseJournalRecord(content: string, aiResponse?: unknown): Record<string, RecordValue> | null {
+  const direct = asRecord(aiResponse);
+  if (direct) return direct;
+  if (!content) return null;
   try {
-    const parsed = aiResponse || (content ? JSON.parse(content) : null);
-
-    if (!parsed || typeof parsed !== 'object') {
-       return <>{content}</>;
-    }
-
-    // We only expect specific keys
-    const fields = [
-      { key: 'Sleep', label: 'Sleep' },
-      { key: 'Pain', label: 'Pain' },
-      { key: 'Feeling', label: 'Feeling' },
-      { key: 'Action', label: 'Action to Feel Better' },
-      { key: 'Grateful', label: 'Grateful For' },
-      { key: 'Medication', label: 'Medications' },
-      { key: 'Mood', label: 'Mood' },
-      { key: 'Note', label: 'Note' },
-    ];
-
-    return (
-      <div className="space-y-3">
-        {/* Health Data */}
-        <div className="grid grid-cols-1 gap-2">
-          {fields.map(({ key, label }) => {
-            const val = parsed[key];
-            if (val && typeof val === 'string' && val.trim() !== '') {
-              return (
-                <div key={key} className="text-calm-text">
-                  <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-0.5">{label}</span>
-                  <div className="text-sm">{val}</div>
-                </div>
-              );
-            }
-            return null;
-          })}
-        </div>
-
-        {/* Appointments Section */}
-        {parsed.Appointments && parsed.Appointments.length > 0 && (
-          <div className="pt-2 border-t border-calm-border/30">
-            <span className="font-semibold text-calm-primary block text-[10px] uppercase tracking-wider mb-2">Appointments Identified</span>
-            <div className="space-y-2">
-              {parsed.Appointments.map((appt: any, idx: number) => (
-                <div key={idx} className="bg-calm-surface rounded p-2 text-xs border border-calm-border/20">
-                  <div className="font-medium">{appt['Practitioner Name'] || 'Doctor'} - {appt['Visit Type'] || 'Consultation'}</div>
-                  {appt.Date && <div className="text-calm-text-muted">{appt.Date} {appt.Time ? `@ ${appt.Time}` : ''}</div>}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Scripts Section */}
-        {parsed.Scripts && parsed.Scripts.length > 0 && (
-          <div className="pt-2 border-t border-calm-border/30">
-            <span className="font-semibold text-calm-primary block text-[10px] uppercase tracking-wider mb-2">Scripts/Referrals Found</span>
-            <div className="space-y-1.5">
-              {parsed.Scripts.map((script: any, idx: number) => (
-                <div key={idx} className="flex items-center justify-between text-xs py-1 border-b border-calm-border/10 last:border-0">
-                   <div className="flex items-center gap-2 pr-2">
-                     <div className="h-1.5 w-1.5 rounded-full bg-calm-teal shrink-0" />
-                     <span className="font-medium line-clamp-2">{script.Name}</span>
-                   </div>
-                   <span className={`shrink-0 px-2 py-0.5 rounded-full text-[9px] uppercase tracking-wider font-medium border ${script.Filled ? 'bg-calm-green-soft text-calm-green border-calm-green/20' : 'bg-calm-blue-soft text-calm-blue border-calm-blue/20'}`}>
-                      {script.Filled ? 'Filled' : 'To Be Filled'}
-                   </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  } catch (error) {
-    // Not JSON, fall back to text rendering
-    return <>{content}</>;
+    return asRecord(JSON.parse(content));
+  } catch {
+    return null;
   }
+}
+
+function SafeHealthJournalRender({ content, aiResponse }: { content: string; aiResponse?: unknown }) {
+  const parsed = parseJournalRecord(content, aiResponse);
+  if (!parsed) return <>{content}</>;
+
+  const fields = [
+    { key: 'Sleep', label: 'Sleep' },
+    { key: 'Pain', label: 'Pain' },
+    { key: 'Feeling', label: 'Feeling' },
+    { key: 'Action', label: 'Action to Feel Better' },
+    { key: 'Grateful', label: 'Grateful For' },
+    { key: 'Medication', label: 'Medications' },
+    { key: 'Mood', label: 'Mood' },
+    { key: 'Note', label: 'Note' },
+  ] as const;
+
+  const appointments = getArray(parsed.Appointments);
+  const scripts = getArray(parsed.Scripts);
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-1 gap-2">
+        {fields.map(({ key, label }) => {
+          const display = getString(parsed[key]);
+          if (!display) return null;
+          return (
+            <div key={key} className="text-calm-text">
+              <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-0.5">{label}</span>
+              <div className="text-sm">{display}</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {appointments.length > 0 && (
+        <div className="pt-2 border-t border-calm-border/30">
+          <span className="font-semibold text-calm-primary block text-[10px] uppercase tracking-wider mb-2">Appointments Identified</span>
+          <div className="space-y-2">
+            {appointments.map((appt, idx: number) => (
+              <div key={idx} className="bg-calm-surface rounded p-2 text-xs border border-calm-border/20">
+                <div className="font-medium">
+                  {getString(appt['Practitioner Name']) || 'Doctor'} - {getString(appt['Visit Type']) || 'Consultation'}
+                </div>
+                {getString(appt.Date) && (
+                  <div className="text-calm-text-muted">
+                    {getString(appt.Date)} {getString(appt.Time) ? `@ ${getString(appt.Time)}` : ''}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {scripts.length > 0 && (
+        <div className="pt-2 border-t border-calm-border/30">
+          <span className="font-semibold text-calm-primary block text-[10px] uppercase tracking-wider mb-2">Scripts/Referrals Found</span>
+          <div className="space-y-1.5">
+            {scripts.map((script, idx: number) => (
+              <div key={idx} className="flex items-center justify-between text-xs py-1 border-b border-calm-border/10 last:border-0">
+                <div className="flex items-center gap-2 pr-2">
+                  <div className="h-1.5 w-1.5 rounded-full bg-calm-teal shrink-0" />
+                  <span className="font-medium line-clamp-2">{getString(script.Name) || 'Script / Referral'}</span>
+                </div>
+                <span className={`shrink-0 px-2 py-0.5 rounded-full text-[9px] uppercase tracking-wider font-medium border ${script.Filled ? 'bg-calm-green-soft text-calm-green border-calm-green/20' : 'bg-calm-blue-soft text-calm-blue border-calm-blue/20'}`}>
+                  {script.Filled ? 'Filled' : 'To Be Filled'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 
@@ -240,13 +272,14 @@ export function GlassBoxCard({ entry, onUpdate, onApprove, onUpdateAiResponse, o
   const [isSaving, setIsSaving] = useState(false);
   const config = getDynamicBadge(entry);
   const isApproved = entry.status === "approved";
+  const entryAiResponse = asRecord(entry.ai_response);
 
   const handleSave = async () => {
     try {
       setIsSaving(true);
       await onUpdate(entry.id, editedContent);
       setIsEditing(false);
-    } catch (error) {
+    } catch {
       // Fail silently for now
     } finally {
       setIsSaving(false);
@@ -257,10 +290,14 @@ export function GlassBoxCard({ entry, onUpdate, onApprove, onUpdateAiResponse, o
     try {
       setIsSaving(true);
       if (onUpdateAiResponse) {
-        await onUpdateAiResponse(entry.id, aiResponse, contentText);
+        const normalized = asRecord(aiResponse);
+        if (!normalized) {
+          throw new Error('Invalid AI response payload');
+        }
+        await onUpdateAiResponse(entry.id, normalized as JsonObject, contentText);
       }
       setIsEditing(false);
-    } catch (error) {
+    } catch {
       // Fail silently for now
     } finally {
       setIsSaving(false);
@@ -271,7 +308,7 @@ export function GlassBoxCard({ entry, onUpdate, onApprove, onUpdateAiResponse, o
     try {
       setIsSaving(true);
       await onApprove(entry.id);
-    } catch (error) {
+    } catch {
       // Fail silently for now
     } finally {
       setIsSaving(false);
@@ -371,19 +408,18 @@ export function GlassBoxCard({ entry, onUpdate, onApprove, onUpdateAiResponse, o
       </div>
 
       <div className="whitespace-pre-wrap text-sm text-calm-text leading-relaxed">
-        {entry.entry_type === "journal" && entry.ai_response ? (
-          // Dispatch to the right renderer based on ai_response shape
-          entry.ai_response['Brand Name'] || entry.ai_response['Generic Name'] || entry.ai_response.Dosage ? (
-            <SafeMedicationRender aiResponse={entry.ai_response} />
-          ) : entry.ai_response['Practitioner Name'] || entry.ai_response['Visit Type'] ? (
-            <SafeAppointmentRender aiResponse={entry.ai_response} />
-          ) : entry.ai_response.Name && entry.ai_response.Filled !== undefined ? (
-            <SafeScriptRender aiResponse={entry.ai_response} />
+        {entry.entry_type === "journal" && entryAiResponse ? (
+          getString(entryAiResponse['Brand Name']) || getString(entryAiResponse['Generic Name']) || getString(entryAiResponse.Dosage) ? (
+            <SafeMedicationRender aiResponse={entryAiResponse} />
+          ) : getString(entryAiResponse['Practitioner Name']) || getString(entryAiResponse['Visit Type']) ? (
+            <SafeAppointmentRender aiResponse={entryAiResponse} />
+          ) : getString(entryAiResponse.Name) && typeof entryAiResponse.Filled === 'boolean' ? (
+            <SafeScriptRender aiResponse={entryAiResponse} />
           ) : (
-            <SafeHealthJournalRender content={entry.content} aiResponse={entry.ai_response} />
+            <SafeHealthJournalRender content={entry.content} aiResponse={entryAiResponse} />
           )
         ) : entry.entry_type === "journal" ? (
-          <SafeHealthJournalRender content={entry.content} aiResponse={entry.ai_response} />
+          <SafeHealthJournalRender content={entry.content} aiResponse={entryAiResponse} />
         ) : (
           entry.content
         )}

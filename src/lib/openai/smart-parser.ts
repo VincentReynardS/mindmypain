@@ -173,62 +173,6 @@ export async function parseJournal(text: string): Promise<JournalResponse> {
   }
 }
 
-// === Parsing Clinical Summaries ===
-
-const ClinicalSummaryResponseSchema = z.object({
-  chief_complaint: z.string(),
-  medication_review: z.string(),
-  patient_goal: z.string()
-});
-
-export type ClinicalSummaryResponse = z.infer<typeof ClinicalSummaryResponseSchema>;
-
-const CLINICAL_SUMMARY_SYSTEM_PROMPT = `
-You are an expert, empathetic medical scribe assisting chronic pain patients.
-Your task is to analyze unstructured journal entries and create a professional clinical summary for a doctor's review.
-
-Output MUST be valid JSON with the following structure:
-{
-  "chief_complaint": "The primary pain or symptom concern extracted from the text.",
-  "medication_review": "Any mentions of medications, dosages, side effects, or adherence issues.",
-  "patient_goal": "What the patient explicitly or implicitly wants from the upcoming appointment."
-}
-
-Rules:
-- Use professional medical terminology where appropriate but keep the patient's voice.
-- If a section cannot be inferred, state "Not reported".
-- Be concise and objective.
-`;
-
-export async function generateClinicalSummary(text: string): Promise<ClinicalSummaryResponse> {
-  if (!text || text.trim().length === 0) {
-    throw new Error('Input text cannot be empty');
-  }
-
-  try {
-    const response = await openai.chat.completions.create({
-      model: MODEL_ID,
-      messages: [
-        { role: 'system', content: CLINICAL_SUMMARY_SYSTEM_PROMPT },
-        { role: 'user', content: text },
-      ],
-      response_format: { type: 'json_object' },
-    });
-
-    const content = response.choices[0].message.content;
-
-    if (!content) {
-      throw new Error('No content received from AI');
-    }
-
-    const parsed = JSON.parse(content);
-    return ClinicalSummaryResponseSchema.parse(parsed);
-  } catch (error) {
-    console.error('Error generating clinical summary:', error);
-    throw new Error(`Failed to generate clinical summary from text: ${error instanceof Error ? error.message : String(error)}`);
-  }
-}
-
 // === Parsing Medications ===
 
 const MedicationResponseSchema = z.object({

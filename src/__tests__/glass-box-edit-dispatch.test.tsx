@@ -76,18 +76,6 @@ describe('GlassBoxCard Edit Dispatch', () => {
     expect(screen.getByText('Editing Script / Referral')).toBeTruthy();
   });
 
-  it('should fallback to JournalEditForm for clinical_summary entries (feature removed)', () => {
-    const entry = makeEntry({
-      entry_type: 'clinical_summary',
-      ai_response: { chief_complaint: 'Back pain', medication_review: 'Panadol', patient_goal: 'Pain reduction' },
-    });
-    render(<GlassBoxCard entry={entry} onUpdate={onUpdate} onApprove={onApprove} onUpdateAiResponse={onUpdateAiResponse} />);
-
-    fireEvent.click(screen.getByText('Edit'));
-    // Falls through to JournalEditForm since ClinicalSummaryEditForm was removed
-    expect(screen.getByText('Editing Daily Health Journal')).toBeTruthy();
-  });
-
   it('should fallback to JournalEditForm for unrecognized ai_response shapes', () => {
     const entry = makeEntry({
       ai_response: { unknown_field: 'some value' },

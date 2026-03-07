@@ -25,7 +25,7 @@ interface MedicationData {
 function parseContent(content: string): MedicationData {
   try {
     return JSON.parse(content || '{}');
-  } catch (e) {
+  } catch {
     return { Notes: content }; // Fallback to raw text if not JSON
   }
 }

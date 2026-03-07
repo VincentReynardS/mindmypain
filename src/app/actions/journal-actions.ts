@@ -14,14 +14,15 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { JournalEntry, NewJournalEntry, UpdateJournalEntry } from '@/types/database';
+import { JournalEntry, JsonObject, NewJournalEntry, UpdateJournalEntry } from '@/types/database';
 
 type JournalMergeCandidate = Pick<JournalEntry, 'id' | 'content' | 'status' | 'ai_response'>;
+type ScriptAiResponse = JsonObject & { Scripts?: Array<JsonObject> };
 
 export async function createJournalEntry(
   content: string, 
   userId: string, 
-  entryType: 'raw_text' | 'clinical_summary' = 'raw_text'
+  entryType: 'raw_text' = 'raw_text'
 ) {
   const supabase = await createClient();
 
@@ -73,7 +74,7 @@ export async function createJournalEntry(
 
   const { data, error } = await supabase
     .from('journal_entries')
-    .insert(newEntry as any)
+    .insert(newEntry as never)
     .select('id')
     .single<{ id: string }>();
 
@@ -266,8 +267,7 @@ export async function processJournalEntry(id: string) {
             .update({
               content: mergedContent,
               entry_type: 'journal',
-              // @ts-ignore - Supabase type definition mismatch for JSON fields
-              ai_response: mergedAiResponse,
+              ai_response: mergedAiResponse as unknown as JsonObject,
               status: mergeTarget.status === 'approved' ? 'approved' : 'draft',
             } as never)
             .eq('id', mergeTarget.id);
@@ -291,8 +291,7 @@ export async function processJournalEntry(id: string) {
     // 3. Update Entry with "Glass Box" state — all become entry_type='journal'
     const updatePayload: UpdateJournalEntry = {
       entry_type: 'journal',
-      // @ts-ignore - Supabase type definition mismatch for JSON fields
-      ai_response: aiResponse,
+      ai_response: aiResponse as unknown as JsonObject,
       status: 'draft' // Keep as draft for user review
     };
 
@@ -342,7 +341,7 @@ export async function processJournalEntry(id: string) {
 
 export async function updateJournalAiResponse(
   id: string,
-  aiResponse: object,
+  aiResponse: JsonObject,
   contentText: string
 ) {
   const supabase = await createClient();
@@ -464,17 +463,18 @@ export async function updateScriptOrReferralEntry(id: string, isFilled: boolean)
       .from('journal_entries')
       .select('ai_response')
       .eq('id', realId)
-      .single<{ ai_response: any }>();
+      .single<{ ai_response: JsonObject | null }>();
 
     if (entryError || !entry) throw new Error(entryError?.message || 'Entry not found');
 
-    if (entry?.ai_response?.Scripts) {
-      const scripts = [...entry.ai_response.Scripts];
+    const response = entry.ai_response as ScriptAiResponse | null;
+    if (response?.Scripts) {
+      const scripts = [...response.Scripts];
       if (scripts[index]) {
-        scripts[index] = { ...scripts[index], Filled: isFilled };
+        scripts[index] = { ...(scripts[index] || {}), Filled: isFilled };
         const { error } = await supabase
           .from('journal_entries')
-          .update({ ai_response: { ...entry.ai_response, Scripts: scripts } } as never)
+          .update({ ai_response: { ...(response || {}), Scripts: scripts } } as never)
           .eq('id', realId);
         
         if (error) throw new Error(error.message);
@@ -490,17 +490,20 @@ export async function updateScriptOrReferralEntry(id: string, isFilled: boolean)
     .from('journal_entries')
     .select('content, ai_response')
     .eq('id', id)
-    .single<{ content: string; ai_response: any }>();
+    .single<{ content: string; ai_response: JsonObject | null }>();
     
   if (fetchError || !entry) {
     throw new Error('Entry not found');
   }
   
-  let parsedContent = {};
+  let parsedContent: JsonObject = {};
   try {
-    parsedContent = JSON.parse(entry.content || '{}');
-  } catch (e) {
-    console.error('Failed to parse script content', e);
+    const parsed = JSON.parse(entry.content || '{}');
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      parsedContent = parsed as JsonObject;
+    }
+  } catch (error) {
+    console.error('Failed to parse script content', error);
   }
 
   const updatedContent = JSON.stringify({
@@ -508,7 +511,7 @@ export async function updateScriptOrReferralEntry(id: string, isFilled: boolean)
     Filled: isFilled
   });
 
-  const updatedAiResponse = entry.ai_response && entry.ai_response.Name ? {
+  const updatedAiResponse = entry.ai_response && entry.ai_response['Name'] ? {
     ...entry.ai_response,
     Filled: isFilled
   } : entry.ai_response;

@@ -30,28 +30,6 @@ export function useAudioRecorder() {
   const chunksRef = useRef<Blob[]>([]);
 
   /**
-   * Continuously read volume from AnalyserNode and push to store.
-   */
-  const updateVolume = useCallback(() => {
-    if (!analyserRef.current) return;
-
-    const dataArray = new Uint8Array(analyserRef.current.fftSize);
-    analyserRef.current.getByteTimeDomainData(dataArray);
-
-    // Calculate RMS volume (0-1 range)
-    let sum = 0;
-    for (let i = 0; i < dataArray.length; i++) {
-      const sample = (dataArray[i] - 128) / 128;
-      sum += sample * sample;
-    }
-    const rms = Math.sqrt(sum / dataArray.length);
-    const normalized = Math.min(1, rms * 3); // Amplify for visual impact
-
-    useAudioStore.getState().setVolume(normalized);
-    animFrameRef.current = requestAnimationFrame(updateVolume);
-  }, []);
-
-  /**
    * Start recording audio from the microphone.
    */
   const startRecording = useCallback(async () => {
@@ -97,6 +75,23 @@ export function useAudioRecorder() {
       mediaRecorder.start(250); // collect data every 250ms
 
       // Start volume updates
+      const updateVolume = () => {
+        if (!analyserRef.current) return;
+
+        const dataArray = new Uint8Array(analyserRef.current.fftSize);
+        analyserRef.current.getByteTimeDomainData(dataArray);
+
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+          const sample = (dataArray[i] - 128) / 128;
+          sum += sample * sample;
+        }
+        const rms = Math.sqrt(sum / dataArray.length);
+        const normalized = Math.min(1, rms * 3);
+
+        useAudioStore.getState().setVolume(normalized);
+        animFrameRef.current = requestAnimationFrame(updateVolume);
+      };
       updateVolume();
 
       // Start duration tracking
@@ -113,7 +108,7 @@ export function useAudioRecorder() {
         err instanceof Error ? err.message : "Microphone access denied";
       useAudioStore.getState().setError(message);
     }
-  }, [updateVolume]);
+  }, []);
 
   /**
    * Stop recording and finalize the audio blob.

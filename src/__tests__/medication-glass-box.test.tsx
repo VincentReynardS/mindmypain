@@ -32,7 +32,7 @@ describe('MedicationGlassBox', () => {
     transcription: null,
     audio_url: null,
     status: 'draft',
-    // @ts-ignore
+    // @ts-expect-error - Medication UI supports this shape even if enum is narrower
     entry_type: 'medication',
     ai_response: null,
     tags: [],

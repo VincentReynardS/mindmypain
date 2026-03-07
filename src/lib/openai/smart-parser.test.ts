@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { generateClinicalSummary, parseMedication, parseScript, classifyIntent, parseAppointment } from './smart-parser';
+import { parseMedication, parseScript, classifyIntent, parseAppointment } from './smart-parser';
 
 // Hoist the mock function so it's available in vi.mock
 const { mockCreate } = vi.hoisted(() => {
@@ -257,25 +257,4 @@ describe('smart-parser', () => {
     });
   });
 
-  describe('clinical summary', () => {
-    it('should generate a clinical summary with correct structure', async () => {
-      const mockResponse = {
-        chief_complaint: 'Right knee pain',
-        medication_review: 'Taking Lyrica',
-        patient_goal: 'Reduce pain'
-      };
-
-      mockCreate.mockResolvedValueOnce({
-        choices: [{ message: { content: JSON.stringify(mockResponse) } }],
-      });
-
-      const result = await generateClinicalSummary('My knee hurts and I take Lyrica');
-
-      expect(result).toEqual(mockResponse);
-    });
-
-    it('should throw error for empty input', async () => {
-      await expect(generateClinicalSummary('')).rejects.toThrow('Input text cannot be empty');
-    });
-  });
 });

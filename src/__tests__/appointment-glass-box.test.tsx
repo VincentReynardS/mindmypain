@@ -33,8 +33,7 @@ describe('AppointmentGlassBox', () => {
     transcription: null,
     audio_url: null,
     status: 'draft',
-    // We expect the backend to set this type eventually, but testing the UI logic itself
-    // @ts-ignore
+    // @ts-expect-error - Appointment UI supports this shape even if enum is narrower
     entry_type: 'appointment',
     ai_response: null,
     tags: [],

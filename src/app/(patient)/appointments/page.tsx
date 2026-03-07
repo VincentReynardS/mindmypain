@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { AppointmentGlassBox } from '@/components/patient/appointment-glass-box';
 import { updateAppointmentEntry, approveAppointmentEntry } from '@/app/actions/journal-actions';
-import { JournalEntry } from '@/types/database';
+import { JsonObject, JournalEntry } from '@/types/database';
 import { useUserStore } from '@/lib/stores/user-store';
 
 export default function AppointmentsPage() {
@@ -67,7 +67,8 @@ export default function AppointmentsPage() {
 
       ((entries as JournalEntry[]) || []).forEach(entry => {
         if (!entry.ai_response) return;
-        const ai = entry.ai_response as any;
+        const ai = entry.ai_response as (JsonObject & { Appointments?: JsonObject[] }) | null;
+        if (!ai || typeof ai !== 'object') return;
 
         // Flat appointment object from parseAppointment()
         if (ai['Practitioner Name'] || ai['Visit Type'] || ai.Date) {
@@ -77,7 +78,7 @@ export default function AppointmentsPage() {
 
         // Embedded array from parseJournal()
         if (ai.Appointments && Array.isArray(ai.Appointments) && ai.Appointments.length > 0) {
-          ai.Appointments.forEach((appt: any, idx: number) => {
+          ai.Appointments.forEach((appt: JsonObject, idx: number) => {
             processedEntries.push({
               ...entry,
               id: `${entry.id}_appt_${idx}`,
@@ -131,7 +132,7 @@ export default function AppointmentsPage() {
         ) : (!appointmentEntries || appointmentEntries.length === 0) ? (
           <div className="rounded-lg border border-calm-border border-dashed p-8 text-center bg-calm-surface">
              <p className="text-sm text-calm-text-muted">No appointments found.</p>
-             <p className="text-xs text-calm-text-muted mt-2">Speak an entry like "I have a doctor's appointment tomorrow" into your journal.</p>
+             <p className="text-xs text-calm-text-muted mt-2">Speak an entry like &quot;I have a doctor&apos;s appointment tomorrow&quot; into your journal.</p>
           </div>
         ) : (
           appointmentEntries.map((entry) => (

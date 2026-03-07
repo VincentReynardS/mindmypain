@@ -15,8 +15,11 @@ export type JournalEntryStatus = "draft" | "pending_review" | "approved" | "arch
 export type JournalEntryType =
   | "raw_text"
   | "journal"
-  | "clinical_summary"
   | "insight_card";
+
+export type JsonPrimitive = string | number | boolean | null;
+export type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
+export type JsonObject = { [key: string]: JsonValue };
 
 export interface Database {
   public: {
@@ -32,9 +35,9 @@ export interface Database {
           audio_url: string | null;
           status: JournalEntryStatus;
           entry_type: JournalEntryType;
-          ai_response: any | null;
+          ai_response: JsonObject | null;
           tags: string[];
-          metadata: any | null;
+          metadata: JsonObject | null;
           previous_status: string | null;
         };
         Insert: {
@@ -47,9 +50,9 @@ export interface Database {
           audio_url?: string | null;
           status?: JournalEntryStatus;
           entry_type?: JournalEntryType;
-          ai_response?: any | null;
+          ai_response?: JsonObject | null;
           tags?: string[];
-          metadata?: any | null;
+          metadata?: JsonObject | null;
           previous_status?: string | null;
         };
         Update: {
@@ -62,9 +65,9 @@ export interface Database {
           audio_url?: string | null;
           status?: JournalEntryStatus;
           entry_type?: JournalEntryType;
-          ai_response?: any | null;
+          ai_response?: JsonObject | null;
           tags?: string[];
-          metadata?: any | null;
+          metadata?: JsonObject | null;
           previous_status?: string | null;
         };
       };

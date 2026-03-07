@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useUserStore } from '@/lib/stores/user-store';
-import { JournalEntry } from '@/types/database';
+import { JsonObject, JournalEntry } from '@/types/database';
 import { ScriptsList } from '@/components/patient/scripts-list';
 import { updateScriptOrReferralEntry } from '@/app/actions/journal-actions';
 
@@ -68,7 +68,8 @@ export default function ScriptsPage() {
 
       ((entries as JournalEntry[]) || []).forEach(entry => {
         if (!entry.ai_response) return;
-        const ai = entry.ai_response as any;
+        const ai = entry.ai_response as (JsonObject & { Scripts?: JsonObject[] }) | null;
+        if (!ai || typeof ai !== 'object') return;
 
         // Flat script object from parseScript()
         if (ai.Name !== undefined && ai.Filled !== undefined) {
@@ -81,7 +82,7 @@ export default function ScriptsPage() {
 
         // Embedded array from parseJournal()
         if (ai.Scripts && Array.isArray(ai.Scripts) && ai.Scripts.length > 0) {
-          ai.Scripts.forEach((script: any, idx: number) => {
+          ai.Scripts.forEach((script: JsonObject, idx: number) => {
             processedEntries.push({
               ...entry,
               id: `${entry.id}_script_${idx}`,

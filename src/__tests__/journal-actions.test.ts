@@ -9,10 +9,6 @@ const mockSelect = vi.fn();
 const mockSingle = vi.fn();
 const mockMaybeSingle = vi.fn();
 const mockUpdate = vi.fn();
-const mockEq = vi.fn();
-const mockNeq = vi.fn();
-const mockFilter = vi.fn();
-const mockOrder = vi.fn();
 const mockDelete = vi.fn();
 
 // Mock Supabase
@@ -38,7 +34,19 @@ vi.mock('next/cache', () => ({
 import { revalidatePath } from 'next/cache';
 
 describe('Journal Server Actions', () => {
-  const mockChain: any = {
+  type MockChain = {
+    eq: ReturnType<typeof vi.fn>;
+    neq: ReturnType<typeof vi.fn>;
+    in: ReturnType<typeof vi.fn>;
+    filter: ReturnType<typeof vi.fn>;
+    order: ReturnType<typeof vi.fn>;
+    limit: ReturnType<typeof vi.fn>;
+    select: ReturnType<typeof vi.fn>;
+    maybeSingle: typeof mockMaybeSingle;
+    single: typeof mockSingle;
+  };
+
+  const mockChain: MockChain = {
     eq: vi.fn(),
     neq: vi.fn(),
     in: vi.fn(),
@@ -153,19 +161,6 @@ describe('Journal Server Actions', () => {
       expect(revalidatePath).toHaveBeenCalledWith('/journal');
     });
 
-    it('should NOT attempt same-day merge for clinical_summary entry type', async () => {
-      mockSingle.mockResolvedValue({ data: { id: 'new-summary-id' }, error: null });
-
-      const result = await createJournalEntry('Summarize this for doctor', 'user-123', 'clinical_summary');
-
-      expect(result).toBe('new-summary-id');
-      expect(mockMaybeSingle).not.toHaveBeenCalled();
-      expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({
-        entry_type: 'raw_text',
-        status: 'draft',
-      }));
-      expect(revalidatePath).toHaveBeenCalledWith('/journal');
-    });
   });
 
   describe('updateJournalEntry', () => {
@@ -368,7 +363,7 @@ describe('Journal Server Actions', () => {
       const smartParserModule = await import('@/lib/openai/smart-parser');
       vi.spyOn(smartParserModule, 'parseAppointment').mockResolvedValueOnce({
         Reason: 'Need follow-up soon',
-      } as any);
+      } as never);
 
       const result = await processJournalEntry('raw-entry-id');
 
@@ -420,7 +415,7 @@ describe('Journal Server Actions', () => {
           Note: null,
           Appointments: [],
           Scripts: [],
-        } as any)
+        } as never)
         .mockResolvedValueOnce({
           Sleep: '7 hours',
           Pain: null,
@@ -432,7 +427,7 @@ describe('Journal Server Actions', () => {
           Note: 'Merged note',
           Appointments: [],
           Scripts: [],
-        } as any);
+        } as never);
 
       // 3) Existing same-day journal candidate for merge
       mockChain.limit.mockResolvedValueOnce({
@@ -495,7 +490,7 @@ describe('Journal Server Actions', () => {
           Note: null,
           Appointments: [],
           Scripts: [],
-        } as any)
+        } as never)
         .mockResolvedValueOnce({
           Sleep: '7 hours',
           Pain: null,
@@ -507,7 +502,7 @@ describe('Journal Server Actions', () => {
           Note: 'Merged into approved',
           Appointments: [],
           Scripts: [],
-        } as any);
+        } as never);
 
       // 3) Existing same-day approved journal candidate for merge
       mockChain.limit.mockResolvedValueOnce({
@@ -567,7 +562,7 @@ describe('Journal Server Actions', () => {
           Note: null,
           Appointments: [],
           Scripts: [],
-        } as any)
+        } as never)
         .mockResolvedValueOnce({
           Sleep: '7 hours',
           Pain: null,
@@ -579,7 +574,7 @@ describe('Journal Server Actions', () => {
           Note: 'Merged note',
           Appointments: [],
           Scripts: [],
-        } as any);
+        } as never);
 
       mockChain.limit.mockResolvedValueOnce({
         data: [{
@@ -644,7 +639,7 @@ describe('Journal Server Actions', () => {
         Note: null,
         Appointments: [],
         Scripts: [],
-      } as any);
+      } as never);
 
       // 3) Same-day candidates exist but all appointment-shaped
       mockChain.limit.mockResolvedValueOnce({
@@ -696,7 +691,6 @@ describe('Journal Server Actions', () => {
     });
 
     it('should throw on Supabase error', async () => {
-      const errorChain = { ...mockFrom(), update: mockUpdate };
       const hybridError = () => {
         const p = Promise.resolve({ data: null, error: { message: 'DB error' } });
         return Object.assign(p, { eq: vi.fn().mockReturnValue(p) });

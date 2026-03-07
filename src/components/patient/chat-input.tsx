@@ -35,13 +35,16 @@ export function ChatInput({ onSubmit, disabled }: ChatInputProps) {
   // Pipe transcribed text into textarea
   useEffect(() => {
     if (transcribedText) {
-      setText((prev) => {
-        if (prev.trim()) {
-          return `${prev}\n${transcribedText}`;
-        }
-        return transcribedText;
-      });
-      resetTranscribedText();
+      const timeoutId = window.setTimeout(() => {
+        setText((prev) => {
+          if (prev.trim()) {
+            return `${prev}\n${transcribedText}`;
+          }
+          return transcribedText;
+        });
+        resetTranscribedText();
+      }, 0);
+      return () => window.clearTimeout(timeoutId);
     }
   }, [transcribedText, resetTranscribedText]);
 

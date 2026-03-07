@@ -18,7 +18,7 @@ interface ScriptData {
 function parseContent(content: string): ScriptData {
   try {
     return JSON.parse(content || '{}');
-  } catch (e) {
+  } catch {
     return { Notes: content }; // Fallback to raw text if not JSON
   }
 }
@@ -41,7 +41,7 @@ export function ScriptsList({ entries, onToggleFilled }: ScriptsListProps) {
     return (
       <div className="rounded-lg border border-calm-border border-dashed p-8 text-center bg-calm-surface">
          <p className="text-sm text-calm-text-muted">No pending scripts or referrals found.</p>
-         <p className="text-xs text-calm-text-muted mt-2">Speak an entry like "I need a referral for Dr. Smith" into your journal.</p>
+         <p className="text-xs text-calm-text-muted mt-2">Speak an entry like &quot;I need a referral for Dr. Smith&quot; into your journal.</p>
       </div>
     );
   }

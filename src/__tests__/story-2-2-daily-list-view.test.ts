@@ -275,14 +275,7 @@ describe("Story 2.2: Daily List View", () => {
     it("should have badge config for each entry_type", () => {
       expect(journalEntryCardSource).toContain("raw_text");
       expect(journalEntryCardSource).toContain("journal");
-      expect(journalEntryCardSource).toContain("clinical_summary");
       expect(journalEntryCardSource).toContain("insight_card");
-    });
-
-    it("should not render a Summary badge for clinical_summary (feature removed)", () => {
-      // clinical_summary badge config is set to null — no badge rendered
-      const match = journalEntryCardSource.match(/clinical_summary:\s*\{[^}]*label:\s*"Summary"/);
-      expect(match).toBeNull();
     });
 
     it("should import formatTime and truncateContent from date-helpers", () => {

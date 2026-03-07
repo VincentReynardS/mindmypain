@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { MedicationGlassBox } from '@/components/patient/medication-glass-box';
 import { updateMedicationEntry, approveMedicationEntry } from '@/app/actions/journal-actions';
-import { JournalEntry } from '@/types/database';
+import { JsonObject, JournalEntry } from '@/types/database';
 import { useUserStore } from '@/lib/stores/user-store';
 
 interface MedicationMention {
@@ -76,7 +76,8 @@ export default function MedicationsPage() {
 
       ((entries as JournalEntry[]) || []).forEach(entry => {
         if (!entry.ai_response) return;
-        const ai = entry.ai_response as any;
+        const ai = entry.ai_response as JsonObject | null;
+        if (!ai || typeof ai !== 'object') return;
 
         // Flat medication object from parseMedication()
         if (ai['Brand Name'] || ai['Generic Name'] || ai.Dosage) {
@@ -85,7 +86,7 @@ export default function MedicationsPage() {
         }
 
         // Medication mention string from parseJournal()
-        if (ai.Medication && typeof ai.Medication === 'string' && ai.Medication.trim() !== '') {
+        if (typeof ai.Medication === 'string' && ai.Medication.trim() !== '') {
           mentions.push({
             entryId: entry.id,
             date: entry.created_at,

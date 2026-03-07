@@ -38,7 +38,6 @@ The `ai_response` JSONB column stores the structured output. The `content` colum
 |---|---|---|
 | `raw_text` | `JournalEntryCard` | Unprocessed; shows Organize button if not yet approved |
 | `journal` | `GlassBoxCard` → `SafeDailyJournalRender` | Structured daily health fields (Sleep, Pain, Mood, etc.) |
-| `clinical_summary` | `GlassBoxCard` → `SafeClinicalSummaryRender` | Chief complaint, medication review, patient goal |
 | `insight_card` | `GlassBoxCard` | Insight content |
 
 ### AI Parsing Layer (`src/lib/openai/smart-parser.ts`)
@@ -48,7 +47,6 @@ All calls use `gpt-4o` with `response_format: { type: 'json_object' }`. Response
 - `classifyIntent(text)` → `'journal' | 'medication' | 'appointment' | 'script' | 'agenda'`
 - `parseJournal(text)` → Sleep, Pain, Mood, Feeling, Action, Grateful, Medication, Note, `Appointments[]`, `Scripts[]`
 - `parseMedication / parseAppointment / parseScript` — specialized parsers
-- `generateClinicalSummary(text)` — wizard-facing summary
 
 ### Entry Creation Flow (`createJournalEntry`)
 

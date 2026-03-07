@@ -89,7 +89,7 @@ describe('ScriptsList', () => {
 
   it('shows loading state while toggling', async () => {
     // Make the mock function take some time
-    let resolvePromise: any;
+    let resolvePromise: (() => void) | undefined;
     mockToggleFilled.mockImplementation(() => new Promise((resolve) => {
       resolvePromise = resolve;
     }));
@@ -103,7 +103,7 @@ describe('ScriptsList', () => {
     expect(buttons[0].hasAttribute('disabled')).toBe(true);
     
     // Complete the mock function
-    resolvePromise();
+    resolvePromise?.();
     
     await waitFor(() => {
       expect(buttons[0].hasAttribute('disabled')).toBe(false);
