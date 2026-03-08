@@ -37,3 +37,9 @@ This file contains critical rules and specific architectural deviations from sta
 - **Rule:** In patient-facing UI, display the completed draft status as **"Added"**.
 - **Rule:** Keep persisted/backend status value as **`approved`** (no schema or enum rename).
 - **Why:** "Added" is friendlier UX copy, while `approved` remains the stable technical status used by existing data flows and logic.
+
+### 7. Story Development Discipline
+
+- **Context:** Multiple epics have seen developer agents forget to update story markdown checkboxes and the 'File List' after completing tasks, leaving auditability gaps.
+- **Rule:** Before marking a story as complete or invoking the code-review process, the Developer agent MUST explicitly check off completed subtasks in the `[ ]` markdown boxes of the story file, AND fully populate the `### File List` section under the Dev Agent Record with all files modified during the story.
+- **Why:** To maintain accurate traceability and unblock QA/Review processes.
