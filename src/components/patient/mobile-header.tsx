@@ -14,7 +14,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useUserStore } from "@/lib/stores/user-store";
-import { User, Archive, LogOut } from "lucide-react";
+import { User, UserCog, Archive, LogOut } from "lucide-react";
 
 export function MobileHeader() {
   const personaName = useUserStore((s) => s.personaName);
@@ -82,8 +82,18 @@ export function MobileHeader() {
               role="menu"
             >
               <Link
-                href="/journal/archive"
+                href="/profile/my-detail"
                 className="flex items-center gap-3 px-4 py-3 text-sm text-calm-text hover:bg-calm-surface transition-colors duration-300 rounded-t-lg"
+                style={{ minHeight: "44px" }}
+                role="menuitem"
+                onClick={() => setIsOpen(false)}
+              >
+                <UserCog className="h-4 w-4" />
+                My Detail
+              </Link>
+              <Link
+                href="/journal/archive"
+                className="flex items-center gap-3 px-4 py-3 text-sm text-calm-text hover:bg-calm-surface transition-colors duration-300"
                 style={{ minHeight: "44px" }}
                 role="menuitem"
                 onClick={() => setIsOpen(false)}
@@ -94,7 +104,7 @@ export function MobileHeader() {
               <button
                 type="button"
                 onClick={handleSignOut}
-                className="flex w-full items-center gap-3 px-4 py-3 text-sm text-calm-text hover:bg-calm-surface transition-colors duration-300 rounded-b-lg"
+                className="flex w-full items-center gap-3 px-4 py-3 text-sm text-calm-text hover:bg-calm-surface transition-colors duration-300 border-t border-calm-border/40 rounded-b-lg"
                 style={{ minHeight: "44px" }}
                 role="menuitem"
               >

@@ -15,6 +15,12 @@ This file contains critical rules and specific architectural deviations from sta
 ### 2. Styling
 
 - Use Tailwind CSS with the predefined `calm` tokens (e.g., `text-calm-text`, `bg-calm-surface-raised`).
+- Patient-facing action colors should follow the established interaction pattern:
+  - `bg-calm-blue` for primary actions such as record, save, and send.
+  - `bg-calm-green` for positive completion states such as add/approve/filled.
+  - `bg-destructive` for destructive or stop actions.
+  - `bg-calm-purple-soft` / `text-calm-purple` for processing or assistant-state indicators.
+- Do not use `bg-calm-primary`, `text-calm-primary`, `border-calm-primary`, or `focus:ring-calm-primary` for new UI work unless the token is first added to `src/app/globals.css`. That token name is referenced in older code, but it is not currently defined and can make controls invisible.
 
 ### 3. Server Actions & Client Components
 
@@ -43,3 +49,9 @@ This file contains critical rules and specific architectural deviations from sta
 - **Context:** Multiple epics have seen developer agents forget to update story markdown checkboxes and the 'File List' after completing tasks, leaving auditability gaps.
 - **Rule:** Before marking a story as complete or invoking the code-review process, the Developer agent MUST explicitly check off completed subtasks in the `[ ]` markdown boxes of the story file, AND fully populate the `### File List` section under the Dev Agent Record with all files modified during the story.
 - **Why:** To maintain accurate traceability and unblock QA/Review processes.
+
+### 8. Known Technical Debt
+
+- **React Hook Form / Shadcn Forms Debt:** Story specs may call for React Hook Form + Zod + Shadcn form primitives as the preferred patient-form stack, but the current repo does not yet have `react-hook-form` installed and does not have a populated `src/components/ui` form layer for that pattern.
+- **Rule:** Do not claim that a form story satisfies the React Hook Form / Shadcn requirement unless those dependencies and primitives are actually added and the form is migrated.
+- **Current Expectation:** Small form fixes may continue using the existing local-state approach, but agents must record this as technical debt when a story requested the RHF/Shadcn stack and the implementation does not provide it.

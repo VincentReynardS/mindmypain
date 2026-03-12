@@ -71,6 +71,80 @@ export interface Database {
           previous_status?: string | null;
         };
       };
+      profiles: {
+        Row: {
+          id: string;
+          full_name: string | null;
+          dob: string | null;
+          address_line_1: string | null;
+          address_line_2: string | null;
+          email: string | null;
+          mobile_phone: string | null;
+          home_phone: string | null;
+          medicare_irn: string | null;
+          medicare_valid_to: string | null;
+          phi_name: string | null;
+          phi_number: string | null;
+          is_organ_donor: boolean;
+          emergency_contact_name: string | null;
+          emergency_contact_relationship: string | null;
+          emergency_contact_mobile: string | null;
+          languages_spoken: string | null;
+          is_aboriginal: boolean;
+          is_torres_strait_islander: boolean;
+          allergies: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          full_name?: string | null;
+          dob?: string | null;
+          address_line_1?: string | null;
+          address_line_2?: string | null;
+          email?: string | null;
+          mobile_phone?: string | null;
+          home_phone?: string | null;
+          medicare_irn?: string | null;
+          medicare_valid_to?: string | null;
+          phi_name?: string | null;
+          phi_number?: string | null;
+          is_organ_donor?: boolean;
+          emergency_contact_name?: string | null;
+          emergency_contact_relationship?: string | null;
+          emergency_contact_mobile?: string | null;
+          languages_spoken?: string | null;
+          is_aboriginal?: boolean;
+          is_torres_strait_islander?: boolean;
+          allergies?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          full_name?: string | null;
+          dob?: string | null;
+          address_line_1?: string | null;
+          address_line_2?: string | null;
+          email?: string | null;
+          mobile_phone?: string | null;
+          home_phone?: string | null;
+          medicare_irn?: string | null;
+          medicare_valid_to?: string | null;
+          phi_name?: string | null;
+          phi_number?: string | null;
+          is_organ_donor?: boolean;
+          emergency_contact_name?: string | null;
+          emergency_contact_relationship?: string | null;
+          emergency_contact_mobile?: string | null;
+          languages_spoken?: string | null;
+          is_aboriginal?: boolean;
+          is_torres_strait_islander?: boolean;
+          allergies?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
     Enums: {
       journal_entry_status: JournalEntryStatus;
@@ -87,3 +161,7 @@ export type NewJournalEntry =
   Database["public"]["Tables"]["journal_entries"]["Insert"];
 export type UpdateJournalEntry =
   Database["public"]["Tables"]["journal_entries"]["Update"];
+
+export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+export type NewProfile = Database["public"]["Tables"]["profiles"]["Insert"];
+export type UpdateProfile = Database["public"]["Tables"]["profiles"]["Update"];

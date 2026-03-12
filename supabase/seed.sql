@@ -4,6 +4,7 @@
 
 -- Clear existing seed data (idempotent)
 DELETE FROM journal_entries WHERE user_id IN ('sarah', 'michael');
+DELETE FROM profiles WHERE id IN ('sarah', 'michael');
 
 -- ============================================================
 -- SARAH (45) - "The Veteran" - Complex Regional Pain Syndrome
@@ -280,4 +281,54 @@ INSERT INTO journal_entries (user_id, content, transcription, status, entry_type
   ARRAY['Script', 'Referral'],
   '{}',
   now() - INTERVAL '8 hours'
+);
+
+-- ============================================================
+-- PROFILES — Static demographics for personas
+-- ============================================================
+
+INSERT INTO profiles (id, full_name, dob, address_line_1, address_line_2, email, mobile_phone, home_phone, medicare_irn, medicare_valid_to, phi_name, phi_number, is_organ_donor, emergency_contact_name, emergency_contact_relationship, emergency_contact_mobile, languages_spoken, is_aboriginal, is_torres_strait_islander, allergies) VALUES
+(
+  'sarah',
+  'Sarah Thompson',
+  '15-06-1981',
+  '42 Banksia Crescent',
+  'Newtown NSW 2042',
+  'sarah.thompson@email.com',
+  '0412 345 678',
+  '02 9555 1234',
+  '1234567890/1',
+  '01-01-2027',
+  'Medibank Private',
+  'MP-9876543',
+  true,
+  'James Thompson',
+  'Husband',
+  '0413 456 789',
+  'English',
+  false,
+  false,
+  'Codeine, Sulfonamides'
+),
+(
+  'michael',
+  'Michael Rivera',
+  '22-09-1998',
+  '8/105 Crown Street',
+  'Surry Hills NSW 2010',
+  'michael.rivera@email.com',
+  '0498 765 432',
+  NULL,
+  '9876543210/2',
+  '01-07-2026',
+  NULL,
+  NULL,
+  false,
+  'Maria Rivera',
+  'Mother',
+  '0412 987 654',
+  'English, Spanish',
+  false,
+  false,
+  'Penicillin'
 );
