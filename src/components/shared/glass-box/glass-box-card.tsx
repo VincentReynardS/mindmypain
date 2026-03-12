@@ -7,6 +7,7 @@ import { MedicationEditForm } from './editors/medication-edit-form';
 import { AppointmentEditForm } from './editors/appointment-edit-form';
 import { ScriptEditForm } from './editors/script-edit-form';
 import { ArchiveConfirmPopover } from '@/components/shared/archive-confirm-popover';
+import { formatDateDDMMYYYY } from '@/lib/utils/date-helpers';
 
 interface GlassBoxCardProps {
   entry: JournalEntry;
@@ -77,6 +78,8 @@ function detectAiResponseShape(entry: JournalEntry): AiResponseShape {
   return 'journal';
 }
 
+const DATE_FIELDS = new Set(['Date', 'Date Started', 'Date Stopped', 'Date Prescribed']);
+
 function SafeMedicationRender({ aiResponse }: { aiResponse: Record<string, RecordValue> }) {
   const fields = [
     { key: 'Brand Name', label: 'Brand Name' },
@@ -95,8 +98,9 @@ function SafeMedicationRender({ aiResponse }: { aiResponse: Record<string, Recor
     <div className="space-y-2">
       {fields.map(({ key, label }) => {
         const val = aiResponse[key];
-        const display = getString(val);
-        if (!display) return null;
+        const raw = getString(val);
+        if (!raw) return null;
+        const display = DATE_FIELDS.has(key) ? formatDateDDMMYYYY(raw) : raw;
         return (
           <div key={key} className="text-calm-text">
             <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-0.5">{label}</span>
@@ -126,8 +130,9 @@ function SafeAppointmentRender({ aiResponse }: { aiResponse: Record<string, Reco
     <div className="space-y-2">
       {fields.map(({ key, label }) => {
         const val = aiResponse[key];
-        const display = getString(val);
-        if (!display) return null;
+        const raw = getString(val);
+        if (!raw) return null;
+        const display = DATE_FIELDS.has(key) ? formatDateDDMMYYYY(raw) : raw;
         return (
           <div key={key} className="text-calm-text">
             <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-0.5">{label}</span>
@@ -162,8 +167,9 @@ function SafeScriptRender({ aiResponse }: { aiResponse: Record<string, RecordVal
     <div className="space-y-2">
       {fields.map(({ key, label }) => {
         const val = aiResponse[key];
-        const display = getString(val);
-        if (!display) return null;
+        const raw = getString(val);
+        if (!raw) return null;
+        const display = DATE_FIELDS.has(key) ? formatDateDDMMYYYY(raw) : raw;
         return (
           <div key={key} className="text-calm-text">
             <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-0.5">{label}</span>
@@ -234,7 +240,7 @@ function SafeHealthJournalRender({ content, aiResponse }: { content: string; aiR
                 </div>
                 {getString(appt.Date) && (
                   <div className="text-calm-text-muted">
-                    {getString(appt.Date)} {getString(appt.Time) ? `@ ${getString(appt.Time)}` : ''}
+                    {formatDateDDMMYYYY(getString(appt.Date)!)} {getString(appt.Time) ? `@ ${getString(appt.Time)}` : ''}
                   </div>
                 )}
               </div>

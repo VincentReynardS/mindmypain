@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { JournalEntry } from '@/types/database';
+import { formatDateDDMMYYYY } from '@/lib/utils/date-helpers';
 
 interface AppointmentGlassBoxProps {
   entry: JournalEntry;
@@ -103,10 +104,11 @@ export function AppointmentGlassBox({ entry, onUpdate, onApprove }: AppointmentG
               <label className="block text-xs font-medium text-calm-text-muted mb-1" htmlFor="apt-date">Date</label>
               <input 
                 id="apt-date"
-                type="date" 
+                type="text" 
                 className="w-full rounded-md border border-calm-border bg-white p-2 text-sm text-calm-text"
                 value={formData.Date || ''}
                 onChange={(e) => handleChange('Date', e.target.value)}
+                placeholder="dd-mm-yyyy"
               />
             </div>
             <div>
@@ -302,10 +304,11 @@ export function AppointmentGlassBox({ entry, onUpdate, onApprove }: AppointmentG
           {fields.map(({ key, label }) => {
             const val = data[key];
             if (!val) return null;
+            const displayValue = key === 'Date' ? formatDateDDMMYYYY(String(val)) : String(val);
             return (
               <div key={key} className="text-calm-text">
                 <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-0.5">{label}</span>
-                <div className="text-sm">{String(val)}</div>
+                <div className="text-sm">{displayValue}</div>
               </div>
             );
           })}

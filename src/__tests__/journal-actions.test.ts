@@ -286,7 +286,7 @@ describe('Journal Server Actions', () => {
       vi.mocked(classifyIntent).mockResolvedValueOnce('script');
 
       const smartParserModule = await import('@/lib/openai/smart-parser');
-      vi.spyOn(smartParserModule, 'parseScript').mockResolvedValueOnce({ Filled: false });
+      vi.spyOn(smartParserModule, 'parseScript').mockResolvedValueOnce({ 'Date Prescribed': undefined, Filled: false });
 
       const result = await processJournalEntry('test-id');
 
@@ -309,7 +309,11 @@ describe('Journal Server Actions', () => {
       mockSelect.mockReturnValueOnce({
         eq: vi.fn().mockReturnValue({
           single: vi.fn().mockResolvedValue({
-            data: { content: 'Need a physio referral', entry_type: 'raw_text' },
+            data: {
+              content: 'Need a physio referral',
+              created_at: '2026-03-05T08:00:00Z',
+              entry_type: 'raw_text',
+            },
             error: null,
           }),
         }),
@@ -319,7 +323,8 @@ describe('Journal Server Actions', () => {
       vi.mocked(classifyIntent).mockResolvedValueOnce('script');
 
       const smartParserModule = await import('@/lib/openai/smart-parser');
-      vi.spyOn(smartParserModule, 'parseScript').mockResolvedValueOnce({
+      const parseScriptSpy = vi.spyOn(smartParserModule, 'parseScript').mockResolvedValueOnce({
+        'Date Prescribed': undefined,
         Name: 'Physio referral',
         Filled: false,
       });
@@ -337,6 +342,7 @@ describe('Journal Server Actions', () => {
           }),
         })
       );
+      expect(parseScriptSpy).toHaveBeenCalledWith('Need a physio referral', '2026-03-05T08:00:00Z');
       expect(revalidatePath).toHaveBeenCalledWith('/journal');
     });
 
@@ -403,7 +409,7 @@ describe('Journal Server Actions', () => {
       vi.mocked(classifyIntent).mockResolvedValueOnce('journal');
 
       const smartParserModule = await import('@/lib/openai/smart-parser');
-      vi.spyOn(smartParserModule, 'parseJournal')
+      const parseJournalSpy = vi.spyOn(smartParserModule, 'parseJournal')
         .mockResolvedValueOnce({
           Sleep: '7 hours',
           Pain: null,
@@ -452,6 +458,12 @@ describe('Journal Server Actions', () => {
       expect(mockChain.eq).toHaveBeenCalledWith('id', 'existing-journal-id');
       expect(mockDelete).toHaveBeenCalled();
       expect(mockChain.eq).toHaveBeenCalledWith('id', 'raw-entry-id');
+      expect(parseJournalSpy).toHaveBeenNthCalledWith(1, 'I slept for 7 hours', '2026-03-05T08:00:00Z');
+      expect(parseJournalSpy).toHaveBeenNthCalledWith(
+        2,
+        "At Adrian's appointment, 180 Cash, add to finance section.\n\nI slept for 7 hours",
+        '2026-03-05T08:00:00Z'
+      );
       expect(revalidatePath).toHaveBeenCalledWith('/journal');
     });
 

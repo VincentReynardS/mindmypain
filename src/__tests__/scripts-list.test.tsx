@@ -67,6 +67,8 @@ describe('ScriptsList', () => {
     expect(screen.getByText('Physiotherapy Referral')).toBeDefined();
     expect(screen.getByText('Dr. Lee recommended 6 sessions')).toBeDefined();
     expect(screen.getByText('Lyrica')).toBeDefined();
+    expect(screen.getByText('Prescribed: 01-11-2023')).toBeDefined();
+    expect(screen.getByText('Prescribed: 15-10-2023')).toBeDefined();
     
     // Check states
     expect(screen.getByText('To Be Filled')).toBeDefined();
@@ -89,7 +91,7 @@ describe('ScriptsList', () => {
 
   it('shows loading state while toggling', async () => {
     // Make the mock function take some time
-    let resolvePromise: (() => void) | undefined;
+    let resolvePromise: ((value?: unknown) => void) | undefined;
     mockToggleFilled.mockImplementation(() => new Promise((resolve) => {
       resolvePromise = resolve;
     }));

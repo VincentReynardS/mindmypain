@@ -111,7 +111,7 @@ INSERT INTO journal_entries (user_id, content, transcription, status, entry_type
   'I have a follow up with Dr. Chen next Tuesday. We need to do a pain management review. I need a new prescription and I want to ask if we can increase the Lyrica. Oh, and I need to ask about the burning in my left hand.',
   'approved',
   'journal',
-  '{"Date":"Next Tuesday","Profession":"Specialist","Practitioner Name":"Dr. Chen","Visit Type":"Follow-up","Reason":"Pain management review","Admin Needs":["Prescription"],"Questions":"Can we increase Lyrica?","Notes":"Need to ask about the burning in left hand."}',
+  '{"Date":"17-03-2026","Profession":"Specialist","Practitioner Name":"Dr. Chen","Visit Type":"Follow-up","Reason":"Pain management review","Admin Needs":["Prescription"],"Questions":"Can we increase Lyrica?","Notes":"Need to ask about the burning in left hand."}',
   ARRAY['Appointment', 'Doctor'],
   '{}',
   now() - INTERVAL '12 hours'
@@ -124,7 +124,7 @@ INSERT INTO journal_entries (user_id, content, transcription, status, entry_type
   'Doctor told me to increase my morning dose of Lyrica to 150mg starting today for the nerve pain. I am hopeful it works better.',
   'approved',
   'journal',
-  '{"Brand Name":"Lyrica","Dosage":"150mg","Date Started":"Today","Reason":"Nerve pain","Feelings":"Hopeful it works better","Notes":"Doctor told me to increase my morning dose."}',
+  '{"Brand Name":"Lyrica","Dosage":"150mg","Date Started":"12-03-2026","Reason":"Nerve pain","Feelings":"Hopeful it works better","Notes":"Doctor told me to increase my morning dose."}',
   ARRAY['Medication'],
   '{}',
   now() - INTERVAL '10 hours'
@@ -137,7 +137,7 @@ INSERT INTO journal_entries (user_id, content, transcription, status, entry_type
   'Dr. Chen gave me an aqua therapy referral yesterday. I have not filled it yet, I need to call the clinic on Monday to book.',
   'approved',
   'journal',
-  '{"Name":"Aqua Therapy Referral","Date Prescribed":"Yesterday","Filled":false,"Notes":"Need to call the clinic on Monday to book."}',
+  '{"Name":"Aqua Therapy Referral","Date Prescribed":"11-03-2026","Filled":false,"Notes":"Need to call the clinic on Monday to book."}',
   ARRAY['Script', 'Referral'],
   '{}',
   now() - INTERVAL '8 hours'
@@ -250,7 +250,7 @@ INSERT INTO journal_entries (user_id, content, transcription, status, entry_type
   'I have my review appointment with Dr. Sharma next month for the fibromyalgia assessment. I need to get a medical certificate for work. I want to ask him what this diagnosis means for my job. I am going to take my list of questions.',
   'approved',
   'journal',
-  '{"Date":"Next Month","Profession":"Rheumatologist","Practitioner Name":"Dr. Sharma","Visit Type":"Initial Review","Reason":"Fibromyalgia assessment","Admin Needs":["Medical Certificate"],"Questions":"What does this diagnosis mean for my job?","Notes":"Going to take my list of questions."}',
+  '{"Date":"12-04-2026","Profession":"Rheumatologist","Practitioner Name":"Dr. Sharma","Visit Type":"Initial Review","Reason":"Fibromyalgia assessment","Admin Needs":["Medical Certificate"],"Questions":"What does this diagnosis mean for my job?","Notes":"Going to take my list of questions."}',
   ARRAY['Appointment'],
   '{}',
   now() - INTERVAL '12 hours'
@@ -263,7 +263,7 @@ INSERT INTO journal_entries (user_id, content, transcription, status, entry_type
   'I started taking Cymbalta 30mg last week for the Fibromyalgia. I don''t have any side effects yet. I am taking it every morning with food. I feel anxious about it but I am trying.',
   'approved',
   'journal',
-  '{"Brand Name":"Cymbalta","Dosage":"30mg","Date Started":"Last week","Reason":"Fibromyalgia","Side Effects":"None yet","Feelings":"Anxious but trying","Notes":"Taking it every morning with food."}',
+  '{"Brand Name":"Cymbalta","Dosage":"30mg","Date Started":"05-03-2026","Reason":"Fibromyalgia","Side Effects":"None yet","Feelings":"Anxious but trying","Notes":"Taking it every morning with food."}',
   ARRAY['Medication'],
   '{}',
   now() - INTERVAL '10 hours'
@@ -276,7 +276,7 @@ INSERT INTO journal_entries (user_id, content, transcription, status, entry_type
   'I got a psychologist referral yesterday and I just filled it. I booked the first session for next week.',
   'approved',
   'journal',
-  '{"Name":"Psychologist Referral","Date Prescribed":"Yesterday","Filled":true,"Notes":"Booked the first session for next week."}',
+  '{"Name":"Psychologist Referral","Date Prescribed":"11-03-2026","Filled":true,"Notes":"Booked the first session for next week."}',
   ARRAY['Script', 'Referral'],
   '{}',
   now() - INTERVAL '8 hours'

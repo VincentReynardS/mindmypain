@@ -8,6 +8,33 @@
 
 import type { JournalEntry } from "@/types/database";
 
+const AUSTRALIA_TIME_ZONE = "Australia/Melbourne";
+const DDMMYYYY_PATTERN = /^\d{2}-\d{2}-\d{4}$/;
+const YYYYMMDD_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+function toDDMMYYYY(day: string, month: string, year: string): string {
+  return `${day.padStart(2, "0")}-${month.padStart(2, "0")}-${year}`;
+}
+
+function formatDateInTimeZone(date: Date, timeZone: string = AUSTRALIA_TIME_ZONE): string {
+  const parts = new Intl.DateTimeFormat("en-AU", {
+    timeZone,
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).formatToParts(date);
+
+  const day = parts.find((part) => part.type === "day")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const year = parts.find((part) => part.type === "year")?.value;
+
+  if (!day || !month || !year) {
+    throw new Error("Unable to format date parts");
+  }
+
+  return toDDMMYYYY(day, month, year);
+}
+
 /**
  * Returns a friendly date label for a given date string.
  * - "Today" for today's date
@@ -57,6 +84,27 @@ export function formatTime(dateString: string): string {
 export function truncateContent(content: string, maxLength: number = 80): string {
   if (content.length <= maxLength) return content;
   return content.slice(0, maxLength).trimEnd() + "...";
+}
+
+/**
+ * Ensures a date string is displayed in dd-mm-yyyy format.
+ * - If already dd-mm-yyyy, returns as-is.
+ * - If parseable (e.g. YYYY-MM-DD, ISO), reformats to dd-mm-yyyy.
+ * - Otherwise returns the original string (graceful degradation for legacy data).
+ */
+export function formatDateDDMMYYYY(value: string): string {
+  if (!value) return value;
+  if (DDMMYYYY_PATTERN.test(value)) return value;
+  if (YYYYMMDD_PATTERN.test(value)) {
+    const [year, month, day] = value.split("-");
+    return toDDMMYYYY(day, month, year);
+  }
+
+  const parsed = new Date(value);
+  if (!isNaN(parsed.getTime())) {
+    return formatDateInTimeZone(parsed);
+  }
+  return value;
 }
 
 /**

@@ -6,6 +6,7 @@ import { MedicationGlassBox } from '@/components/patient/medication-glass-box';
 import { updateMedicationEntry, approveMedicationEntry } from '@/app/actions/journal-actions';
 import { JsonObject, JournalEntry } from '@/types/database';
 import { useUserStore } from '@/lib/stores/user-store';
+import { formatDateDDMMYYYY } from '@/lib/utils/date-helpers';
 
 interface MedicationMention {
   entryId: string;
@@ -174,12 +175,7 @@ export default function MedicationsPage() {
                       className="block rounded-lg border border-calm-border bg-calm-surface p-4 transition-colors hover:bg-calm-surface-raised"
                     >
                       <p className="text-xs text-calm-text-muted">
-                        {new Date(mention.date).toLocaleDateString('en-AU', {
-                          weekday: 'short',
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
+                        {formatDateDDMMYYYY(mention.date)}
                       </p>
                       <p className="mt-1 text-sm text-calm-text">{mention.medication}</p>
                     </a>

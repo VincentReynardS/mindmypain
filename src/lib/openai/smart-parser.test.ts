@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { parseMedication, parseScript, classifyIntent, parseAppointment } from './smart-parser';
+import { parseMedication, parseScript, classifyIntent, parseAppointment, getCurrentDateContext } from './smart-parser';
 
 // Hoist the mock function so it's available in vi.mock
 const { mockCreate } = vi.hoisted(() => {
@@ -54,6 +54,24 @@ describe('smart-parser', () => {
   });
 
   describe('parseJournal', () => {
+    it('should include the provided reference date in the system prompt context', async () => {
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: JSON.stringify({ Sleep: '8 hours', Pain: null, Feeling: null, Action: null, Grateful: null, Medication: null, Mood: null, Note: null, Appointments: [], Scripts: [] }) } }],
+      });
+
+      const { parseJournal } = await import('./smart-parser');
+      await parseJournal('Slept 8 hours', '2026-03-12T09:15:00+11:00');
+
+      expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({
+        messages: expect.arrayContaining([
+          expect.objectContaining({
+            role: 'system',
+            content: expect.stringContaining('2026'),
+          }),
+        ]),
+      }));
+    });
+
     it('should parse text into journal format with health fields', async () => {
       const mockResponse = {
         Sleep: '8 hours',
@@ -183,7 +201,7 @@ describe('smart-parser', () => {
 
   describe('parseAppointment', () => {
     it('should parse text into appointment format using Zod validation', async () => {
-      const mockResponse = {
+      const apiResponse = {
         Date: '2026-02-22',
         'Practitioner Name': 'Dr. Smith',
         'Visit Type': 'Follow-up',
@@ -195,7 +213,7 @@ describe('smart-parser', () => {
         choices: [
           {
             message: {
-              content: JSON.stringify(mockResponse),
+              content: JSON.stringify(apiResponse),
             },
           },
         ],
@@ -203,7 +221,8 @@ describe('smart-parser', () => {
 
       const result = await parseAppointment('I have a follow-up with Dr. Smith tomorrow for my knee pain. Need a referral.');
 
-      expect(result).toEqual(mockResponse);
+      // Zod ddmmyyyyDateString transform converts YYYY-MM-DD → dd-mm-yyyy
+      expect(result).toEqual({ ...apiResponse, Date: '22-02-2026' });
       expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({
         model: 'gpt-4o',
         response_format: { type: 'json_object' },
@@ -230,6 +249,15 @@ describe('smart-parser', () => {
       const result = await parseAppointment('hello');
       expect(result).toEqual({ 'Visit Type': 'Follow-up' });
     });
+
+    it('should keep YYYY-MM-DD stable when normalizing', async () => {
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: JSON.stringify({ Date: '2026-03-17' }) } }],
+      });
+
+      const result = await parseAppointment('appointment');
+      expect(result).toEqual({ Date: '17-03-2026' });
+    });
   });
 
   describe('parseMedication', () => {
@@ -254,6 +282,15 @@ describe('smart-parser', () => {
       mockCreate.mockResolvedValueOnce({ choices: [{ message: { content: JSON.stringify(mockResponse) } }] });
       const result = await parseScript('Got a physio referral today');
       expect(result).toEqual(mockResponse);
+    });
+  });
+
+  describe('getCurrentDateContext', () => {
+    it('should use Australia timezone wording for the provided reference date', () => {
+      const context = getCurrentDateContext('2026-03-12T09:15:00+11:00');
+      expect(context).toContain('Current date and time:');
+      expect(context).toContain('2026');
+      expect(context).toContain('resolve any relative date references');
     });
   });
 

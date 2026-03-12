@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { z } from 'zod';
+import { formatDateDDMMYYYY } from '@/lib/utils/date-helpers';
 
 // Initialize OpenAI client
 // Note: This requires OPENAI_API_KEY environment variable
@@ -8,6 +9,39 @@ const openai = new OpenAI({
 });
 
 const MODEL_ID = 'gpt-4o';
+
+// === Date Context & Formatting ===
+
+/**
+ * Returns a current date/time context string for AI prompts.
+ * Enables the LLM to resolve relative date references accurately.
+ */
+export function getCurrentDateContext(referenceDate: Date | string = new Date()): string {
+  const now = referenceDate instanceof Date ? referenceDate : new Date(referenceDate);
+  const formatted = new Intl.DateTimeFormat('en-AU', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZoneName: 'short',
+    hour12: false,
+  }).format(now);
+  return `Current date and time: ${formatted}. Use this to resolve any relative date references.`;
+}
+
+const DATE_FORMAT_INSTRUCTION = `All date fields MUST be resolved to dd-mm-yyyy format using the current date context provided. Relative dates like "next Tuesday", "yesterday", "in 2 weeks" must be calculated relative to the current date.`;
+
+/**
+ * Zod schema for date strings that normalizes to dd-mm-yyyy format.
+ * Passes through null/undefined, validates dd-mm-yyyy, and attempts
+ * to reformat common date formats as a safety net.
+ */
+const ddmmyyyyDateString = z.string().nullish().transform((val) => {
+  if (!val) return val;
+  return formatDateDDMMYYYY(val);
+});
 
 // === Intent Classification ===
 
@@ -79,7 +113,7 @@ const JournalResponseSchema = z.object({
     'Practitioner Name': z.string().nullish(),
     'Visit Type': z.string().nullish(),
     'Profession': z.string().nullish(),
-    'Date': z.string().nullish(),
+    'Date': ddmmyyyyDateString,
     'Time': z.string().nullish(),
     'Location': z.string().nullish(),
     'Reason': z.string().nullish(),
@@ -112,6 +146,7 @@ Extraction Rules:
 
 2. APPOINTMENTS (If mentioned):
    - Extract into "Appointments" array. Use keys: "Practitioner Name", "Visit Type", "Profession", "Date", "Time", "Location", "Reason", "Notes".
+   - ${DATE_FORMAT_INSTRUCTION}
 
 3. SCRIPTS (If mentioned):
    - Extract prescription refills or referrals into "Scripts" array. Use keys: "Name" (e.g. "Panadol Script"), "Details/Context", "Filled" (default false).
@@ -119,7 +154,7 @@ Extraction Rules:
 If a field or array is empty/not mentioned, set it to null or an empty array []. Be concise.
 `;
 
-export async function parseJournal(text: string): Promise<JournalResponse> {
+export async function parseJournal(text: string, referenceDate?: Date | string): Promise<JournalResponse> {
   if (!text || text.trim().length === 0) {
     throw new Error('Input text cannot be empty');
   }
@@ -128,7 +163,7 @@ export async function parseJournal(text: string): Promise<JournalResponse> {
     const response = await openai.chat.completions.create({
       model: MODEL_ID,
       messages: [
-        { role: 'system', content: JOURNAL_SYSTEM_PROMPT },
+        { role: 'system', content: `${JOURNAL_SYSTEM_PROMPT}\n\n${getCurrentDateContext(referenceDate)}` },
         { role: 'user', content: text },
       ],
       response_format: { type: 'json_object' },
@@ -179,11 +214,11 @@ const MedicationResponseSchema = z.object({
   'Brand Name': z.string().optional(),
   'Generic Name': z.string().optional(),
   Dosage: z.string().optional(),
-  'Date Started': z.string().optional(),
+  'Date Started': ddmmyyyyDateString,
   Reason: z.string().optional(),
   'Side Effects': z.string().optional(),
   Feelings: z.string().optional(),
-  'Date Stopped': z.string().optional(),
+  'Date Stopped': ddmmyyyyDateString,
   'Stop Reason': z.string().optional(),
   Notes: z.string().optional()
 });
@@ -195,10 +230,12 @@ You are a medical scribe extracting medication data from a journal entry.
 Extract the medication details and output valid JSON exactly matching these keys:
 "Brand Name", "Generic Name", "Dosage", "Date Started", "Reason", "Side Effects", "Feelings", "Date Stopped", "Stop Reason", "Notes".
 
+${DATE_FORMAT_INSTRUCTION}
+
 Omit keys if not mentioned. Be concise.
 `;
 
-export async function parseMedication(text: string): Promise<MedicationResponse> {
+export async function parseMedication(text: string, referenceDate?: Date | string): Promise<MedicationResponse> {
   if (!text || text.trim().length === 0) {
     throw new Error('Input text cannot be empty');
   }
@@ -207,7 +244,7 @@ export async function parseMedication(text: string): Promise<MedicationResponse>
     const response = await openai.chat.completions.create({
       model: MODEL_ID,
       messages: [
-        { role: 'system', content: MEDICATION_SYSTEM_PROMPT },
+        { role: 'system', content: `${MEDICATION_SYSTEM_PROMPT}\n\n${getCurrentDateContext(referenceDate)}` },
         { role: 'user', content: text },
       ],
       response_format: { type: 'json_object' },
@@ -231,7 +268,7 @@ export async function parseMedication(text: string): Promise<MedicationResponse>
 
 const ScriptResponseSchema = z.object({
   Name: z.string().optional(),
-  'Date Prescribed': z.string().optional(),
+  'Date Prescribed': ddmmyyyyDateString,
   Filled: z.boolean().default(false).optional(),
   Notes: z.string().optional()
 });
@@ -245,10 +282,11 @@ Extract the script/referral details and output valid JSON exactly matching these
 
 - "Name" is the medication or doctor name (e.g., "Physiotherapy Referral", "Lyrica 50mg").
 - "Filled" should be false by default unless they explicitly say they picked it up.
+${DATE_FORMAT_INSTRUCTION}
 Omit keys if not mentioned. Be concise.
 `;
 
-export async function parseScript(text: string): Promise<ScriptResponse> {
+export async function parseScript(text: string, referenceDate?: Date | string): Promise<ScriptResponse> {
   if (!text || text.trim().length === 0) {
     throw new Error('Input text cannot be empty');
   }
@@ -257,7 +295,7 @@ export async function parseScript(text: string): Promise<ScriptResponse> {
     const response = await openai.chat.completions.create({
       model: MODEL_ID,
       messages: [
-        { role: 'system', content: SCRIPT_SYSTEM_PROMPT },
+        { role: 'system', content: `${SCRIPT_SYSTEM_PROMPT}\n\n${getCurrentDateContext(referenceDate)}` },
         { role: 'user', content: text },
       ],
       response_format: { type: 'json_object' },
@@ -280,7 +318,7 @@ export async function parseScript(text: string): Promise<ScriptResponse> {
 // === Parsing Appointments ===
 
 const AppointmentResponseSchema = z.object({
-  Date: z.string().optional(),
+  Date: ddmmyyyyDateString,
   Profession: z.string().optional(),
   'Practitioner Name': z.string().optional(),
   'Visit Type': z.string().optional(),
@@ -300,10 +338,12 @@ You are a medical scribe extracting appointment data from a journal entry.
 Extract the appointment details and output valid JSON exactly matching these keys:
 "Date", "Profession", "Practitioner Name", "Visit Type", "Location", "Reason", "Admin Needs" (array of strings), "Questions", "Outcomes", "Follow-up Questions", "Notes".
 
+${DATE_FORMAT_INSTRUCTION}
+
 Omit keys if not mentioned. Be concise. For "Admin Needs", allowed values are: 'Referral', 'Prescription', 'Medical Certificate', 'Imaging Request', 'Blood Test'.
 `;
 
-export async function parseAppointment(text: string): Promise<AppointmentData> {
+export async function parseAppointment(text: string, referenceDate?: Date | string): Promise<AppointmentData> {
   if (!text || text.trim().length === 0) {
     throw new Error('Input text cannot be empty');
   }
@@ -312,7 +352,7 @@ export async function parseAppointment(text: string): Promise<AppointmentData> {
     const response = await openai.chat.completions.create({
       model: MODEL_ID,
       messages: [
-        { role: 'system', content: APPOINTMENT_SYSTEM_PROMPT },
+        { role: 'system', content: `${APPOINTMENT_SYSTEM_PROMPT}\n\n${getCurrentDateContext(referenceDate)}` },
         { role: 'user', content: text },
       ],
       response_format: { type: 'json_object' },

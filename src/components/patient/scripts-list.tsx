@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { JournalEntry } from '@/types/database';
+import { formatDateDDMMYYYY } from '@/lib/utils/date-helpers';
 
 interface ScriptsListProps {
   entries: JournalEntry[];
@@ -99,7 +100,7 @@ export function ScriptsList({ entries, onToggleFilled }: ScriptsListProps) {
                   
                   {data['Date Prescribed'] && (
                      <div className="text-xs text-calm-text-muted mb-1">
-                       Prescribed: {data['Date Prescribed']}
+                       Prescribed: {formatDateDDMMYYYY(data['Date Prescribed'])}
                      </div>
                   )}
                   

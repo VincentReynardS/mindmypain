@@ -16,7 +16,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { JournalEntry, JsonObject, NewJournalEntry, UpdateJournalEntry } from '@/types/database';
 
-type JournalMergeCandidate = Pick<JournalEntry, 'id' | 'content' | 'status' | 'ai_response'>;
+type JournalMergeCandidate = Pick<JournalEntry, 'id' | 'content' | 'status' | 'ai_response' | 'created_at'>;
 type ScriptAiResponse = JsonObject & { Scripts?: Array<JsonObject> };
 
 export async function createJournalEntry(
@@ -164,23 +164,23 @@ export async function processJournalEntry(id: string) {
     switch (intent) {
       case 'medication': {
         const { parseMedication } = await import('@/lib/openai/smart-parser');
-        aiResponse = await parseMedication(entry.content || '');
+        aiResponse = await parseMedication(entry.content || '', entry.created_at);
         break;
       }
       case 'appointment': {
         const { parseAppointment } = await import('@/lib/openai/smart-parser');
-        aiResponse = await parseAppointment(entry.content || '');
+        aiResponse = await parseAppointment(entry.content || '', entry.created_at);
         break;
       }
       case 'script': {
         const { parseScript } = await import('@/lib/openai/smart-parser');
-        aiResponse = await parseScript(entry.content || '');
+        aiResponse = await parseScript(entry.content || '', entry.created_at);
         break;
       }
       case 'journal':
       default: {
         const { parseJournal } = await import('@/lib/openai/smart-parser');
-        aiResponse = await parseJournal(entry.content || '');
+        aiResponse = await parseJournal(entry.content || '', entry.created_at);
         break;
       }
     }
@@ -238,7 +238,7 @@ export async function processJournalEntry(id: string) {
 
         const { data: sameDayJournalDrafts, error: sameDayError } = await supabase
           .from('journal_entries')
-          .select('id, content, status, ai_response')
+          .select('id, content, status, ai_response, created_at')
           .eq('user_id', entry.user_id)
           .in('status', ['draft', 'approved'])
           .eq('entry_type', 'journal')
@@ -260,7 +260,7 @@ export async function processJournalEntry(id: string) {
         if (mergeTarget) {
           const mergedContent = `${mergeTarget.content || ''}\n\n${entry.content || ''}`.trim();
           const { parseJournal } = await import('@/lib/openai/smart-parser');
-          const mergedAiResponse = await parseJournal(mergedContent);
+          const mergedAiResponse = await parseJournal(mergedContent, mergeTarget.created_at || entry.created_at);
 
           const { error: mergeUpdateError } = await supabase
             .from('journal_entries')

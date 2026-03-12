@@ -56,6 +56,7 @@ describe('AppointmentGlassBox', () => {
     expect(screen.getByText('Appointment')).toBeTruthy();
     expect(screen.getByText('Draft')).toBeTruthy();
     expect(screen.getByText(/Dr\. Smith/)).toBeTruthy();
+    expect(screen.getByText('27-10-2023')).toBeTruthy();
   });
 
   it('switches to edit mode when Edit is clicked', () => {
@@ -71,6 +72,7 @@ describe('AppointmentGlassBox', () => {
     
     expect(screen.getByLabelText(/Date/)).toBeTruthy();
     expect(screen.getByDisplayValue('Dr. Smith')).toBeTruthy();
+    expect(screen.getByDisplayValue('2023-10-27')).toBeTruthy();
   });
 
   it('calls onUpdate with stringified JSON when saved', async () => {

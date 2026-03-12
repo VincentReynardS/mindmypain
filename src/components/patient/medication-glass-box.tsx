@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { JournalEntry } from '@/types/database';
+import { formatDateDDMMYYYY } from '@/lib/utils/date-helpers';
 
 interface MedicationGlassBoxProps {
   entry: JournalEntry;
@@ -115,10 +116,11 @@ export function MedicationGlassBox({ entry, onUpdate, onApprove }: MedicationGla
               <label className="block text-xs font-medium text-calm-text-muted mb-1" htmlFor="med-date-started">Date Started</label>
               <input 
                 id="med-date-started"
-                type="date" 
+                type="text" 
                 className="w-full rounded-md border border-calm-border bg-white p-2 text-sm text-calm-text"
                 value={formData['Date Started'] || ''}
                 onChange={(e) => handleChange('Date Started', e.target.value)}
+                placeholder="dd-mm-yyyy"
               />
             </div>
           </div>
@@ -159,10 +161,11 @@ export function MedicationGlassBox({ entry, onUpdate, onApprove }: MedicationGla
               <label className="block text-xs font-medium text-calm-text-muted mb-1" htmlFor="med-date-stopped">Date Stopped</label>
               <input 
                 id="med-date-stopped"
-                type="date" 
+                type="text" 
                 className="w-full rounded-md border border-calm-border bg-white p-2 text-sm text-calm-text"
                 value={formData['Date Stopped'] || ''}
                 onChange={(e) => handleChange('Date Stopped', e.target.value)}
+                placeholder="dd-mm-yyyy"
               />
             </div>
           </div>
@@ -276,7 +279,9 @@ export function MedicationGlassBox({ entry, onUpdate, onApprove }: MedicationGla
           if (!value) return null;
           
           const formattedKey = key;
-          let displayValue: React.ReactNode = String(value);
+          let displayValue: React.ReactNode = ['Date Started', 'Date Stopped'].includes(key)
+            ? formatDateDDMMYYYY(String(value))
+            : String(value);
           
           if (typeof value === 'object') {
             if (Array.isArray(value)) {

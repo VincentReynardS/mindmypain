@@ -56,6 +56,7 @@ describe('MedicationGlassBox', () => {
     expect(screen.getByText('Draft')).toBeTruthy();
     expect(screen.getByText('Lyrica (Pregabalin)')).toBeTruthy();
     expect(screen.getByText('75mg twice daily')).toBeTruthy();
+    expect(screen.getByText('01-11-2023')).toBeTruthy();
   });
 
   it('switches to edit mode when Edit is clicked', () => {
@@ -71,6 +72,7 @@ describe('MedicationGlassBox', () => {
     
     expect(screen.getByLabelText(/Brand Name/)).toBeTruthy();
     expect(screen.getByDisplayValue('Lyrica')).toBeTruthy();
+    expect(screen.getByDisplayValue('2023-11-01')).toBeTruthy();
   });
 
   it('calls onUpdate with stringified JSON when saved', async () => {
