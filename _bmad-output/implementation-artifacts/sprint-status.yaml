@@ -90,9 +90,17 @@ development_status:
   epic-6-retrospective: done
 
   epic-7: backlog
-  7-1-researcher-dashboard-overview: backlog
-  7-2-live-stream-real-time-updates: backlog
-  7-3-wizard-intervention-actions-edit-scenario-trigger: backlog
-  7-4-pre-canned-response-library: backlog
-  7-5-thinking-state-indication: backlog
+  7-1-global-date-formatting-relative-time-calculation: backlog
+  7-2-chat-ui-responsive-fixes-auto-expanding-input: backlog
+  7-3-the-my-detail-profile-page: backlog
+  7-4-immunisation-record-component-parser: backlog
+  7-5-dedicated-journal-page-clear-input-functionality: backlog
   epic-7-retrospective: optional
+
+  epic-8: backlog
+  8-1-researcher-dashboard-overview: backlog
+  8-2-live-stream-real-time-updates: backlog
+  8-3-wizard-intervention-actions-edit-scenario-trigger: backlog
+  8-4-pre-canned-response-library: backlog
+  8-5-thinking-state-indication: backlog
+  epic-8-retrospective: optional

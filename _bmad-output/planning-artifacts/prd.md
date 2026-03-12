@@ -118,6 +118,8 @@ Instead of a messy handwritten diary, Dr. Lee receives a 1-page "Clinical Snapsh
 - **FR_SJ3:** **System** must support **multi-intent extraction** from a single entry (e.g., Symptoms + Meds + Sleep).
 - **FR_SJ4:** **Primary User** can review and manually correct AI-inferred tags before saving (Glass Box Pattern).
 - **FR_SJ5:** **Primary User** can view a "Daily List" of entries, mirroring the physical journal structure.
+- **FR_SJ6:** **Primary User** can access and edit a structured "My Detail" profile summarizing their static demographics and medical history.
+- **FR_SJ7:** **Primary User** can separate structured forms (Meds, Appointments) from raw Journal entries via a dedicated "Journal" page.
 
 ### 2. Scribe Mode (Appointment Synthesis)
 

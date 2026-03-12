@@ -524,13 +524,84 @@ So that the application can properly handle parallel server actions and regressi
 - **Then** the optimistic UI precisely reflects the state without breaking or conflicting
 - **And** the Zustand store is robust enough to handle these parallel actions reliably
 
-# Epic 7: The Wizard's Dashboard & Scenario Control (Deferred)
+# Epic 7: Core Refinements & Functional Expansion
+
+**Goal**: Address immediate functional gaps identified in post-Epic 6 testing prior to opening the Dashboard view, expanding structured health records to include demographics and immunizations, and standardizing Date inputs across the parse engine.
+**User Outcome**: Users gain a dedicated profile and immunization tracking, while experiencing fewer logic errors with dates and easier mobile text entry.
+
+### Story 7.1: Global Date Formatting & Relative Time Calculation
+
+As a patient user,
+I want the app to interpret phrases like "Next Tuesday" and save them strictly as `dd-mm-yyyy`,
+So that my records maintain a clear, unconfused timeline.
+
+**Acceptance Criteria:**
+
+- **Given** I input a phrase with a relative date
+- **When** the AI parser processes it
+- **Then** it calculates the true date relative to the journal's creation date
+- **And** all parsed date strings explicitly use the `dd-mm-yyyy` format across the UI
+
+### Story 7.2: Chat UI Responsive Fixes & Auto-expanding Input
+
+As a patient user,
+I want my typing space in Chat to expand as I write on mobile and the placeholder text to wrap,
+So that I can compose longer entries without text getting cut off.
+
+**Acceptance Criteria:**
+
+- **Given** the mobile chat interface
+- **When** I type multiple lines
+- **Then** the text area vertically expands to show the active text
+- **And** the "Ask a question..." prompt wraps naturally on small screens instead of truncating
+
+### Story 7.3: The "My Detail" Profile Page
+
+As a patient user,
+I want a dedicated form to manage my static medical and personal demographics,
+So that I don't have to repeatedly enter standard context (like allergies or name changes).
+
+**Acceptance Criteria:**
+
+- **Given** the Profile avatar menu
+- **When** I click "My Detail"
+- **Then** I am taken to a form mapping to the `profiles` table schema
+- **And** I can edit fields like Name, DOB, Address, Medicare No, Languages spoken, Allergies, etc.
+
+### Story 7.4: Immunisation Record Component & Parser
+
+As a patient user,
+I want a specific tab to log my Vaccines and Immunizations,
+So that I can securely track brand names and dates given over the course of years.
+
+**Acceptance Criteria:**
+
+- **Given** the bottom navigation and Parsers
+- **When** I tap "Immunisation" (or AI parses an immunization note)
+- **Then** I am presented with a `ImmunisationGlassBox`
+- **And** it requests explicit fields: Vaccine Name, Date Given (`dd-mm-yyyy`), and Brand Name
+- **And** the smart parser accurately routes and structures this data
+
+### Story 7.5: Dedicated Journal Page & Clear Input Functionality
+
+As a patient user,
+I want a dedicated "Journal" page to view my raw journal reflections and a "Clear" button for the input box on the home page,
+So that I can specifically review my thoughts without clutter and easily wipe my draft inputs.
+
+**Acceptance Criteria:**
+
+- **Given** the main navigation and home page
+- **When** I want to see only my thoughts
+- **Then** I can navigate to a dedicated "Journal" page that displays only "Raw Journal" entries (excluding Meds/Scripts/Appointments)
+- **And** the input text box on the home page features a "Clear" button to quickly wipe the current text field.
+
+# Epic 8: The Wizard's Dashboard & Scenario Control (Deferred)
 
 **Goal**: Enable the Researcher to monitor live sessions and trigger specific "Scenario Responses" or edit text in real-time. (Deferred).
 **User Outcome**: (Researcher) Can invisibly drive the workshop scenarios. (Patient) Receives intelligent, context-aware responses that feel like a "Magic" AI.
 **FRs covered**: FR_WD1, FR_WD2, FR_WD3
 
-### Story 7.1: Researcher Dashboard Overview
+### Story 8.1: Researcher Dashboard Overview
 
 As a researcher,
 I want a dashboard where I can see the active session for "Sarah" or "Michael",
@@ -545,7 +616,7 @@ So that I can monitor their inputs in real-time.
 - **And** It should show the current connection status (Online/Offline)
 - **And** Must adhere to `@simulated-auth-only` principles for viewing across users.
 
-### Story 7.2: Live Stream & Real-time Updates
+### Story 8.2: Live Stream & Real-time Updates
 
 As a researcher,
 I want incoming patient logs to appear instantly (<500ms),
@@ -558,7 +629,7 @@ So that I can respond quickly and maintain the illusion of a fast AI.
 - **Then** the new entry should appear at the top of the feed immediately (Supabase Realtime)
 - **And** A visual indicator should flash to grab my attention (NFR_USE2)
 
-### Story 7.3: Wizard Intervention Actions (Edit/Scenario Trigger)
+### Story 8.3: Wizard Intervention Actions (Edit/Scenario Trigger)
 
 As a researcher,
 I want to edit the AI-generated draft before the patient sees it,
@@ -572,7 +643,7 @@ So that I can correct hallucinations or improve the tone.
 - **And** I can type new content or correct form fields
 - **And** Clicking "Push to Patient" should update the `journal_entries` status to `pending_review` (visible to patient)
 
-### Story 7.4: Pre-Canned Response Library
+### Story 8.4: Pre-Canned Response Library
 
 As a researcher,
 I want a library of pre-written responses for the specific workshop scenarios,
@@ -586,7 +657,7 @@ So that I don't have to type long medical summaries in 7 minutes.
 - **And** Selecting one should auto-fill the response editor with the scripted text/json
 - **And** I can still make minor edits before pushing
 
-### Story 7.5: "Thinking State" Indication
+### Story 8.5: "Thinking State" Indication
 
 As a patient user,
 I want to see a "AI is thinking..." animation while the researcher is preparing a response,
@@ -604,22 +675,26 @@ So that I know the system hasn't crashed.
 - **And** It should persist until the status changes to `pending_review`
 
 ### Story 6.8: Remove "Save as Doctor Summary" Feature
+
 As a patient user,
-I do not want to see a specific "Save as Doctor Summary" feature, 
+I do not want to see a specific "Save as Doctor Summary" feature,
 So that I am not confused about how it differs from the proactive chat interface.
 
 **Acceptance Criteria:**
+
 - **Given** the active application views
 - **When** navigating through the journal or chat
 - **Then** any UI elements (buttons, forms, cards) related to generating or approving a "Doctor Summary" or "Clinical Summary" should be removed.
 - **And** the primary way to recall data for doctor visits is explicitly directed through the Proactive Chat interface.
 
 ### Story 6.9: Refactor Data Model to Remove `clinical_summary` Type
-As a developer, 
+
+As a developer,
 I want to remove the redundant `clinical_summary` data types and seed data,
 So that the database schema correctly reflects the active features of the application.
 
 **Acceptance Criteria:**
+
 - **Given** the database schema and seed data
 - **When** the "Save as Doctor Summary" feature is removed
 - **Then** the `clinical_summary` entry type should be removed from the `journal_entry_type` enum (or safely deprecated).

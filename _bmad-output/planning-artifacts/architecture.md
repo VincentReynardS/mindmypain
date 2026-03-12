@@ -125,10 +125,11 @@ npm install @supabase/supabase-js @supabase/ssr framer-motion lucide-react clsx 
 
 **Decision 1: The "Glass Box" Data Model**
 
-- **Decision:** **Single Table with Status Column**
+- **Decision:** **Single Table with Status Column & Separated Profile Table**
 - **Rationale:**
-  - **Simplicity:** A single `journal_entries` table with a `status` Enum (`draft`, `pending_review`, `approved`) simplifies the "Wizard" workflow.
-  - **Workflow:** The Researcher dashboard simply updates the status from `pending` to `approved` without complex data migration between tables.
+  - **Core Stream Simplicity:** A single `journal_entries` table with a `status` Enum (`draft`, `pending_review`, `approved`) handles the chronological data flow. The `entry_type` Enum explicitly handles types like `MEDICATION`, `APPOINTMENT`, `SCRIPT`, and `IMMUNISATION` alongside general `JOURNAL` entries.
+  - **Profile Data Table:** A dedicated `profiles` table will manage static demographics. Required Columns: `id` (references simulated user), `full_name`, `dob`, `address_line_1`, `address_line_2`, `email`, `mobile_phone`, `home_phone`, `medicare_irn`, `medicare_valid_to`, `phi_name`, `phi_number`, `is_organ_donor`, `emergency_contact_name`, `emergency_contact_relationship`, `emergency_contact_mobile`, `languages_spoken`, `is_aboriginal`, `is_torres_strait_islander`, `allergies`.
+  - **Global Date Formatting:** All parsed relative time phrases (e.g., "Next Tuesday") must be computationally resolved by the AI or backend to a strict `dd-mm-yyyy` format relative to the current timestamp of the session before writing to the database.
   - **RLS:** Policies will handle visibility (e.g., `policy "Patient sees own approved"`).
 
 ### Authentication & Security
