@@ -91,7 +91,7 @@ development_status:
 
   epic-7: in-progress
   7-1-global-date-formatting-relative-time-calculation: done
-  7-2-chat-ui-responsive-fixes-auto-expanding-input: backlog
+  7-2-chat-ui-responsive-fixes-auto-expanding-input: review
   7-3-the-my-detail-profile-page: backlog
   7-4-immunisation-record-component-parser: backlog
   7-5-dedicated-journal-page-clear-input-functionality: backlog

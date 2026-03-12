@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useRef, useEffect, type KeyboardEvent } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+  type KeyboardEvent,
+} from "react";
 import { SendHorizontal, Mic, Square, Loader2 } from "lucide-react";
 import { useAudioStore } from "@/lib/stores/audio-store";
 import { useAudioRecorder } from "@/hooks/use-audio-recorder";
@@ -14,6 +21,36 @@ interface ChatInputProps {
 export function ChatInput({ onSubmit, disabled }: ChatInputProps) {
   const [text, setText] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const resizeTextarea = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, []);
+
+  useLayoutEffect(() => {
+    resizeTextarea();
+  }, [text, resizeTextarea]);
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+
+    if (typeof ResizeObserver !== "undefined") {
+      const observer = new ResizeObserver(() => {
+        resizeTextarea();
+      });
+      observer.observe(el);
+      return () => observer.disconnect();
+    }
+
+    const handleWindowResize = () => {
+      resizeTextarea();
+    };
+    window.addEventListener("resize", handleWindowResize);
+    return () => window.removeEventListener("resize", handleWindowResize);
+  }, [resizeTextarea]);
 
   const isRecording = useAudioStore((s) => s.isRecording);
   const isProcessing = useAudioStore((s) => s.isProcessing);
@@ -82,7 +119,7 @@ export function ChatInput({ onSubmit, disabled }: ChatInputProps) {
           placeholder={placeholder}
           disabled={disabled || voiceBusy}
           rows={1}
-          className="flex-1 resize-none rounded-xl border border-calm-surface-raised bg-calm-surface px-4 py-2.5 text-sm text-calm-text placeholder:text-calm-text-muted focus:outline-none focus:ring-2 focus:ring-calm-blue disabled:opacity-50"
+          className="max-h-32 flex-1 resize-none overflow-y-auto rounded-xl border border-calm-surface-raised bg-calm-surface px-4 py-2.5 text-sm text-calm-text placeholder:text-calm-text-muted focus:outline-none focus:ring-2 focus:ring-calm-blue disabled:opacity-50"
         />
 
         {/* Mic / Stop / Processing button */}

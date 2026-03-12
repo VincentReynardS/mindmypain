@@ -3,13 +3,36 @@
  */
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { render, screen, fireEvent, act, waitFor } from "@testing-library/react";
 import fs from "fs";
 import path from "path";
 
 import { ChatMessage } from "@/components/patient/chat-message";
 import { ChatInput } from "@/components/patient/chat-input";
 import { useAudioStore } from "@/lib/stores/audio-store";
+
+class MockResizeObserver {
+  static instances: MockResizeObserver[] = [];
+
+  callback: ResizeObserverCallback;
+
+  constructor(callback: ResizeObserverCallback) {
+    this.callback = callback;
+    MockResizeObserver.instances.push(this);
+  }
+
+  observe = vi.fn();
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+
+  trigger() {
+    this.callback([], this as unknown as ResizeObserver);
+  }
+
+  static reset() {
+    MockResizeObserver.instances = [];
+  }
+}
 
 const { startRecordingMock, stopRecordingMock, useTranscriptionMock } =
   vi.hoisted(() => ({
@@ -49,6 +72,8 @@ beforeEach(() => {
   startRecordingMock.mockReset();
   stopRecordingMock.mockReset();
   useTranscriptionMock.mockReset();
+  MockResizeObserver.reset();
+  vi.stubGlobal("ResizeObserver", MockResizeObserver);
 });
 
 describe("Chat UI Components", () => {
@@ -334,14 +359,75 @@ describe("Chat UI Components", () => {
       expect(screen.getByRole("alert").textContent).toBe("Mic denied");
     });
 
-    it("should pipe transcribed text into the chat input", () => {
+    it("should pipe transcribed text into the chat input", async () => {
       render(<ChatInput onSubmit={vi.fn()} disabled={false} />);
       act(() => {
         useAudioStore.setState({ transcribedText: "Voice text" });
       });
-      const textarea = screen.getByDisplayValue("Voice text");
+      const textarea = await waitFor(() => screen.getByDisplayValue("Voice text"));
       expect(textarea).toBeDefined();
       expect(useAudioStore.getState().transcribedText).toBe("");
+    });
+  });
+
+  describe("ChatInput component — auto-expand", () => {
+    it("should grow the textarea height as multiline text is entered", async () => {
+      render(<ChatInput onSubmit={vi.fn()} disabled={false} />);
+      const textarea = screen.getByPlaceholderText(
+        /ask about your journal/i
+      ) as HTMLTextAreaElement;
+
+      let scrollHeight = 24;
+      Object.defineProperty(textarea, "scrollHeight", {
+        configurable: true,
+        get: () => scrollHeight,
+      });
+
+      scrollHeight = 72;
+      fireEvent.change(textarea, { target: { value: "Line 1\nLine 2\nLine 3" } });
+
+      await waitFor(() => {
+        expect(textarea.style.height).toBe("72px");
+      });
+    });
+
+    it("should recompute height when the textarea width changes", async () => {
+      render(<ChatInput onSubmit={vi.fn()} disabled={false} />);
+      const textarea = screen.getByPlaceholderText(
+        /ask about your journal/i
+      ) as HTMLTextAreaElement;
+
+      let scrollHeight = 48;
+      Object.defineProperty(textarea, "scrollHeight", {
+        configurable: true,
+        get: () => scrollHeight,
+      });
+
+      fireEvent.change(textarea, { target: { value: "A longer message that wraps" } });
+
+      await waitFor(() => {
+        expect(textarea.style.height).toBe("48px");
+      });
+
+      scrollHeight = 88;
+      MockResizeObserver.instances.at(-1)?.trigger();
+
+      await waitFor(() => {
+        expect(textarea.style.height).toBe("88px");
+      });
+    });
+
+    it("should keep the max-height constraint and internal scrolling classes on the rendered textarea", () => {
+      render(<ChatInput onSubmit={vi.fn()} disabled={false} />);
+      const textarea = screen.getByPlaceholderText(/ask about your journal/i);
+
+      expect(textarea.className).toContain("max-h-32");
+      expect(textarea.className).toContain("overflow-y-auto");
+    });
+
+    it("should not prevent placeholder wrapping", () => {
+      expect(chatInputSource).not.toContain("text-overflow");
+      expect(chatInputSource).not.toContain("whitespace-nowrap");
     });
   });
 
