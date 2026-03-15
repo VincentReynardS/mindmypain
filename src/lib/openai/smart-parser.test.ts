@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { parseMedication, parseScript, classifyIntent, parseAppointment, getCurrentDateContext } from './smart-parser';
+import { parseMedication, parseScript, classifyIntent, parseAppointment, parseImmunisation, getCurrentDateContext } from './smart-parser';
 
 // Hoist the mock function so it's available in vi.mock
 const { mockCreate } = vi.hoisted(() => {
@@ -36,6 +36,14 @@ describe('smart-parser', () => {
       });
       const result = await classifyIntent('I took 500mg of aspirin');
       expect(result).toBe('medication');
+    });
+
+    it('should classify an immunisation intent', async () => {
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: JSON.stringify({ intent: 'immunisation' }) } }],
+      });
+      const result = await classifyIntent('Got my Pfizer COVID booster today');
+      expect(result).toBe('immunisation');
     });
 
     it('should fall back to journal if unclear', async () => {
@@ -99,7 +107,7 @@ describe('smart-parser', () => {
 
       expect(result).toEqual(mockResponse);
       expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({
-        model: 'gpt-4o',
+        model: 'gpt-5.2',
         response_format: { type: 'json_object' },
       }));
     });
@@ -224,7 +232,7 @@ describe('smart-parser', () => {
       // Zod ddmmyyyyDateString transform converts YYYY-MM-DD → dd-mm-yyyy
       expect(result).toEqual({ ...apiResponse, Date: '22-02-2026' });
       expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({
-        model: 'gpt-4o',
+        model: 'gpt-5.2',
         response_format: { type: 'json_object' },
       }));
     });
@@ -282,6 +290,45 @@ describe('smart-parser', () => {
       mockCreate.mockResolvedValueOnce({ choices: [{ message: { content: JSON.stringify(mockResponse) } }] });
       const result = await parseScript('Got a physio referral today');
       expect(result).toEqual(mockResponse);
+    });
+  });
+
+  describe('parseImmunisation', () => {
+    it('should parse immunisation with Vaccine Name, Brand Name, and Date Given', async () => {
+      const mockResponse = {
+        'Vaccine Name': 'COVID-19 Booster',
+        'Brand Name': 'Pfizer',
+        'Date Given': '15-03-2026',
+      };
+      mockCreate.mockResolvedValueOnce({ choices: [{ message: { content: JSON.stringify(mockResponse) } }] });
+      const result = await parseImmunisation('Got my Pfizer COVID booster today');
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should handle partial immunisation data', async () => {
+      const mockResponse = {
+        'Vaccine Name': 'Flu Shot',
+      };
+      mockCreate.mockResolvedValueOnce({ choices: [{ message: { content: JSON.stringify(mockResponse) } }] });
+      const result = await parseImmunisation('Had a flu shot');
+      expect(result['Vaccine Name']).toBe('Flu Shot');
+    });
+
+    it('should normalize date format via Zod transform', async () => {
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: JSON.stringify({ 'Vaccine Name': 'Tetanus', 'Date Given': '2026-03-15' }) } }],
+      });
+      const result = await parseImmunisation('tetanus shot');
+      expect(result['Date Given']).toBe('15-03-2026');
+    });
+
+    it('should throw on empty input', async () => {
+      await expect(parseImmunisation('')).rejects.toThrow('Input text cannot be empty');
+    });
+
+    it('should throw on API failure', async () => {
+      mockCreate.mockRejectedValueOnce(new Error('API Error'));
+      await expect(parseImmunisation('flu shot')).rejects.toThrow('Failed to parse immunisation');
     });
   });
 

@@ -107,6 +107,15 @@ export function formatDateDDMMYYYY(value: string): string {
   return value;
 }
 
+export function normalizeOptionalDateDDMMYYYY(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const normalized = formatDateDDMMYYYY(trimmed);
+  return DDMMYYYY_PATTERN.test(normalized) ? normalized : null;
+}
+
 /**
  * Groups journal entries by date label.
  * Returns an array of [label, entries[]] tuples preserving chronological order (newest first).

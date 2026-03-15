@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { AppointmentGlassBox } from '@/components/patient/appointment-glass-box';
-import { updateAppointmentEntry, approveAppointmentEntry } from '@/app/actions/journal-actions';
+import { updateAppointmentEntry, approveAppointmentEntry, backfillEntryIntent } from '@/app/actions/journal-actions';
 import { JsonObject, JournalEntry } from '@/types/database';
 import { useUserStore } from '@/lib/stores/user-store';
 
@@ -64,15 +64,36 @@ export default function AppointmentsPage() {
         .order('created_at', { ascending: false });
 
       const processedEntries: JournalEntry[] = [];
+      const toBackfill: { id: string; intent: string }[] = [];
 
       ((entries as JournalEntry[]) || []).forEach(entry => {
         if (!entry.ai_response) return;
         const ai = entry.ai_response as (JsonObject & { Appointments?: JsonObject[] }) | null;
         if (!ai || typeof ai !== 'object') return;
 
-        // Flat appointment object from parseAppointment()
+        // Check authoritative _intent first
+        if (typeof ai._intent === 'string') {
+          if (ai._intent === 'appointment') {
+            processedEntries.push(entry);
+          }
+          // Embedded appointments from journal-intent entries
+          if (ai._intent === 'journal' && ai.Appointments && Array.isArray(ai.Appointments) && ai.Appointments.length > 0) {
+            ai.Appointments.forEach((appt: JsonObject, idx: number) => {
+              processedEntries.push({
+                ...entry,
+                id: `${entry.id}_appt_${idx}`,
+                content: JSON.stringify(appt),
+                entry_type: 'journal'
+              });
+            });
+          }
+          return;
+        }
+
+        // Legacy fallback: field-sniffing
         if (ai['Practitioner Name'] || ai['Visit Type'] || ai.Date) {
           processedEntries.push(entry);
+          toBackfill.push({ id: entry.id, intent: 'appointment' });
           return;
         }
 
@@ -88,7 +109,10 @@ export default function AppointmentsPage() {
           });
         }
       });
-      
+
+      // On-the-fly backfill for legacy entries
+      toBackfill.forEach(({ id, intent }) => backfillEntryIntent(id, intent));
+
       setAppointmentEntries(processedEntries);
       setIsLoading(false);
     }

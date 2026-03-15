@@ -6,6 +6,7 @@ import { JournalEditForm } from './editors/journal-edit-form';
 import { MedicationEditForm } from './editors/medication-edit-form';
 import { AppointmentEditForm } from './editors/appointment-edit-form';
 import { ScriptEditForm } from './editors/script-edit-form';
+import { ImmunisationEditForm } from './editors/immunisation-edit-form';
 import { ArchiveConfirmPopover } from '@/components/shared/archive-confirm-popover';
 import { formatDateDDMMYYYY } from '@/lib/utils/date-helpers';
 
@@ -23,7 +24,7 @@ const TYPE_CONFIG: Record<JournalEntryType, { label: string; badgeClass: string 
   insight_card: { label: 'Insight', badgeClass: 'bg-calm-blue-soft text-calm-blue' },
 };
 
-type AiResponseShape = 'medication' | 'appointment' | 'script' | 'journal';
+type AiResponseShape = 'medication' | 'appointment' | 'script' | 'immunisation' | 'journal';
 type RecordValue = string | number | boolean | null | JsonObject | RecordValue[];
 
 const asRecord = (value: unknown): Record<string, RecordValue> | null => {
@@ -49,36 +50,43 @@ const getStringArray = (value: RecordValue | undefined): string[] => {
   return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
 };
 
-function getDynamicBadge(entry: JournalEntry): { label: string; badgeClass: string } {
-  const config = TYPE_CONFIG[entry.entry_type] || TYPE_CONFIG.raw_text;
+const BADGE_CONFIG: Record<AiResponseShape, { label: string; badgeClass: string }> = {
+  appointment: { label: 'Appointment', badgeClass: 'bg-indigo-100 text-indigo-700' },
+  immunisation: { label: 'Immunisation', badgeClass: 'bg-teal-100 text-teal-700' },
+  medication: { label: 'Medication', badgeClass: 'bg-amber-100 text-amber-800' },
+  script: { label: 'Script', badgeClass: 'bg-calm-blue-soft text-calm-blue' },
+  journal: { label: 'Journal', badgeClass: 'bg-calm-purple-soft text-calm-purple' },
+};
 
-  if (entry.entry_type === 'journal') {
-    const ai = asRecord(entry.ai_response);
-    if (!ai) return config;
-    if (getString(ai['Practitioner Name']) || getString(ai['Visit Type']) || getString(ai.Date)) {
-      return { label: 'Appointment', badgeClass: 'bg-indigo-100 text-indigo-700' };
-    }
-    if (getString(ai['Brand Name']) || getString(ai['Generic Name']) || getString(ai.Dosage)) {
-      return { label: 'Medication', badgeClass: 'bg-amber-100 text-amber-800' };
-    }
-    if (getString(ai.Name) && typeof ai.Filled === 'boolean') {
-      return { label: 'Script', badgeClass: 'bg-calm-blue-soft text-calm-blue' };
-    }
-  }
-
-  return config;
-}
-
+/**
+ * Detects the semantic shape of a journal entry's ai_response.
+ * Checks `_intent` first (set at parse time); falls back to field-sniffing for legacy entries.
+ */
 function detectAiResponseShape(entry: JournalEntry): AiResponseShape {
   const ai = asRecord(entry.ai_response);
   if (!ai) return 'journal';
+
+  // Authoritative: intent persisted at parse time
+  const intent = getString(ai._intent);
+  if (intent && intent in BADGE_CONFIG) return intent as AiResponseShape;
+
+  // Legacy fallback: infer from field presence
   if (getString(ai['Practitioner Name']) || getString(ai['Visit Type'])) return 'appointment';
+  if (getString(ai['Vaccine Name'])) return 'immunisation';
   if (getString(ai['Brand Name']) || getString(ai['Generic Name']) || getString(ai.Dosage)) return 'medication';
   if (getString(ai.Name) && typeof ai.Filled === 'boolean') return 'script';
   return 'journal';
 }
 
-const DATE_FIELDS = new Set(['Date', 'Date Started', 'Date Stopped', 'Date Prescribed']);
+function getDynamicBadge(entry: JournalEntry): { label: string; badgeClass: string } {
+  const config = TYPE_CONFIG[entry.entry_type] || TYPE_CONFIG.raw_text;
+  if (entry.entry_type !== 'journal') return config;
+
+  const shape = detectAiResponseShape(entry);
+  return BADGE_CONFIG[shape];
+}
+
+const DATE_FIELDS = new Set(['Date', 'Date Started', 'Date Stopped', 'Date Prescribed', 'Date Given']);
 
 function SafeMedicationRender({ aiResponse }: { aiResponse: Record<string, RecordValue> }) {
   const fields = [
@@ -185,6 +193,31 @@ function SafeScriptRender({ aiResponse }: { aiResponse: Record<string, RecordVal
   );
 }
 
+function SafeImmunisationRender({ aiResponse }: { aiResponse: Record<string, RecordValue> }) {
+  const fields = [
+    { key: 'Vaccine Name', label: 'Vaccine Name' },
+    { key: 'Date Given', label: 'Date Given' },
+    { key: 'Brand Name', label: 'Brand Name' },
+  ];
+
+  return (
+    <div className="space-y-2">
+      {fields.map(({ key, label }) => {
+        const val = aiResponse[key];
+        const raw = getString(val);
+        if (!raw) return null;
+        const display = DATE_FIELDS.has(key) ? formatDateDDMMYYYY(raw) : raw;
+        return (
+          <div key={key} className="text-calm-text">
+            <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-0.5">{label}</span>
+            <div className="text-sm">{display}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function parseJournalRecord(content: string, aiResponse?: unknown): Record<string, RecordValue> | null {
   const direct = asRecord(aiResponse);
   if (direct) return direct;
@@ -272,6 +305,17 @@ function SafeHealthJournalRender({ content, aiResponse }: { content: string; aiR
 }
 
 
+function renderByShape(shape: AiResponseShape, content: string, aiResponse: Record<string, RecordValue>) {
+  switch (shape) {
+    case 'appointment': return <SafeAppointmentRender aiResponse={aiResponse} />;
+    case 'immunisation': return <SafeImmunisationRender aiResponse={aiResponse} />;
+    case 'medication': return <SafeMedicationRender aiResponse={aiResponse} />;
+    case 'script': return <SafeScriptRender aiResponse={aiResponse} />;
+    case 'journal':
+    default: return <SafeHealthJournalRender content={content} aiResponse={aiResponse} />;
+  }
+}
+
 export function GlassBoxCard({ entry, onUpdate, onApprove, onUpdateAiResponse, onArchive }: GlassBoxCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(entry.content);
@@ -341,6 +385,8 @@ export function GlassBoxCard({ entry, onUpdate, onApprove, onUpdateAiResponse, o
           return <AppointmentEditForm aiResponse={entry.ai_response} onSave={handleAiResponseSave} onCancel={handleCancel} isSaving={isSaving} />;
         case 'script':
           return <ScriptEditForm aiResponse={entry.ai_response} onSave={handleAiResponseSave} onCancel={handleCancel} isSaving={isSaving} />;
+        case 'immunisation':
+          return <ImmunisationEditForm aiResponse={entry.ai_response} onSave={handleAiResponseSave} onCancel={handleCancel} isSaving={isSaving} />;
       }
     }
 
@@ -415,15 +461,7 @@ export function GlassBoxCard({ entry, onUpdate, onApprove, onUpdateAiResponse, o
 
       <div className="whitespace-pre-wrap text-sm text-calm-text leading-relaxed">
         {entry.entry_type === "journal" && entryAiResponse ? (
-          getString(entryAiResponse['Brand Name']) || getString(entryAiResponse['Generic Name']) || getString(entryAiResponse.Dosage) ? (
-            <SafeMedicationRender aiResponse={entryAiResponse} />
-          ) : getString(entryAiResponse['Practitioner Name']) || getString(entryAiResponse['Visit Type']) ? (
-            <SafeAppointmentRender aiResponse={entryAiResponse} />
-          ) : getString(entryAiResponse.Name) && typeof entryAiResponse.Filled === 'boolean' ? (
-            <SafeScriptRender aiResponse={entryAiResponse} />
-          ) : (
-            <SafeHealthJournalRender content={entry.content} aiResponse={entryAiResponse} />
-          )
+          renderByShape(detectAiResponseShape(entry), entry.content, entryAiResponse)
         ) : entry.entry_type === "journal" ? (
           <SafeHealthJournalRender content={entry.content} aiResponse={entryAiResponse} />
         ) : (

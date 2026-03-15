@@ -46,6 +46,7 @@ describe("PatientBottomNav Component", () => {
     expect(source).toContain('href: "/appointments"');
     expect(source).toContain('href: "/medications"');
     expect(source).toContain('href: "/scripts"');
+    expect(source).toContain('href: "/immunisations"');
   });
 
   it("should use appropriate icons", () => {

@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useUserStore } from '@/lib/stores/user-store';
 import { JsonObject, JournalEntry } from '@/types/database';
 import { ScriptsList } from '@/components/patient/scripts-list';
-import { updateScriptOrReferralEntry } from '@/app/actions/journal-actions';
+import { updateScriptOrReferralEntry, backfillEntryIntent } from '@/app/actions/journal-actions';
 
 export default function ScriptsPage() {
   const [scriptEntries, setScriptEntries] = useState<JournalEntry[]>([]);
@@ -65,18 +65,42 @@ export default function ScriptsPage() {
         .order('created_at', { ascending: false });
 
       const processedEntries: JournalEntry[] = [];
+      const toBackfill: { id: string; intent: string }[] = [];
 
       ((entries as JournalEntry[]) || []).forEach(entry => {
         if (!entry.ai_response) return;
         const ai = entry.ai_response as (JsonObject & { Scripts?: JsonObject[] }) | null;
         if (!ai || typeof ai !== 'object') return;
 
-        // Flat script object from parseScript()
+        // Check authoritative _intent first
+        if (typeof ai._intent === 'string') {
+          if (ai._intent === 'script') {
+            processedEntries.push({
+              ...entry,
+              content: JSON.stringify(ai),
+            });
+          }
+          // Embedded scripts from journal-intent entries
+          if (ai._intent === 'journal' && ai.Scripts && Array.isArray(ai.Scripts) && ai.Scripts.length > 0) {
+            ai.Scripts.forEach((script: JsonObject, idx: number) => {
+              processedEntries.push({
+                ...entry,
+                id: `${entry.id}_script_${idx}`,
+                content: JSON.stringify(script),
+                entry_type: 'journal'
+              });
+            });
+          }
+          return;
+        }
+
+        // Legacy fallback: field-sniffing
         if (ai.Name !== undefined && ai.Filled !== undefined) {
           processedEntries.push({
             ...entry,
             content: JSON.stringify(ai),
           });
+          toBackfill.push({ id: entry.id, intent: 'script' });
           return;
         }
 
@@ -92,7 +116,10 @@ export default function ScriptsPage() {
           });
         }
       });
-      
+
+      // On-the-fly backfill for legacy entries
+      toBackfill.forEach(({ id, intent }) => backfillEntryIntent(id, intent));
+
       setScriptEntries(processedEntries);
       setIsLoading(false);
     }

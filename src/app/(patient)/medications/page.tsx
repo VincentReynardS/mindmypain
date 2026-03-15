@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { MedicationGlassBox } from '@/components/patient/medication-glass-box';
-import { updateMedicationEntry, approveMedicationEntry } from '@/app/actions/journal-actions';
+import { updateMedicationEntry, approveMedicationEntry, backfillEntryIntent } from '@/app/actions/journal-actions';
 import { JsonObject, JournalEntry } from '@/types/database';
 import { useUserStore } from '@/lib/stores/user-store';
 import { formatDateDDMMYYYY } from '@/lib/utils/date-helpers';
@@ -74,15 +74,27 @@ export default function MedicationsPage() {
 
       const dedications: JournalEntry[] = [];
       const mentions: MedicationMention[] = [];
+      const toBackfill: { id: string; intent: string }[] = [];
 
       ((entries as JournalEntry[]) || []).forEach(entry => {
         if (!entry.ai_response) return;
         const ai = entry.ai_response as JsonObject | null;
         if (!ai || typeof ai !== 'object') return;
 
-        // Flat medication object from parseMedication()
+        // Check authoritative _intent first
+        if (typeof ai._intent === 'string') {
+          if (ai._intent === 'medication') dedications.push(entry);
+          // Medication mentions come from journal-intent entries, check below
+          if (ai._intent === 'journal' && typeof ai.Medication === 'string' && ai.Medication.trim() !== '') {
+            mentions.push({ entryId: entry.id, date: entry.created_at, medication: ai.Medication });
+          }
+          return;
+        }
+
+        // Legacy fallback: field-sniffing
         if (ai['Brand Name'] || ai['Generic Name'] || ai.Dosage) {
           dedications.push(entry);
+          toBackfill.push({ id: entry.id, intent: 'medication' });
           return;
         }
 
@@ -95,6 +107,9 @@ export default function MedicationsPage() {
           });
         }
       });
+
+      // On-the-fly backfill for legacy entries
+      toBackfill.forEach(({ id, intent }) => backfillEntryIntent(id, intent));
 
       setMedicationEntries(dedications);
       setMedicationMentions(mentions);

@@ -8,7 +8,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const MODEL_ID = 'gpt-4o';
+const MODEL_ID = 'gpt-5.2';
 
 // === Date Context & Formatting ===
 
@@ -48,20 +48,27 @@ const ddmmyyyyDateString = z.string().nullish().transform((val) => {
 const INTENT_CLASSIFICATION_PROMPT = `
 You are an intelligent medical triage assistant for a chronic pain patient's journal.
 Your task is to classify the patient's unstructured journal entry.
+Classify the patient's input based on the intention of the patient.
 
-Categories:
+Categories (assess in this order):
 - "appointment": The user is discussing a doctor's visit, consultation, therapist, or any health practitioner meeting.
-- "medication": The user is discussing taking a medication, dosage, or side effect.
+- "immunisation": The user is discussing a vaccine, immunisation, vaccination, booster, flu shot, or any injection/jab for disease prevention.
+- "medication": The user is discussing taking a medication, dosage, or side effect. Medication refers to consumable drugs, this is different from immunisation.
 - "script": The user is talking about prescriptions or referrals.
 - "journal": A multi-topic daily entry, a general narrative, tasks, reminders, or any other content.
 
 Rule: If the entry is PRIMARILY about an appointment, classify it as "appointment".
+Rule: If the entry is PRIMARILY about a vaccine or immunisation, classify it as "immunisation", not "medication".
 Rule: For short, social, or ambiguous greetings (e.g., "hi", "hello", "test"), default to "journal".
 Rule: When in doubt, always default to "journal".
 Output MUST be valid JSON: {"intent": "..."}
+
+Be careful not to be biased based on the brand names that the patient includes in the input.
+For example:
+"Got my Pfizer COVID booster today" -> "immunisation" because it is a vaccination, regardless of the brand.
 `;
 
-export async function classifyIntent(text: string): Promise<'appointment' | 'medication' | 'script' | 'journal'> {
+export async function classifyIntent(text: string): Promise<'appointment' | 'medication' | 'script' | 'immunisation' | 'journal'> {
   if (!text || text.trim().length === 0) {
     throw new Error('Input text cannot be empty');
   }
@@ -369,5 +376,56 @@ export async function parseAppointment(text: string, referenceDate?: Date | stri
   } catch (error) {
     console.error('Error parsing appointment:', error);
     throw new Error(`Failed to parse appointment from text: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+// === Parsing Immunisations ===
+
+const ImmunisationResponseSchema = z.object({
+  'Vaccine Name': z.string().nullish(),
+  'Date Given': ddmmyyyyDateString,
+  'Brand Name': z.string().nullish(),
+});
+
+export type ImmunisationResponse = z.infer<typeof ImmunisationResponseSchema>;
+
+const IMMUNISATION_SYSTEM_PROMPT = `
+You are a medical scribe extracting vaccination/immunisation data from a journal entry.
+Extract the immunisation details and output valid JSON exactly matching these keys:
+"Vaccine Name", "Date Given", "Brand Name".
+
+- "Vaccine Name" is the name of the vaccine (e.g., "COVID-19 Booster", "Influenza", "Tetanus").
+- "Brand Name" is the manufacturer or brand (e.g., "Pfizer", "AstraZeneca", "Moderna").
+- "Date Given" is when the vaccine was administered.
+${DATE_FORMAT_INSTRUCTION}
+Omit keys if not mentioned. Be concise.
+`;
+
+export async function parseImmunisation(text: string, referenceDate?: Date | string): Promise<ImmunisationResponse> {
+  if (!text || text.trim().length === 0) {
+    throw new Error('Input text cannot be empty');
+  }
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: MODEL_ID,
+      messages: [
+        { role: 'system', content: `${IMMUNISATION_SYSTEM_PROMPT}\n\n${getCurrentDateContext(referenceDate)}` },
+        { role: 'user', content: text },
+      ],
+      response_format: { type: 'json_object' },
+    });
+
+    const content = response.choices[0].message.content;
+
+    if (!content) {
+      throw new Error('No content received from AI');
+    }
+
+    const parsed = JSON.parse(content);
+    return ImmunisationResponseSchema.parse(parsed);
+  } catch (error) {
+    console.error('Error parsing immunisation:', error);
+    throw new Error(`Failed to parse immunisation from text: ${error instanceof Error ? error.message : String(error)}`);
   }
 }

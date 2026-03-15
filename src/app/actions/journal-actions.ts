@@ -15,6 +15,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { JournalEntry, JsonObject, NewJournalEntry, UpdateJournalEntry } from '@/types/database';
+import { getPersistedIntent, isEntryIntent, isJournalDisplayShape, normalizeImmunisationAiResponse, withPersistedIntent } from '@/lib/journal-entry-ai';
 
 type JournalMergeCandidate = Pick<JournalEntry, 'id' | 'content' | 'status' | 'ai_response' | 'created_at'>;
 type ScriptAiResponse = JsonObject & { Scripts?: Array<JsonObject> };
@@ -123,6 +124,16 @@ export async function approveMedicationEntry(id: string) {
   revalidatePath('/medications');
 }
 
+export async function updateImmunisationEntry(id: string, content: string) {
+  await updateJournalEntry(id, { content });
+  revalidatePath('/immunisations');
+}
+
+export async function approveImmunisationEntry(id: string) {
+  await approveJournalEntry(id);
+  revalidatePath('/immunisations');
+}
+
 export async function approveJournalEntry(id: string) {
   const supabase = await createClient();
   
@@ -177,6 +188,11 @@ export async function processJournalEntry(id: string) {
         aiResponse = await parseScript(entry.content || '', entry.created_at);
         break;
       }
+      case 'immunisation': {
+        const { parseImmunisation } = await import('@/lib/openai/smart-parser');
+        aiResponse = await parseImmunisation(entry.content || '', entry.created_at);
+        break;
+      }
       case 'journal':
       default: {
         const { parseJournal } = await import('@/lib/openai/smart-parser');
@@ -211,18 +227,6 @@ export async function processJournalEntry(id: string) {
         usedJournalSafetyNet = true;
       }
     }
-
-    const isJournalDisplayShape = (response: Record<string, unknown>): boolean => {
-      const journalKeys = new Set([
-        'Sleep', 'Pain', 'Feeling', 'Action', 'Grateful', 'Medication', 'Mood', 'Note',
-        'Appointments', 'Scripts',
-      ]);
-      const keys = Object.keys(response);
-      if (keys.length === 0) return false;
-      const hasKnownJournalKey = keys.some((key) => journalKeys.has(key));
-      const hasForeignKey = keys.some((key) => !journalKeys.has(key));
-      return hasKnownJournalKey && !hasForeignKey;
-    };
 
     // Optional merge-on-organize: if this resolves to a Journal shape, merge into an
     // existing same-day Journal draft instead of creating another Journal card.
@@ -267,7 +271,7 @@ export async function processJournalEntry(id: string) {
             .update({
               content: mergedContent,
               entry_type: 'journal',
-              ai_response: mergedAiResponse as unknown as JsonObject,
+              ai_response: withPersistedIntent(mergedAiResponse as Record<string, unknown>, 'journal'),
               status: mergeTarget.status === 'approved' ? 'approved' : 'draft',
             } as never)
             .eq('id', mergeTarget.id);
@@ -288,10 +292,19 @@ export async function processJournalEntry(id: string) {
       }
     }
 
+    const persistedIntent = getPersistedIntent(intent, usedJournalSafetyNet);
+
+    const normalizedAiResponse = persistedIntent === 'immunisation'
+      ? normalizeImmunisationAiResponse(aiResponse as Record<string, unknown>)
+      : aiResponse as JsonObject;
+
     // 3. Update Entry with "Glass Box" state — all become entry_type='journal'
+    // Persist the classified intent so the UI doesn't need to re-infer via field-sniffing
+    const aiResponseWithIntent = withPersistedIntent(normalizedAiResponse as Record<string, unknown>, persistedIntent);
+
     const updatePayload: UpdateJournalEntry = {
       entry_type: 'journal',
-      ai_response: aiResponse as unknown as JsonObject,
+      ai_response: aiResponseWithIntent as unknown as JsonObject,
       status: 'draft' // Keep as draft for user review
     };
 
@@ -331,7 +344,7 @@ export async function processJournalEntry(id: string) {
     };
     const { error: fallbackError } = await supabase
       .from('journal_entries')
-      .update({ entry_type: 'journal', ai_response: syntheticResponse, status: 'draft' } as never)
+      .update({ entry_type: 'journal', ai_response: withPersistedIntent(syntheticResponse, 'journal'), status: 'draft' } as never)
       .eq('id', id);
     if (fallbackError) throw new Error(fallbackError.message);
     revalidatePath('/journal');
@@ -346,10 +359,27 @@ export async function updateJournalAiResponse(
 ) {
   const supabase = await createClient();
 
+  // Preserve _intent from the existing ai_response so edit forms don't lose it
+  const { data: existing } = await supabase
+    .from('journal_entries')
+    .select('ai_response')
+    .eq('id', id)
+    .single<{ ai_response: JsonObject | null }>();
+
+  const existingIntentValue = (existing?.ai_response as Record<string, unknown> | null)?._intent;
+  const existingIntent = isEntryIntent(existingIntentValue) ? existingIntentValue : null;
+  const normalizedAiResponse = existingIntent === 'immunisation'
+    ? normalizeImmunisationAiResponse(aiResponse as Record<string, unknown>)
+    : aiResponse;
+
+  const mergedAiResponse = existingIntent
+    ? withPersistedIntent(normalizedAiResponse as Record<string, unknown>, existingIntent)
+    : normalizedAiResponse;
+
   const { error } = await supabase
     .from('journal_entries')
     .update({
-      ai_response: aiResponse,
+      ai_response: mergedAiResponse,
       content: contentText,
     } as never)
     .eq('id', id);
@@ -362,6 +392,7 @@ export async function updateJournalAiResponse(
   revalidatePath('/appointments');
   revalidatePath('/medications');
   revalidatePath('/scripts');
+  revalidatePath('/immunisations');
 }
 
 export async function archiveJournalEntry(id: string) {
@@ -389,6 +420,7 @@ export async function archiveJournalEntry(id: string) {
   revalidatePath('/medications');
   revalidatePath('/appointments');
   revalidatePath('/scripts');
+  revalidatePath('/immunisations');
 }
 
 export async function restoreJournalEntry(id: string) {
@@ -415,6 +447,7 @@ export async function restoreJournalEntry(id: string) {
   revalidatePath('/medications');
   revalidatePath('/appointments');
   revalidatePath('/scripts');
+  revalidatePath('/immunisations');
 }
 
 export async function permanentlyDeleteJournalEntry(id: string) {
@@ -432,6 +465,7 @@ export async function permanentlyDeleteJournalEntry(id: string) {
   revalidatePath('/medications');
   revalidatePath('/appointments');
   revalidatePath('/scripts');
+  revalidatePath('/immunisations');
 }
 
 export async function bulkDeleteArchivedEntries(userId: string) {
@@ -449,6 +483,7 @@ export async function bulkDeleteArchivedEntries(userId: string) {
   revalidatePath('/medications');
   revalidatePath('/appointments');
   revalidatePath('/scripts');
+  revalidatePath('/immunisations');
 }
 
 export async function updateScriptOrReferralEntry(id: string, isFilled: boolean) {
@@ -528,4 +563,24 @@ export async function updateScriptOrReferralEntry(id: string, isFilled: boolean)
 
   revalidatePath('/scripts');
   revalidatePath('/journal');
+}
+
+export async function backfillEntryIntent(id: string, intent: string) {
+  const supabase = await createClient();
+
+  const { data: entry, error: fetchError } = await supabase
+    .from('journal_entries')
+    .select('ai_response')
+    .eq('id', id)
+    .single<{ ai_response: JsonObject | null }>();
+
+  if (fetchError || !entry?.ai_response) return;
+
+  const existing = entry.ai_response as Record<string, unknown>;
+  if (existing._intent) return; // Already has intent, skip
+
+  await supabase
+    .from('journal_entries')
+    .update({ ai_response: { ...existing, _intent: intent } } as never)
+    .eq('id', id);
 }
