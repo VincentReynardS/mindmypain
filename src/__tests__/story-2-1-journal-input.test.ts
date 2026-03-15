@@ -28,8 +28,8 @@ const journalInputSource = fs.readFileSync(
   path.resolve(__dirname, "../components/patient/journal-input.tsx"),
   "utf-8"
 );
-const journalPageSource = fs.readFileSync(
-  path.resolve(__dirname, "../app/(patient)/journal/page.tsx"),
+const homePageSource = fs.readFileSync(
+  path.resolve(__dirname, "../app/(patient)/home/page.tsx"),
   "utf-8"
 );
 const apiRouteSource = fs.readFileSync(
@@ -274,36 +274,36 @@ describe("Story 2.1: Journal Entry Input (Voice/Text)", () => {
 
   // -- Journal Page Integration --
 
-  describe("Journal page integration", () => {
-    it("should export JournalPage as default function", async () => {
-      const mod = await import("@/app/(patient)/journal/page");
+  describe("Home page integration", () => {
+    it("should export HomePage as default function", async () => {
+      const mod = await import("@/app/(patient)/home/page");
       expect(mod.default).toBeDefined();
       expect(typeof mod.default).toBe("function");
     });
 
     it("should import JournalInput component", () => {
-      expect(journalPageSource).toContain("JournalInput");
-      expect(journalPageSource).toContain(
+      expect(homePageSource).toContain("JournalInput");
+      expect(homePageSource).toContain(
         "@/components/patient/journal-input"
       );
     });
 
     it("should import ScribeControls component", () => {
-      expect(journalPageSource).toContain("ScribeControls");
-      expect(journalPageSource).toContain(
+      expect(homePageSource).toContain("ScribeControls");
+      expect(homePageSource).toContain(
         "@/components/patient/scribe-controls"
       );
     });
 
     it("should import AudioVisualizer component", () => {
-      expect(journalPageSource).toContain("AudioVisualizer");
-      expect(journalPageSource).toContain(
+      expect(homePageSource).toContain("AudioVisualizer");
+      expect(homePageSource).toContain(
         "@/components/shared/audio-visualizer"
       );
     });
 
     it("should be marked as a client component", () => {
-      expect(journalPageSource).toContain('"use client"');
+      expect(homePageSource).toContain('"use client"');
     });
   });
 });

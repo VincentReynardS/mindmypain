@@ -49,6 +49,7 @@ export function JournalEntryCard({ entry, onArchive }: JournalEntryCardProps) {
 
   return (
     <div
+      id={entry.id}
       className="min-h-[2.75rem] rounded-lg bg-calm-surface-raised px-4 py-3 transition-colors"
       style={{ transitionDuration: "var(--transition-duration-calm)" }}
       role="article"

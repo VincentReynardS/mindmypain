@@ -22,7 +22,7 @@ export default function HilaryLoginPage() {
       const valid = await verifyHilaryPassword(password);
       if (valid) {
         selectPersona("hilary");
-        router.push("/journal");
+        router.push("/home");
       } else {
         setError("Incorrect password");
         setPassword("");

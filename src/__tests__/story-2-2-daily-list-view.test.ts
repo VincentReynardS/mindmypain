@@ -36,8 +36,8 @@ const journalEntryListSource = fs.readFileSync(
   path.resolve(__dirname, "../components/patient/journal-entry-list.tsx"),
   "utf-8"
 );
-const journalPageSource = fs.readFileSync(
-  path.resolve(__dirname, "../app/(patient)/journal/page.tsx"),
+const homePageSource = fs.readFileSync(
+  path.resolve(__dirname, "../app/(patient)/home/page.tsx"),
   "utf-8"
 );
 
@@ -363,39 +363,39 @@ describe("Story 2.2: Daily List View", () => {
 
   // -- Journal Page Integration --
 
-  describe("Journal page integration (Story 2.2)", () => {
+  describe("Home page integration (Story 2.2)", () => {
     it("should import JournalEntryList", () => {
-      expect(journalPageSource).toContain("JournalEntryList");
-      expect(journalPageSource).toContain(
+      expect(homePageSource).toContain("JournalEntryList");
+      expect(homePageSource).toContain(
         "@/components/patient/journal-entry-list"
       );
     });
 
     it("should import useJournalStore for fetching entries", () => {
-      expect(journalPageSource).toContain("useJournalStore");
-      expect(journalPageSource).toContain("@/lib/stores/journal-store");
+      expect(homePageSource).toContain("useJournalStore");
+      expect(homePageSource).toContain("@/lib/stores/journal-store");
     });
 
     it("should import useUserStore for persona filtering", () => {
-      expect(journalPageSource).toContain("useUserStore");
-      expect(journalPageSource).toContain("@/lib/stores/user-store");
+      expect(homePageSource).toContain("useUserStore");
+      expect(homePageSource).toContain("@/lib/stores/user-store");
     });
 
     it("should use atomic selectors for personaId", () => {
-      expect(journalPageSource).toContain("(s) => s.personaId");
+      expect(homePageSource).toContain("(s) => s.personaId");
     });
 
     it("should use useEffect to fetch entries on mount", () => {
-      expect(journalPageSource).toContain("useEffect");
-      expect(journalPageSource).toContain("fetchEntries");
+      expect(homePageSource).toContain("useEffect");
+      expect(homePageSource).toContain("fetchEntries");
     });
 
     it("should remain a client component", () => {
-      expect(journalPageSource).toContain('"use client"');
+      expect(homePageSource).toContain('"use client"');
     });
 
     it("should clear entries before fetching on persona change", () => {
-      expect(journalPageSource).toContain("clearEntries");
+      expect(homePageSource).toContain("clearEntries");
     });
   });
 });

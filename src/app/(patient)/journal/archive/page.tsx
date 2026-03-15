@@ -87,7 +87,7 @@ export default function ArchivePage() {
       {/* Header */}
       <div className="flex items-center gap-3">
         <Link
-          href="/journal"
+          href="/home"
           className="rounded-md p-2 text-calm-text-muted hover:text-calm-text hover:bg-calm-surface transition-colors"
           style={{ minHeight: "44px", minWidth: "44px" }}
         >

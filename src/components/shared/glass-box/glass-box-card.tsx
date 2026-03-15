@@ -425,7 +425,10 @@ export function GlassBoxCard({ entry, onUpdate, onApprove, onUpdateAiResponse, o
   }
 
   return (
-    <div className={`rounded-lg bg-calm-surface-raised p-4 shadow-sm border-l-4 ${isApproved ? "border-calm-green" : "border-calm-primary"} transition-all`}>
+    <div
+      id={entry.id}
+      className={`rounded-lg bg-calm-surface-raised p-4 shadow-sm border-l-4 ${isApproved ? "border-calm-green" : "border-calm-primary"} transition-all`}
+    >
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${config.badgeClass}`}>

@@ -42,6 +42,7 @@ describe("PatientBottomNav Component", () => {
       path.resolve(__dirname, "../components/patient/bottom-nav.tsx"),
       "utf-8"
     );
+    expect(source).toContain('href: "/home"');
     expect(source).toContain('href: "/journal"');
     expect(source).toContain('href: "/appointments"');
     expect(source).toContain('href: "/medications"');

@@ -205,9 +205,9 @@ export function MyDetailForm() {
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
         <Link
-          href="/journal"
+          href="/home"
           className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-calm-surface transition-colors duration-300"
-          aria-label="Back to journal"
+          aria-label="Back to home"
         >
           <ArrowLeft className="h-5 w-5 text-calm-text-muted" />
         </Link>

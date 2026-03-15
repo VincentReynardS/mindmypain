@@ -186,7 +186,7 @@ export default function MedicationsPage() {
                   {medicationMentions.map((mention) => (
                     <a
                       key={mention.entryId}
-                      href={`/journal#${mention.entryId}`}
+                      href={`/home#${mention.entryId}`}
                       className="block rounded-lg border border-calm-border bg-calm-surface p-4 transition-colors hover:bg-calm-surface-raised"
                     >
                       <p className="text-xs text-calm-text-muted">

@@ -22,7 +22,7 @@ export default function KimLoginPage() {
       const valid = await verifyKimPassword(password);
       if (valid) {
         selectPersona("kim");
-        router.push("/journal");
+        router.push("/home");
       } else {
         setError("Incorrect password");
         setPassword("");

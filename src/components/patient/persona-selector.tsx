@@ -90,7 +90,7 @@ export function PersonaSelector() {
 
   const handleSelect = (id: PersonaId) => {
     selectPersona(id);
-    router.push("/journal");
+    router.push("/home");
   };
 
   return (

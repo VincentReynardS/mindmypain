@@ -18,6 +18,12 @@ const JOURNAL_KEYS = new Set([
   "Appointments",
   "Scripts",
 ]);
+const NON_JOURNAL_INTENTS = new Set<EntryIntent>(["appointment", "medication", "script", "immunisation"]);
+const RAW_TEXT_MEDICAL_PATTERNS = [
+  /\b(appointment|appt|consult|follow-up|doctor|dr\.?|specialist|physio|clinic|visit|referral)\b/i,
+  /\b(medication|medicine|meds|tablet|capsule|dosage|dose|prescription|script|refill|repeat|pharmacy|chemist)\b/i,
+  /\b(vaccine|vaccination|immuni[sz]ation|booster|flu shot|covid shot|tetanus)\b/i,
+];
 
 function getNonEmptyString(value: unknown): string | null {
   if (typeof value !== "string") return null;
@@ -28,6 +34,28 @@ function getNonEmptyString(value: unknown): string | null {
 function asObject(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   return value as Record<string, unknown>;
+}
+
+function detectLegacyIntent(aiResponse: Record<string, unknown>): EntryIntent | null {
+  if (getNonEmptyString(aiResponse["Practitioner Name"]) || getNonEmptyString(aiResponse["Visit Type"])) {
+    return "appointment";
+  }
+  if (getNonEmptyString(aiResponse["Vaccine Name"])) return "immunisation";
+  if (
+    getNonEmptyString(aiResponse["Brand Name"]) ||
+    getNonEmptyString(aiResponse["Generic Name"]) ||
+    getNonEmptyString(aiResponse.Dosage)
+  ) {
+    return "medication";
+  }
+  if (getNonEmptyString(aiResponse.Name) && typeof aiResponse.Filled === "boolean") {
+    return "script";
+  }
+  return "journal";
+}
+
+function isLikelyMedicalRawText(content: string): boolean {
+  return RAW_TEXT_MEDICAL_PATTERNS.some((pattern) => pattern.test(content));
 }
 
 export function isJournalDisplayShape(response: Record<string, unknown>): boolean {
@@ -44,6 +72,25 @@ export function getPersistedIntent(intent: EntryIntent, usedJournalSafetyNet: bo
 
 export function isEntryIntent(value: unknown): value is EntryIntent {
   return typeof value === "string" && ENTRY_INTENTS.has(value as EntryIntent);
+}
+
+export function isJournalReflectionEntry(entry: JournalEntry): boolean {
+  const ai = asObject(entry.ai_response);
+  const persistedIntent = ai ? ai._intent : null;
+
+  if (isEntryIntent(persistedIntent)) {
+    return !NON_JOURNAL_INTENTS.has(persistedIntent);
+  }
+
+  if (entry.entry_type === "raw_text") {
+    return !isLikelyMedicalRawText(entry.content);
+  }
+
+  if (ai) {
+    return detectLegacyIntent(ai) === "journal";
+  }
+
+  return entry.entry_type === "journal";
 }
 
 export function withPersistedIntent(aiResponse: Record<string, unknown>, intent: EntryIntent): JsonObject {

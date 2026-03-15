@@ -14,6 +14,7 @@
  */
 
 import { useState, useEffect } from "react";
+import { X } from "lucide-react";
 import { useAudioStore } from "@/lib/stores/audio-store";
 import { createJournalEntry } from "@/app/actions/journal-actions";
 import { useUserStore } from "@/lib/stores/user-store";
@@ -44,6 +45,11 @@ export function JournalInput() {
       resetTranscribedText();
     }
   }, [transcribedText, resetTranscribedText]);
+
+  const handleClear = () => {
+    setText("");
+    resetTranscribedText();
+  };
 
   const handleSave = async () => {
     if (!text.trim() || !personaId) return;
@@ -88,6 +94,15 @@ export function JournalInput() {
               {error}
             </div>
          )}
+         <button
+          onClick={handleClear}
+          disabled={!text.trim() || isProcessing || isSaving}
+          className="flex items-center gap-1 rounded-lg border border-border/60 bg-calm-surface-raised px-3 py-2 text-sm font-medium text-calm-text-muted transition-colors hover:text-calm-text hover:bg-calm-surface-raised/80 disabled:opacity-50 disabled:cursor-not-allowed"
+          aria-label="Clear input"
+        >
+          <X className="h-4 w-4" />
+          Clear
+        </button>
          <button
           onClick={handleSave}
           disabled={!text.trim() || isProcessing || isSaving}

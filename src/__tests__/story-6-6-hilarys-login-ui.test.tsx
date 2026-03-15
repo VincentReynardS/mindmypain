@@ -56,7 +56,7 @@ describe("Story 6.6: Hilary login UI flow", () => {
     });
 
     expect(screen.getByRole("alert").textContent).toContain("Incorrect password");
-    expect(mockPush).not.toHaveBeenCalledWith("/journal");
+    expect(mockPush).not.toHaveBeenCalledWith("/home");
     expect(useUserStore.getState().personaId).toBeNull();
   });
 
@@ -71,7 +71,7 @@ describe("Story 6.6: Hilary login UI flow", () => {
     fireEvent.click(screen.getByRole("button", { name: "Login" }));
 
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith("/journal");
+      expect(mockPush).toHaveBeenCalledWith("/home");
     });
 
     const state = useUserStore.getState();
