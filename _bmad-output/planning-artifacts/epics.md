@@ -595,6 +595,49 @@ So that I can specifically review my thoughts without clutter and easily wipe my
 - **Then** I can navigate to a dedicated "Journal" page that displays only "Raw Journal" entries (excluding Meds/Scripts/Appointments)
 - **And** the input text box on the home page features a "Clear" button to quickly wipe the current text field.
 
+### Story 7.6: Session Persistence Fix
+
+As an end user (and creator Kim),
+I want my selected persona login to persist even when my phone screen locks or goes into the background,
+So that I don't have to keep logging back in every time I pull my phone out.
+
+**Acceptance Criteria:**
+
+- **Given** I am logged into a specific persona (e.g. Kim, Sarah, Michael)
+- **When** I lock my phone screen or leave the browser tab open for an extended period
+- **Then** my session should not reset
+- **And** upon returning, I should remain on the authenticated view without needing to re-enter credentials or select a persona again.
+
+### Story 7.7: Appointment Form Enhancements
+
+As a patient user,
+I want more detailed fields on the Appointment card to accurately record my doctor visits,
+So that I can log the exact time, appointment type, address, purpose, and track required repeat prescriptions.
+
+**Acceptance Criteria:**
+
+- **Given** I am viewing an Appointment Glass Box (in `/appointments` or `/journal`)
+- **When** the entry is in edit mode or viewed
+- **Then** there should be a "Time" field formatted as HH:MM AM/PM
+- **And** an "In-person / Telehealth" radio selection under the Profession/Practitioner Name
+- **And** the "Location" field should be renamed to "Address"
+- **And** under "Reason for Visit", the "Admin Needs" heading should be removed
+- **And** the chip selections under "Reason for Visit" should be updated to exclusively: "Repeat Prescription", "Medical Certificate", "Specialist Referral", and "Pathology Referral"
+- **And** a "Repeat Prescription" list section should be added under "Questions to Ask" (before Outcomes/Plan) where I can add items dynamically.
+
+### Story 7.8: Medication History View Fix
+
+As a patient user,
+I want to see my medication logs fully structured with brand names and dosages on the Medications page,
+So that I can review my actual structured data, rather than just the raw input note.
+
+**Acceptance Criteria:**
+
+- **Given** I navigate to the Medications tab (`/medications`)
+- **When** the list of medication entries loads
+- **Then** the entries should render using the full `MedicationGlassBox` component UI (like they do on the Home page)
+- **And** they should visually display the parsed structured data (Brand Name, Dosage, etc) instead of just the raw log note.
+
 # Epic 8: The Wizard's Dashboard & Scenario Control (Deferred)
 
 **Goal**: Enable the Researcher to monitor live sessions and trigger specific "Scenario Responses" or edit text in real-time. (Deferred).
