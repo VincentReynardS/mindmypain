@@ -19,16 +19,16 @@ so that I don't have to repeatedly enter standard context (like allergies or nam
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create "My Detail" Page Route and UI
-  - [ ] Create route `/app/profile/my-detail` (or similar).
-  - [ ] Add navigation link to the Profile avatar menu to point to this new detail page.
-  - [ ] Build a form UI covering the `profiles` table fields (`full_name`, `dob`, `address_line_1`, `address_line_2`, `email`, `mobile_phone`, `home_phone`, `medicare_irn`, `medicare_valid_to`, `phi_name`, `phi_number`, `is_organ_donor`, `emergency_contact_name`, `emergency_contact_relationship`, `emergency_contact_mobile`, `languages_spoken`, `is_aboriginal`, `is_torres_strait_islander`, `allergies`).
-- [ ] Task 2: Implement Data Fetching
-  - [ ] Create a Supabase server action or query to fetch the current user's profile from the `profiles` table based on `UserContext` persona.
-- [ ] Task 3: Implement Form Submission and Update
-  - [ ] Create a Supabase server action to update the `profiles` table.
-  - [ ] Wire up the form to submit and display success/error states.
-  - [ ] Ensure optimistic UI updates or revalidation upon success.
+- [x] Task 1: Create "My Detail" Page Route and UI
+  - [x] Create route `/app/profile/my-detail` (or similar).
+  - [x] Add navigation link to the Profile avatar menu to point to this new detail page.
+  - [x] Build a form UI covering the `profiles` table fields (`full_name`, `dob`, `address_line_1`, `address_line_2`, `email`, `mobile_phone`, `home_phone`, `medicare_irn`, `medicare_valid_to`, `phi_name`, `phi_number`, `is_organ_donor`, `emergency_contact_name`, `emergency_contact_relationship`, `emergency_contact_mobile`, `languages_spoken`, `is_aboriginal`, `is_torres_strait_islander`, `allergies`).
+- [x] Task 2: Implement Data Fetching
+  - [x] Create a Supabase server action or query to fetch the current user's profile from the `profiles` table based on `UserContext` persona.
+- [x] Task 3: Implement Form Submission and Update
+  - [x] Create a Supabase server action to update the `profiles` table.
+  - [x] Wire up the form to submit and display success/error states.
+  - [x] Ensure optimistic UI updates or revalidation upon success.
 
 ## Dev Notes
 
