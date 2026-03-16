@@ -94,8 +94,8 @@ development_status:
   7-2-chat-ui-responsive-fixes-auto-expanding-input: done
   7-3-the-my-detail-profile-page: done
   7-4-immunisation-record-component-parser: done
-  7-5-dedicated-journal-page-clear-input-functionality: review
-  7-6-session-persistence-fix: backlog
+  7-5-dedicated-journal-page-clear-input-functionality: done
+  7-6-session-persistence-fix: done
   7-7-appointment-form-enhancements: backlog
   7-8-medication-history-view-fix: backlog
   epic-7-retrospective: optional

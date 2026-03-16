@@ -66,6 +66,25 @@ describe('GlassBoxCard Edit Dispatch', () => {
     expect(screen.getByText('Editing Appointment Record')).toBeTruthy();
   });
 
+  it('should use the visible selected chip styling for appointment admin needs', () => {
+    const entry = makeEntry({
+      ai_response: {
+        'Practitioner Name': 'Dr Smith',
+        'Visit Type': 'Consultation',
+        Date: '2026-03-01',
+        'Admin Needs': ['Referral'],
+      },
+    });
+    render(<GlassBoxCard entry={entry} onUpdate={onUpdate} onApprove={onApprove} onUpdateAiResponse={onUpdateAiResponse} />);
+
+    fireEvent.click(screen.getByText('Edit'));
+
+    const selectedChip = screen.getByRole('button', { name: 'Referral' });
+    expect(selectedChip.className).toContain('bg-calm-blue');
+    expect(selectedChip.className).toContain('text-white');
+    expect(selectedChip.className).not.toContain('bg-calm-primary');
+  });
+
   it('should render ScriptEditForm for script-shaped ai_response', () => {
     const entry = makeEntry({
       ai_response: { Name: 'Panadol Script', Filled: false, 'Date Prescribed': '2026-02-20', Notes: '' },

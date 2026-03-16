@@ -13,19 +13,24 @@
  * @see architecture.md - Authentication & Security (Decision 2)
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/lib/stores/user-store";
 
 export function PersonaGuard({ children }: { children: React.ReactNode }) {
   const isSelected = useUserStore((s) => s.isSelected);
   const router = useRouter();
-  const [hasHydrated, setHasHydrated] = useState(() =>
-    useUserStore.persist.hasHydrated()
-  );
+  const [hasHydrated, setHasHydrated] = useState(false);
 
-  useEffect(() => {
-    // Subscribe to finish hydration if not already hydrated
+  useLayoutEffect(() => {
+    // If rehydration already completed (microtask can fire between
+    // React commit and layout effects), set the flag before paint.
+    if (useUserStore.persist.hasHydrated()) {
+      setHasHydrated(true);
+      return;
+    }
+
+    // Otherwise subscribe to the callback for when it finishes.
     const unsub = useUserStore.persist.onFinishHydration(() => {
       setHasHydrated(true);
     });
@@ -39,7 +44,7 @@ export function PersonaGuard({ children }: { children: React.ReactNode }) {
     }
   }, [isSelected, hasHydrated, router]);
 
-  // Show loading spinner while Zustand hydrates from sessionStorage
+  // Show loading spinner while Zustand hydrates from localStorage
   if (!hasHydrated) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-calm-surface">

@@ -132,6 +132,7 @@ export default function JournalPage() {
                     <GlassBoxCard
                       key={entry.id}
                       entry={entry}
+                      hideAdminTasks={true}
                       onUpdate={async (id, content) => {
                         const snapshot = getEntriesSnapshot();
                         updateEntry(id, { content });

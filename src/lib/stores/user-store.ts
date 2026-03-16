@@ -5,8 +5,8 @@
  * - Export raw store creator for testing
  * - Export default hook for usage
  * - ALWAYS use atomic selectors to prevent re-renders
- * - Persisted via sessionStorage so personas survive page refreshes
- *   but NOT across tabs/browser sessions (workshop-scoped)
+ * - Persisted via localStorage so personas survive page refreshes,
+ *   tab backgrounding, and screen locks (critical for mobile workshops)
  *
  * @see architecture.md - State Management (Decision 4)
  */
@@ -79,7 +79,7 @@ export const useUserStore = create<UserState>()(
       name: "mindmypain-persona",
       storage: createJSONStorage(() =>
         typeof window !== "undefined"
-          ? sessionStorage
+          ? localStorage
           : {
               getItem: () => null,
               setItem: () => {},

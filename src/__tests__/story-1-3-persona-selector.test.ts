@@ -3,7 +3,7 @@
  *
  * Tests cover:
  * - useUserStore: selectPersona + clearPersona state transitions
- * - useUserStore: sessionStorage persistence behavior
+ * - useUserStore: localStorage persistence behavior
  * - useUserStore: hydration flag lifecycle
  * - PersonaSelector / PersonaGuard: module export verification
  * - Persona-Database alignment

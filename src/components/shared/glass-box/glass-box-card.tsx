@@ -16,6 +16,7 @@ interface GlassBoxCardProps {
   onApprove: (id: string) => Promise<void>;
   onUpdateAiResponse?: (id: string, aiResponse: JsonObject, contentText: string) => Promise<void>;
   onArchive?: (id: string) => Promise<void>;
+  hideAdminTasks?: boolean;
 }
 
 const TYPE_CONFIG: Record<JournalEntryType, { label: string; badgeClass: string }> = {
@@ -229,7 +230,7 @@ function parseJournalRecord(content: string, aiResponse?: unknown): Record<strin
   }
 }
 
-function SafeHealthJournalRender({ content, aiResponse }: { content: string; aiResponse?: unknown }) {
+function SafeHealthJournalRender({ content, aiResponse, hideAdminTasks }: { content: string; aiResponse?: unknown; hideAdminTasks?: boolean }) {
   const parsed = parseJournalRecord(content, aiResponse);
   if (!parsed) return <>{content}</>;
 
@@ -262,7 +263,7 @@ function SafeHealthJournalRender({ content, aiResponse }: { content: string; aiR
         })}
       </div>
 
-      {appointments.length > 0 && (
+      {!hideAdminTasks && appointments.length > 0 && (
         <div className="pt-2 border-t border-calm-border/30">
           <span className="font-semibold text-calm-primary block text-[10px] uppercase tracking-wider mb-2">Appointments Identified</span>
           <div className="space-y-2">
@@ -282,7 +283,7 @@ function SafeHealthJournalRender({ content, aiResponse }: { content: string; aiR
         </div>
       )}
 
-      {scripts.length > 0 && (
+      {!hideAdminTasks && scripts.length > 0 && (
         <div className="pt-2 border-t border-calm-border/30">
           <span className="font-semibold text-calm-primary block text-[10px] uppercase tracking-wider mb-2">Scripts/Referrals Found</span>
           <div className="space-y-1.5">
@@ -305,18 +306,18 @@ function SafeHealthJournalRender({ content, aiResponse }: { content: string; aiR
 }
 
 
-function renderByShape(shape: AiResponseShape, content: string, aiResponse: Record<string, RecordValue>) {
+function renderByShape(shape: AiResponseShape, content: string, aiResponse: Record<string, RecordValue>, hideAdminTasks?: boolean) {
   switch (shape) {
     case 'appointment': return <SafeAppointmentRender aiResponse={aiResponse} />;
     case 'immunisation': return <SafeImmunisationRender aiResponse={aiResponse} />;
     case 'medication': return <SafeMedicationRender aiResponse={aiResponse} />;
     case 'script': return <SafeScriptRender aiResponse={aiResponse} />;
     case 'journal':
-    default: return <SafeHealthJournalRender content={content} aiResponse={aiResponse} />;
+    default: return <SafeHealthJournalRender content={content} aiResponse={aiResponse} hideAdminTasks={hideAdminTasks} />;
   }
 }
 
-export function GlassBoxCard({ entry, onUpdate, onApprove, onUpdateAiResponse, onArchive }: GlassBoxCardProps) {
+export function GlassBoxCard({ entry, onUpdate, onApprove, onUpdateAiResponse, onArchive, hideAdminTasks }: GlassBoxCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(entry.content);
   const [isSaving, setIsSaving] = useState(false);
@@ -464,9 +465,9 @@ export function GlassBoxCard({ entry, onUpdate, onApprove, onUpdateAiResponse, o
 
       <div className="whitespace-pre-wrap text-sm text-calm-text leading-relaxed">
         {entry.entry_type === "journal" && entryAiResponse ? (
-          renderByShape(detectAiResponseShape(entry), entry.content, entryAiResponse)
+          renderByShape(detectAiResponseShape(entry), entry.content, entryAiResponse, hideAdminTasks)
         ) : entry.entry_type === "journal" ? (
-          <SafeHealthJournalRender content={entry.content} aiResponse={entryAiResponse} />
+          <SafeHealthJournalRender content={entry.content} aiResponse={entryAiResponse} hideAdminTasks={hideAdminTasks} />
         ) : (
           entry.content
         )}

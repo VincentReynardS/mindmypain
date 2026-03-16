@@ -154,8 +154,8 @@ export function AppointmentEditForm({ aiResponse, onSave, onCancel, isSaving }: 
                 disabled={isSaving}
                 className={`rounded-md px-3 py-1.5 text-xs font-medium border transition-all ${
                   form['Admin Needs'].includes(need)
-                    ? 'bg-calm-primary text-white border-calm-primary'
-                    : 'bg-white text-calm-text border-calm-border hover:border-calm-primary'
+                    ? 'bg-calm-blue text-white border-calm-blue'
+                    : 'bg-calm-surface text-calm-text border-calm-border hover:bg-calm-border'
                 }`}
                 style={{ minHeight: '44px' }}
               >
