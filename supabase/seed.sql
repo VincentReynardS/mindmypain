@@ -17,11 +17,11 @@ INSERT INTO journal_entries (user_id, content, transcription, status, entry_type
 -- Entry 1: Medication tracking (7 days ago)
 (
   'sarah',
-  'Took my morning Lyrica 150mg. Noticed the tingling in my right foot is worse today. Might be the cold weather. Also took Panadol Osteo for the general ache.',
-  'Took my morning Lyrica 150mg. Noticed the tingling in my right foot is worse today. Might be the cold weather. Also took Panadol Osteo for the general ache.',
+  'Took my morning Lyrica 75mg. Noticed the tingling in my right foot is worse today. Might be the cold weather. Also felt dizzy after taking it. Also took Panadol Osteo for the general ache.',
+  'Took my morning Lyrica 75mg. Noticed the tingling in my right foot is worse today. Might be the cold weather. Also felt dizzy after taking it. Also took Panadol Osteo for the general ache.',
   'approved',
   'journal',
-  '{"Pain": "Tingling in right foot worse today, possibly weather-related. General ache.", "Medication": "Lyrica 150mg (morning), Panadol Osteo for general ache", "Note": "Cold weather may be contributing to increased tingling."}',
+  '{"Pain": "Tingling in right foot worse today, possibly weather-related. General ache.", "Medication": "Lyrica 75mg (morning), Panadol Osteo for general ache. Reported dizziness.", "Note": "Cold weather may be contributing to increased tingling."}',
   ARRAY['Medication', 'Symptoms', 'Weather'],
   '{"pain_level": 6, "location": "right foot"}',
   now() - INTERVAL '7 days'
@@ -30,11 +30,11 @@ INSERT INTO journal_entries (user_id, content, transcription, status, entry_type
 -- Entry 2: Appointment preparation (6 days ago)
 (
   'sarah',
-  'Need to prepare for Dr. Chen appointment next week. Want to discuss: 1) Lyrica dosage - is 150mg still right? 2) Physio referral for aqua therapy 3) The new burning sensation in my left hand 4) Whether we should try a nerve block again.',
-  'Need to prepare for Dr. Chen appointment next week. Want to discuss: 1) Lyrica dosage - is 150mg still right? 2) Physio referral for aqua therapy 3) The new burning sensation in my left hand 4) Whether we should try a nerve block again.',
+  'Need to prepare for Dr. Chen appointment next week. Want to discuss: 1) Lyrica dosage - is 75mg still right? 2) Physio referral for aqua therapy 3) The new burning sensation in my left hand 4) Whether we should try a nerve block again.',
+  'Need to prepare for Dr. Chen appointment next week. Want to discuss: 1) Lyrica dosage - is 75mg still right? 2) Physio referral for aqua therapy 3) The new burning sensation in my left hand 4) Whether we should try a nerve block again.',
   'approved',
   'journal',
-  '{"Practitioner Name": "Dr. Chen", "Visit Type": "Follow-up Prep", "preparation_items": [{"category": "Medication Review", "item": "Lyrica 150mg dosage reassessment"}, {"category": "Referral", "item": "Physiotherapy - aqua therapy"}, {"category": "New Symptom", "item": "Burning sensation in left hand"}, {"category": "Treatment Option", "item": "Nerve block reconsideration"}]}',
+  '{"Practitioner Name": "Dr. Chen", "Visit Type": "Follow-up Prep", "preparation_items": [{"category": "Medication Review", "item": "Lyrica 75mg dosage reassessment"}, {"category": "Referral", "item": "Physiotherapy - aqua therapy"}, {"category": "New Symptom", "item": "Burning sensation in left hand"}, {"category": "Treatment Option", "item": "Nerve block reconsideration"}]}',
   ARRAY['Appointment', 'Medication', 'Physiotherapy', 'Symptoms'],
   '{"appointment_date": "2026-02-25", "doctor": "Dr. Chen"}',
   now() - INTERVAL '6 days'
@@ -43,11 +43,11 @@ INSERT INTO journal_entries (user_id, content, transcription, status, entry_type
 -- Entry 3: Sleep and pain correlation (5 days ago)
 (
   'sarah',
-  'Terrible night. Woke up at 2am with the burning. Could not get back to sleep until 4. Pain was probably an 8. Took extra Panadol. Feeling exhausted today and the brain fog is thick.',
-  'Terrible night. Woke up at 2am with the burning. Could not get back to sleep until 4. Pain was probably an 8. Took extra Panadol. Feeling exhausted today and the brain fog is thick.',
+  'Terrible night. Woke up at 2am with the burning. Could not get back to sleep until 4. Pain was probably an 8. Took extra Panadol. Feeling exhausted today and the brain fog is thick. Had a bout of dizziness this morning too.',
+  'Terrible night. Woke up at 2am with the burning. Could not get back to sleep until 4. Pain was probably an 8. Took extra Panadol. Feeling exhausted today and the brain fog is thick. Had a bout of dizziness this morning too.',
   'approved',
   'journal',
-  '{"Sleep": "Terrible night. Woke at 2am with burning, back to sleep at 4. About 4 hours total.", "Pain": "8/10 — burning pain woke me up. 3rd sleep disruption this month.", "Mood": "Exhausted, brain fog is thick.", "Medication": "Extra Panadol taken for the flare."}',
+  '{"Sleep": "Terrible night. Woke at 2am with burning, back to sleep at 4. About 4 hours total.", "Pain": "8/10 — burning pain woke me up. 3rd sleep disruption this month.", "Mood": "Exhausted, brain fog is thick.", "Medication": "Extra Panadol taken for the flare. Dizziness noted in the morning."}',
   ARRAY['Sleep', 'Pain', 'Medication', 'Cognitive'],
   '{"pain_level": 8, "sleep_hours": 4, "disruption_time": "02:00"}',
   now() - INTERVAL '5 days'
@@ -56,11 +56,11 @@ INSERT INTO journal_entries (user_id, content, transcription, status, entry_type
 -- Entry 4: Summary for doctor appointment (4 days ago)
 (
   'sarah',
-  'I want to create a summary of the last 2 weeks for Dr. Chen. My pain has been averaging around 6-7, with two flares hitting 8+. The Lyrica seems less effective. Sleep is getting worse - maybe 4-5 hours most nights. The new left hand burning started about 10 days ago.',
-  'I want to create a summary of the last 2 weeks for Dr. Chen. My pain has been averaging around 6-7, with two flares hitting 8+. The Lyrica seems less effective. Sleep is getting worse - maybe 4-5 hours most nights. The new left hand burning started about 10 days ago.',
+  'I want to create a summary of the last 2 weeks for Dr. Chen. My pain has been averaging around 6-7, with two flares hitting 8+. The Lyrica seems less effective and is making me dizzy almost every day. Sleep is getting worse - maybe 4-5 hours most nights. The new left hand burning started about 10 days ago.',
+  'I want to create a summary of the last 2 weeks for Dr. Chen. My pain has been averaging around 6-7, with two flares hitting 8+. The Lyrica seems less effective and is making me dizzy almost every day. Sleep is getting worse - maybe 4-5 hours most nights. The new left hand burning started about 10 days ago.',
   'approved',
   'journal',
-  '{"Pain": "Averaging 6-7/10 with two flares hitting 8+. New burning sensation in left hand started approximately 10 days ago.", "Medication": "Lyrica 150mg daily — efficacy appears to be declining. Panadol Osteo PRN with partial relief.", "Sleep": "4-5 hours most nights, disrupted by pain.", "Note": "Summary for Dr. Chen covering the past 2 weeks. Wants better pain management, sleep improvement, and investigation of new hand symptoms."}',
+  '{"Pain": "Averaging 6-7/10 with two flares hitting 8+. New burning sensation in left hand started approximately 10 days ago.", "Medication": "Lyrica 75mg daily — efficacy appears to be declining and causing daily dizziness. Panadol Osteo PRN with partial relief.", "Sleep": "4-5 hours most nights, disrupted by pain.", "Note": "Summary for Dr. Chen covering the past 2 weeks. Wants better pain management, sleep improvement, and investigation of new hand symptoms."}',
   ARRAY['Pain', 'Medication', 'Sleep', 'New Symptoms'],
   '{"pain_level": 7, "medication": "Lyrica", "provider": "Dr. Chen"}',
   now() - INTERVAL '4 days'
@@ -82,11 +82,11 @@ INSERT INTO journal_entries (user_id, content, transcription, status, entry_type
 -- Entry 6: Frustration and advocacy (2 days ago)
 (
   'sarah',
-  'Pharmacy messed up my Lyrica script again. Had to call Dr. Chen''s office to sort it out. Spent 45 minutes on the phone. This happens every other month. I need to ask her to send a recurring prescription. Also my left hand burned all morning.',
-  'Pharmacy messed up my Lyrica script again. Had to call Dr. Chen''s office to sort it out. Spent 45 minutes on the phone. This happens every other month. I need to ask her to send a recurring prescription. Also my left hand burned all morning.',
+  'Pharmacy messed up my Lyrica script again. Had to call Dr. Chen''s office to sort it out. Spent 45 minutes on the phone. This happens every other month. I need to ask her to send a recurring prescription. Also my left hand burned all morning and I had to sit down because I got dizzy standing up.',
+  'Pharmacy messed up my Lyrica script again. Had to call Dr. Chen''s office to sort it out. Spent 45 minutes on the phone. This happens every other month. I need to ask her to send a recurring prescription. Also my left hand burned all morning and I had to sit down because I got dizzy standing up.',
   'approved',
   'journal',
-  '{"Pain": "5/10 — left hand burned all morning.", "Medication": "Lyrica script messed up by pharmacy again. Spent 45 min on phone to sort it out.", "Mood": "Frustrated with admin burden.", "Note": "Need to ask Dr. Chen for a recurring Lyrica prescription. This happens every other month."}',
+  '{"Pain": "5/10 — left hand burned all morning.", "Medication": "Lyrica script messed up by pharmacy again. Spent 45 min on phone to sort it out. Dizziness reported upon standing.", "Mood": "Frustrated with admin burden.", "Note": "Need to ask Dr. Chen for a recurring Lyrica prescription. This happens every other month."}',
   ARRAY['Medication', 'Admin', 'Symptoms'],
   '{"pain_level": 5, "admin_time_minutes": 45}',
   now() - INTERVAL '2 days'
@@ -121,14 +121,14 @@ INSERT INTO journal_entries (user_id, content, transcription, status, entry_type
 -- Entry 9 (New): Structured Medication (10 hours ago)
 (
   'sarah',
-  'Doctor told me to increase my morning dose of Lyrica to 150mg starting today for the nerve pain. I am hopeful it works better.',
-  'Doctor told me to increase my morning dose of Lyrica to 150mg starting today for the nerve pain. I am hopeful it works better.',
+  'Doctor told me to start taking Lyrica 75mg for the nerve pain. I am hopeful it works better than the last one.',
+  'Doctor told me to start taking Lyrica 75mg for the nerve pain. I am hopeful it works better than the last one.',
   'approved',
   'journal',
-  '{"Brand Name":"Lyrica","Dosage":"150mg","Date Started":"12-03-2026","Reason":"Nerve pain","Feelings":"Hopeful it works better","Notes":"Doctor told me to increase my morning dose."}',
+  '{"Brand Name":"Lyrica","Dosage":"75mg","Date Started":"10-02-2026","Reason":"Nerve pain","Feelings":"Hopeful it works better","Notes":"Doctor told me to start taking Lyrica 75mg."}',
   ARRAY['Medication'],
   '{}',
-  now() - INTERVAL '10 hours'
+  timestamp '2026-02-10 10:00:00'
 ),
 
 -- Entry 10 (New): Structured Script/Referral (8 hours ago)
@@ -169,13 +169,13 @@ INSERT INTO journal_entries (user_id, content, transcription, status, entry_type
 -- Entry 2: Medication anxiety (6 days ago)
 (
   'michael',
-  'Dr. wants me to start on Cymbalta. I googled the side effects and now I''m freaking out. Weight gain, nausea, withdrawal symptoms. But the pain is getting worse every day. My shoulders and neck feel like they''re on fire. I don''t know what to do.',
-  'Dr. wants me to start on Cymbalta. I googled the side effects and now I''m freaking out. Weight gain, nausea, withdrawal symptoms. But the pain is getting worse every day. My shoulders and neck feel like they''re on fire. I don''t know what to do.',
+  'Dr. wants me to start on Cymbalta. I googled the side effects and now I''m freaking out. Weight gain, nausea, withdrawal symptoms. But the pain is getting worse every day. My knee and shoulders feel like they''re on fire. I don''t know what to do.',
+  'Dr. wants me to start on Cymbalta. I googled the side effects and now I''m freaking out. Weight gain, nausea, withdrawal symptoms. But the pain is getting worse every day. My knee and shoulders feel like they''re on fire. I don''t know what to do.',
   'approved',
   'journal',
-  '{"Pain": "7/10 — shoulders and neck feel like they''re on fire. Getting worse every day.", "Medication": "Doctor wants me to start Cymbalta. Worried about side effects (weight gain, nausea, withdrawal).", "Mood": "Anxious, freaking out.", "Feeling": "Don''t know what to do. Overwhelmed by googling side effects."}',
+  '{"Pain": "7/10 — knee and shoulders feel like they''re on fire. Getting worse every day.", "Medication": "Doctor wants me to start Cymbalta. Worried about side effects (weight gain, nausea, withdrawal).", "Mood": "Anxious, freaking out.", "Feeling": "Don''t know what to do. Overwhelmed by googling side effects."}',
   ARRAY['Medication', 'Anxiety', 'Symptoms'],
-  '{"pain_level": 7, "location": "shoulders, neck", "mood": "anxious"}',
+  '{"pain_level": 7, "location": "knee, shoulders", "mood": "anxious"}',
   now() - INTERVAL '6 days'
 ),
 
@@ -195,11 +195,11 @@ INSERT INTO journal_entries (user_id, content, transcription, status, entry_type
 -- Entry 4: Appointment prep - messy dump (4 days ago)
 (
   'michael',
-  'OK so I need to sort out: the medical certificate for work, ask about Cymbalta dosage, the burning in my neck and shoulders, whether I should see a physio, why am I so tired all the time, is this going to get worse, can I still exercise, my friend said try turmeric but that sounds like nonsense',
-  'OK so I need to sort out: the medical certificate for work, ask about Cymbalta dosage, the burning in my neck and shoulders, whether I should see a physio, why am I so tired all the time, is this going to get worse, can I still exercise, my friend said try turmeric but that sounds like nonsense',
+  'OK so I need to sort out: the medical certificate for work, ask about Cymbalta dosage, the burning in my knee and shoulders, whether I should see a physio, why am I so tired all the time, is this going to get worse, can I still exercise, my friend said try turmeric but that sounds like nonsense',
+  'OK so I need to sort out: the medical certificate for work, ask about Cymbalta dosage, the burning in my knee and shoulders, whether I should see a physio, why am I so tired all the time, is this going to get worse, can I still exercise, my friend said try turmeric but that sounds like nonsense',
   'approved',
   'journal',
-  '{"Practitioner Name": "Rheumatologist", "Visit Type": "Review Prep", "preparation_items": [{"category": "Admin/Work", "item": "Medical certificate for employer"}, {"category": "Medication", "item": "Cymbalta dosage and concerns"}, {"category": "Symptoms", "item": "Burning in neck and shoulders"}, {"category": "Referral", "item": "Physiotherapy assessment"}, {"category": "Fatigue", "item": "Persistent tiredness investigation"}, {"category": "Prognosis", "item": "Disease progression questions"}, {"category": "Lifestyle", "item": "Exercise safety and guidelines"}, {"category": "Alternative", "item": "Supplement inquiry (turmeric)"}]}',
+  '{"Practitioner Name": "Rheumatologist", "Visit Type": "Review Prep", "preparation_items": [{"category": "Admin/Work", "item": "Medical certificate for employer"}, {"category": "Medication", "item": "Cymbalta dosage and concerns"}, {"category": "Symptoms", "item": "Burning in knee and shoulders"}, {"category": "Referral", "item": "Physiotherapy assessment"}, {"category": "Fatigue", "item": "Persistent tiredness investigation"}, {"category": "Prognosis", "item": "Disease progression questions"}, {"category": "Lifestyle", "item": "Exercise safety and guidelines"}, {"category": "Alternative", "item": "Supplement inquiry (turmeric)"}]}',
   ARRAY['Appointment', 'Medication', 'Symptoms', 'Work', 'Exercise'],
   '{"items_count": 8, "mood": "overwhelmed but trying"}',
   now() - INTERVAL '4 days'
