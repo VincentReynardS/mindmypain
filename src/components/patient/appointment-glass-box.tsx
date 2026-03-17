@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { JournalEntry } from '@/types/database';
-import { formatDateDDMMYYYY } from '@/lib/utils/date-helpers';
+import { formatDateDDMMYYYY, toYYYYMMDD } from '@/lib/utils/date-helpers';
 
 interface AppointmentGlassBoxProps {
   entry: JournalEntry;
@@ -12,19 +12,32 @@ interface AppointmentGlassBoxProps {
 
 interface AppointmentData {
   Date?: string;
+  Time?: string;
   Profession?: string;
   'Practitioner Name'?: string;
   'Visit Type'?: string;
-  Location?: string;
+  Mode?: 'In-person' | 'Telehealth' | string;
+  Address?: string;
+  Location?: string; // Legacy fallback
   Reason?: string;
   'Admin Needs'?: string[];
   Questions?: string;
+  'Repeat Prescriptions'?: string[];
   Outcomes?: string;
   'Follow-up Questions'?: string;
   Notes?: string;
 }
 
-const ADMIN_NEEDS_OPTIONS = ['Referral', 'Prescription', 'Medical Certificate', 'Imaging Request', 'Blood Test'];
+const ADMIN_NEEDS_OPTIONS = ['Repeat Prescription', 'Medical Certificate', 'Specialist Referral', 'Pathology Referral'];
+const MODE_OPTIONS = ['In-person', 'Telehealth'] as const;
+type AdminNeedOption = typeof ADMIN_NEEDS_OPTIONS[number];
+const LEGACY_ADMIN_NEEDS_MAP: Record<string, typeof ADMIN_NEEDS_OPTIONS[number]> = {
+  Referral: 'Specialist Referral',
+  Prescription: 'Repeat Prescription',
+  'Medical Certificate': 'Medical Certificate',
+  'Imaging Request': 'Pathology Referral',
+};
+
 
 function parseContent(content: string): AppointmentData {
   try {
@@ -34,18 +47,44 @@ function parseContent(content: string): AppointmentData {
   }
 }
 
+function isAdminNeedOption(value: string): value is AdminNeedOption {
+  return (ADMIN_NEEDS_OPTIONS as readonly string[]).includes(value);
+}
+
+function normalizeAdminNeeds(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const normalized = value
+    .map(String)
+    .map((need) => LEGACY_ADMIN_NEEDS_MAP[need] ?? need)
+    .filter(isAdminNeedOption);
+  return normalized.length > 0 ? Array.from(new Set(normalized)) : undefined;
+}
+
+function normalizeAppointmentData(data: AppointmentData): AppointmentData {
+  const normalized: AppointmentData = { ...data };
+  if (!normalized.Address && normalized.Location) {
+    normalized.Address = normalized.Location;
+  }
+  const adminNeeds = normalizeAdminNeeds(normalized['Admin Needs']);
+  if (adminNeeds) {
+    normalized['Admin Needs'] = adminNeeds;
+  }
+  return normalized;
+}
+
 function resolveAppointmentData(entry: JournalEntry): AppointmentData {
   const ai = entry.ai_response as AppointmentData | null;
   if (ai && (ai['Practitioner Name'] || ai['Visit Type'] || ai.Date)) {
-    return ai;
+    return normalizeAppointmentData(ai);
   }
-  return parseContent(entry.content);
+  return normalizeAppointmentData(parseContent(entry.content));
 }
 
 export function AppointmentGlassBox({ entry, onUpdate, onApprove }: AppointmentGlassBoxProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState<AppointmentData>(resolveAppointmentData(entry));
+  const [formData, setFormData] = useState<AppointmentData>(() => resolveAppointmentData(entry));
   const [isSaving, setIsSaving] = useState(false);
+  const [newPrescription, setNewPrescription] = useState('');
 
   const isApproved = entry.status === "approved";
 
@@ -84,11 +123,28 @@ export function AppointmentGlassBox({ entry, onUpdate, onApprove }: AppointmentG
   const handleAdminNeedToggle = (need: string) => {
     setFormData(prev => {
       const current = prev['Admin Needs'] || [];
-      const updated = current.includes(need) 
-        ? current.filter(n => n !== need) 
+      const updated = current.includes(need)
+        ? current.filter(n => n !== need)
         : [...current, need];
       return { ...prev, 'Admin Needs': updated };
     });
+  };
+
+  const addPrescription = () => {
+    const trimmed = newPrescription.trim();
+    if (!trimmed) return;
+    setFormData(prev => ({
+      ...prev,
+      'Repeat Prescriptions': [...(prev['Repeat Prescriptions'] || []), trimmed],
+    }));
+    setNewPrescription('');
+  };
+
+  const removePrescription = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      'Repeat Prescriptions': (prev['Repeat Prescriptions'] || []).filter((_, i) => i !== index),
+    }));
   };
 
   if (isEditing) {
@@ -97,49 +153,61 @@ export function AppointmentGlassBox({ entry, onUpdate, onApprove }: AppointmentG
         <label className="mb-4 block text-sm font-medium text-calm-text">
           Editing Appointment Record
         </label>
-        
+
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-calm-text-muted mb-1" htmlFor="apt-date">Date</label>
-              <input 
+              <input
                 id="apt-date"
-                type="text" 
+                type="date"
                 className="w-full rounded-md border border-calm-border bg-white p-2 text-sm text-calm-text"
-                value={formData.Date || ''}
-                onChange={(e) => handleChange('Date', e.target.value)}
-                placeholder="dd-mm-yyyy"
+                value={toYYYYMMDD(formData.Date || '')}
+                onChange={(e) => handleChange('Date', formatDateDDMMYYYY(e.target.value))}
               />
             </div>
             <div>
+              <label className="block text-xs font-medium text-calm-text-muted mb-1" htmlFor="apt-time">Time</label>
+              <input
+                id="apt-time"
+                type="time"
+                className="w-full rounded-md border border-calm-border bg-white p-2 text-sm text-calm-text"
+                value={formData.Time || ''}
+                onChange={(e) => handleChange('Time', e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
                <label className="block text-xs font-medium text-calm-text-muted mb-1" htmlFor="apt-type">Visit Type</label>
-               <input 
+               <input
                 id="apt-type"
-                type="text" 
+                type="text"
                 className="w-full rounded-md border border-calm-border bg-white p-2 text-sm text-calm-text"
                 value={formData['Visit Type'] || ''}
                 onChange={(e) => handleChange('Visit Type', e.target.value)}
                 placeholder="e.g., Initial, Follow-up"
               />
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
              <div>
               <label className="block text-xs font-medium text-calm-text-muted mb-1" htmlFor="apt-prof">Profession</label>
-              <input 
+              <input
                 id="apt-prof"
-                type="text" 
+                type="text"
                 className="w-full rounded-md border border-calm-border bg-white p-2 text-sm text-calm-text"
                 value={formData.Profession || ''}
                 onChange={(e) => handleChange('Profession', e.target.value)}
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-calm-text-muted mb-1" htmlFor="apt-prac">Practitioner Name</label>
-              <input 
+              <input
                 id="apt-prac"
-                type="text" 
+                type="text"
                 className="w-full rounded-md border border-calm-border bg-white p-2 text-sm text-calm-text"
                 value={formData['Practitioner Name'] || ''}
                 onChange={(e) => handleChange('Practitioner Name', e.target.value)}
@@ -148,19 +216,40 @@ export function AppointmentGlassBox({ entry, onUpdate, onApprove }: AppointmentG
           </div>
 
           <div>
-             <label className="block text-xs font-medium text-calm-text-muted mb-1" htmlFor="apt-loc">Location</label>
-              <input 
-                id="apt-loc"
-                type="text" 
+            <label className="block text-xs font-medium text-calm-text-muted mb-1">Mode</label>
+            <div className="flex gap-2">
+              {MODE_OPTIONS.map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => handleChange('Mode', formData.Mode === mode ? '' : mode)}
+                  className={`rounded-md px-4 py-2 text-xs font-medium border transition-colors ${
+                    formData.Mode === mode
+                      ? 'bg-calm-blue text-white border-calm-blue'
+                      : 'bg-calm-surface text-calm-text border-calm-border hover:bg-calm-border'
+                  }`}
+                  style={{ minHeight: '44px' }}
+                >
+                  {mode}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+             <label className="block text-xs font-medium text-calm-text-muted mb-1" htmlFor="apt-address">Address</label>
+              <input
+                id="apt-address"
+                type="text"
                 className="w-full rounded-md border border-calm-border bg-white p-2 text-sm text-calm-text"
-                value={formData.Location || ''}
-                onChange={(e) => handleChange('Location', e.target.value)}
+                value={formData.Address || ''}
+                onChange={(e) => handleChange('Address', e.target.value)}
               />
           </div>
 
           <div>
              <label className="block text-xs font-medium text-calm-text-muted mb-1" htmlFor="apt-reason">Reason for Visit</label>
-              <textarea 
+              <textarea
                 id="apt-reason"
                 className="w-full rounded-md border border-calm-border bg-white p-2 text-sm text-calm-text min-h-15"
                 value={formData.Reason || ''}
@@ -169,7 +258,7 @@ export function AppointmentGlassBox({ entry, onUpdate, onApprove }: AppointmentG
           </div>
 
           <div>
-             <label className="block text-xs font-medium text-calm-text-muted mb-2">Admin Needs</label>
+             <label className="block text-xs font-medium text-calm-text-muted mb-2">Reason for Visit</label>
              <div className="flex flex-wrap gap-2">
                {ADMIN_NEEDS_OPTIONS.map(need => (
                  <button
@@ -180,7 +269,7 @@ export function AppointmentGlassBox({ entry, onUpdate, onApprove }: AppointmentG
                        ? 'bg-calm-blue text-white'
                        : 'bg-calm-surface text-calm-text hover:bg-calm-border'
                    }`}
-                   style={{ minHeight: '44px' }} // Accessibility target
+                   style={{ minHeight: '44px' }}
                  >
                    {need}
                  </button>
@@ -190,7 +279,7 @@ export function AppointmentGlassBox({ entry, onUpdate, onApprove }: AppointmentG
 
            <div>
              <label className="block text-xs font-medium text-calm-text-muted mb-1" htmlFor="apt-q">Questions to Ask</label>
-              <textarea 
+              <textarea
                 id="apt-q"
                 className="w-full rounded-md border border-calm-border bg-white p-2 text-sm text-calm-text min-h-15"
                 value={formData.Questions || ''}
@@ -198,9 +287,50 @@ export function AppointmentGlassBox({ entry, onUpdate, onApprove }: AppointmentG
               />
           </div>
 
+          {/* Repeat Prescriptions dynamic list */}
+          <div>
+            <label className="block text-xs font-medium text-calm-text-muted mb-1">Repeat Prescriptions</label>
+            {(formData['Repeat Prescriptions'] || []).length > 0 && (
+              <div className="space-y-1.5 mb-2">
+                {(formData['Repeat Prescriptions'] || []).map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <span className="flex-1 rounded-md border border-calm-border bg-white px-2 py-1.5 text-sm text-calm-text">{item}</span>
+                    <button
+                      type="button"
+                      onClick={() => removePrescription(idx)}
+                      className="rounded-md px-2 py-1.5 text-xs font-medium text-destructive hover:bg-red-50 border border-calm-border"
+                      style={{ minHeight: '44px' }}
+                    >
+                      X
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                className="w-full rounded-md border border-calm-border bg-white p-2 text-sm text-calm-text"
+                value={newPrescription}
+                onChange={(e) => setNewPrescription(e.target.value)}
+                placeholder="Medication name"
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addPrescription(); } }}
+              />
+              <button
+                type="button"
+                onClick={addPrescription}
+                disabled={!newPrescription.trim()}
+                className="rounded-md bg-calm-green px-3 py-2 text-xs font-medium text-white hover:bg-opacity-90 disabled:opacity-50"
+                style={{ minHeight: '44px' }}
+              >
+                Add
+              </button>
+            </div>
+          </div>
+
           <div>
              <label className="block text-xs font-medium text-calm-text-muted mb-1" htmlFor="apt-out">Outcomes / Plan</label>
-              <textarea 
+              <textarea
                 id="apt-out"
                 className="w-full rounded-md border border-calm-border bg-white p-2 text-sm text-calm-text min-h-15"
                 value={formData.Outcomes || ''}
@@ -210,7 +340,7 @@ export function AppointmentGlassBox({ entry, onUpdate, onApprove }: AppointmentG
 
           <div>
              <label className="block text-xs font-medium text-calm-text-muted mb-1" htmlFor="apt-fq">Follow-up Questions</label>
-              <textarea 
+              <textarea
                 id="apt-fq"
                 className="w-full rounded-md border border-calm-border bg-white p-2 text-sm text-calm-text min-h-15"
                 value={formData['Follow-up Questions'] || ''}
@@ -220,7 +350,7 @@ export function AppointmentGlassBox({ entry, onUpdate, onApprove }: AppointmentG
 
           <div>
              <label className="block text-xs font-medium text-calm-text-muted mb-1" htmlFor="apt-note">Notes</label>
-              <textarea 
+              <textarea
                 id="apt-note"
                 className="w-full rounded-md border border-calm-border bg-white p-2 text-sm text-calm-text min-h-20"
                 value={formData.Notes || ''}
@@ -235,7 +365,7 @@ export function AppointmentGlassBox({ entry, onUpdate, onApprove }: AppointmentG
             onClick={handleCancel}
             disabled={isSaving}
             className="rounded-md px-4 py-2 text-sm font-medium text-calm-text-muted hover:bg-calm-surface"
-            style={{ minHeight: '44px' }} 
+            style={{ minHeight: '44px' }}
           >
             Cancel
           </button>
@@ -243,7 +373,7 @@ export function AppointmentGlassBox({ entry, onUpdate, onApprove }: AppointmentG
             onClick={handleSave}
             disabled={isSaving}
             className="rounded-md bg-calm-blue px-4 py-2 text-sm font-medium text-white hover:bg-opacity-90 disabled:opacity-50"
-            style={{ minHeight: '44px' }} 
+            style={{ minHeight: '44px' }}
           >
             {isSaving ? "Saving..." : "Save"}
           </button>
@@ -253,13 +383,18 @@ export function AppointmentGlassBox({ entry, onUpdate, onApprove }: AppointmentG
   }
 
   const data = resolveAppointmentData(entry);
+  // Resolve address with legacy Location fallback
+  const address = data.Address || data.Location;
 
   const fields: { key: keyof AppointmentData; label: string }[] = [
     { key: 'Practitioner Name', label: 'Practitioner' },
     { key: 'Visit Type', label: 'Visit Type' },
     { key: 'Profession', label: 'Profession' },
     { key: 'Date', label: 'Date' },
-    { key: 'Location', label: 'Location' },
+    { key: 'Time', label: 'Time' },
+  ];
+
+  const lowerFields: { key: keyof AppointmentData; label: string }[] = [
     { key: 'Reason', label: 'Reason' },
     { key: 'Questions', label: 'Questions to Ask' },
     { key: 'Outcomes', label: 'Outcomes' },
@@ -312,14 +447,55 @@ export function AppointmentGlassBox({ entry, onUpdate, onApprove }: AppointmentG
               </div>
             );
           })}
+          {data.Mode && (
+            <div className="text-calm-text">
+              <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-0.5">Mode</span>
+              <div className="text-sm">
+                <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+                  data.Mode === 'Telehealth' ? 'bg-calm-blue-soft text-calm-blue' : 'bg-calm-purple-soft text-calm-purple'
+                }`}>
+                  {data.Mode}
+                </span>
+              </div>
+            </div>
+          )}
+          {address && (
+            <div className="text-calm-text">
+              <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-0.5">Address</span>
+              <div className="text-sm">{address}</div>
+            </div>
+          )}
+          {lowerFields.map(({ key, label }) => {
+            const val = data[key];
+            if (!val) return null;
+            return (
+              <div key={key} className="text-calm-text">
+                <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-0.5">{label}</span>
+                <div className="text-sm">{String(val)}</div>
+              </div>
+            );
+          })}
           {data['Admin Needs'] && data['Admin Needs'].length > 0 && (
             <div className="text-calm-text">
-              <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-1">Admin Needs</span>
+              <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-1">Reason for Visit</span>
               <div className="flex flex-wrap gap-1">
                 {data['Admin Needs'].map((need: string, idx: number) => (
                   <span key={idx} className="bg-calm-surface text-calm-text text-xs px-2 py-1 rounded-md border border-calm-border">
                     {need}
                   </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {data['Repeat Prescriptions'] && data['Repeat Prescriptions'].length > 0 && (
+            <div className="text-calm-text">
+              <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-1">Repeat Prescriptions</span>
+              <div className="space-y-1">
+                {data['Repeat Prescriptions'].map((item: string, idx: number) => (
+                  <div key={idx} className="flex items-center gap-2 text-sm">
+                    <div className="h-1.5 w-1.5 rounded-full bg-calm-green shrink-0" />
+                    {item}
+                  </div>
                 ))}
               </div>
             </div>

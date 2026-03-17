@@ -214,7 +214,7 @@ describe('smart-parser', () => {
         'Practitioner Name': 'Dr. Smith',
         'Visit Type': 'Follow-up',
         Reason: 'Knee pain',
-        'Admin Needs': ['Referral']
+        'Admin Needs': ['Repeat Prescription']
       };
 
       mockCreate.mockResolvedValueOnce({
@@ -227,7 +227,7 @@ describe('smart-parser', () => {
         ],
       });
 
-      const result = await parseAppointment('I have a follow-up with Dr. Smith tomorrow for my knee pain. Need a referral.');
+      const result = await parseAppointment('I have a follow-up with Dr. Smith tomorrow for my knee pain. Need a repeat prescription.');
 
       // Zod ddmmyyyyDateString transform converts YYYY-MM-DD → dd-mm-yyyy
       expect(result).toEqual({ ...apiResponse, Date: '22-02-2026' });
@@ -265,6 +265,30 @@ describe('smart-parser', () => {
 
       const result = await parseAppointment('appointment');
       expect(result).toEqual({ Date: '17-03-2026' });
+    });
+
+    it('should reject invalid 24-hour time values', async () => {
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: JSON.stringify({ Date: '2026-03-17', Time: '2:30 PM' }) } }],
+      });
+
+      await expect(parseAppointment('appointment')).rejects.toThrow('Time must be in 24-hour HH:MM format');
+    });
+
+    it('should reject unsupported mode values', async () => {
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: JSON.stringify({ Date: '2026-03-17', Mode: 'Phone' }) } }],
+      });
+
+      await expect(parseAppointment('appointment')).rejects.toThrow();
+    });
+
+    it('should reject legacy admin need values that are no longer allowed', async () => {
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: JSON.stringify({ Date: '2026-03-17', 'Admin Needs': ['Referral'] }) } }],
+      });
+
+      await expect(parseAppointment('appointment')).rejects.toThrow();
     });
   });
 

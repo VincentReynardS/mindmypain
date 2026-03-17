@@ -18,8 +18,16 @@ export default function AppointmentsPage() {
   // rollback to an already-optimistic state. Acceptable for prototype scope.
   const handleUpdate = async (id: string, content: string) => {
     const previousEntries = [...appointmentEntries];
+    // Parse the stringified JSON to also update ai_response optimistically
+    // so the view mode reflects edits immediately (resolveAppointmentData reads ai_response first)
+    let parsedContent: JsonObject | null = null;
+    try { parsedContent = JSON.parse(content) as JsonObject; } catch { /* keep null */ }
     setAppointmentEntries(entries =>
-      entries.map(e => e.id === id ? { ...e, content } : e)
+      entries.map(e => e.id === id ? {
+        ...e,
+        content,
+        ...(parsedContent ? { ai_response: { ...(e.ai_response as JsonObject || {}), ...parsedContent } } : {}),
+      } : e)
     );
     try {
       await updateAppointmentEntry(id, content);

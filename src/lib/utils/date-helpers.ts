@@ -107,6 +107,27 @@ export function formatDateDDMMYYYY(value: string): string {
   return value;
 }
 
+/**
+ * Converts dd-mm-yyyy to YYYY-MM-DD for native date input value.
+ * Returns empty string if not parseable.
+ */
+export function toYYYYMMDD(value: string): string {
+  if (!value) return '';
+  if (YYYYMMDD_PATTERN.test(value)) return value;
+  if (DDMMYYYY_PATTERN.test(value)) {
+    const [day, month, year] = value.split('-');
+    return `${year}-${month}-${day}`;
+  }
+  const parsed = new Date(value);
+  if (!isNaN(parsed.getTime())) {
+    const y = parsed.getFullYear();
+    const m = String(parsed.getMonth() + 1).padStart(2, '0');
+    const d = String(parsed.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  return '';
+}
+
 export function normalizeOptionalDateDDMMYYYY(value: string | null | undefined): string | null {
   if (!value) return null;
   const trimmed = value.trim();

@@ -96,7 +96,7 @@ development_status:
   7-4-immunisation-record-component-parser: done
   7-5-dedicated-journal-page-clear-input-functionality: done
   7-6-session-persistence-fix: done
-  7-7-appointment-form-enhancements: backlog
+  7-7-appointment-form-enhancements: done
   7-8-medication-history-view-fix: backlog
   epic-7-retrospective: optional
 

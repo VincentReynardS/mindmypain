@@ -112,7 +112,7 @@ INSERT INTO journal_entries (user_id, content, transcription, status, entry_type
   'I have a follow up with Dr. Chen next Tuesday. We need to do a pain management review. I need a new prescription and I want to ask if we can increase the Lyrica. Oh, and I need to ask about the burning in my left hand.',
   'approved',
   'journal',
-  '{"Date":"17-03-2026","Profession":"Specialist","Practitioner Name":"Dr. Chen","Visit Type":"Follow-up","Reason":"Pain management review","Admin Needs":["Prescription"],"Questions":"Can we increase Lyrica?","Notes":"Need to ask about the burning in left hand."}',
+  '{"Date":"17-03-2026","Time":"14:30","Profession":"Specialist","Practitioner Name":"Dr. Chen","Visit Type":"Follow-up","Mode":"In-person","Address":"Suite 4, 120 Collins St, Melbourne VIC 3000","Reason":"Pain management review","Admin Needs":["Repeat Prescription","Specialist Referral"],"Questions":"Can we increase Lyrica?","Repeat Prescriptions":["Lyrica 75mg","Panadol Osteo"],"Notes":"Need to ask about the burning in left hand."}',
   ARRAY['Appointment', 'Doctor'],
   '{}',
   now() - INTERVAL '12 hours'
@@ -251,7 +251,7 @@ INSERT INTO journal_entries (user_id, content, transcription, status, entry_type
   'I have my review appointment with Dr. Sharma next month for the fibromyalgia assessment. I need to get a medical certificate for work. I want to ask him what this diagnosis means for my job. I am going to take my list of questions.',
   'approved',
   'journal',
-  '{"Date":"12-04-2026","Profession":"Rheumatologist","Practitioner Name":"Dr. Sharma","Visit Type":"Initial Review","Reason":"Fibromyalgia assessment","Admin Needs":["Medical Certificate"],"Questions":"What does this diagnosis mean for my job?","Notes":"Going to take my list of questions."}',
+  '{"Date":"12-04-2026","Time":"10:00","Profession":"Rheumatologist","Practitioner Name":"Dr. Sharma","Visit Type":"Initial Review","Mode":"Telehealth","Address":"","Reason":"Fibromyalgia assessment","Admin Needs":["Medical Certificate","Pathology Referral"],"Questions":"What does this diagnosis mean for my job?","Repeat Prescriptions":[],"Notes":"Going to take my list of questions."}',
   ARRAY['Appointment'],
   '{}',
   now() - INTERVAL '12 hours'

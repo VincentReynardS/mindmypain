@@ -9,6 +9,7 @@ const openai = new OpenAI({
 });
 
 const MODEL_ID = 'gpt-5.2';
+const APPOINTMENT_TIME_24H_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 // === Date Context & Formatting ===
 
@@ -42,6 +43,11 @@ const ddmmyyyyDateString = z.string().nullish().transform((val) => {
   if (!val) return val;
   return formatDateDDMMYYYY(val);
 });
+
+const appointmentTimeString = z.string().regex(
+  APPOINTMENT_TIME_24H_PATTERN,
+  'Time must be in 24-hour HH:MM format'
+);
 
 // === Intent Classification ===
 
@@ -121,8 +127,9 @@ const JournalResponseSchema = z.object({
     'Visit Type': z.string().nullish(),
     'Profession': z.string().nullish(),
     'Date': ddmmyyyyDateString,
-    'Time': z.string().nullish(),
-    'Location': z.string().nullish(),
+    'Time': appointmentTimeString.nullish(),
+    'Mode': z.enum(['In-person', 'Telehealth']).nullish(),
+    'Address': z.string().nullish(),
     'Reason': z.string().nullish(),
     'Notes': z.string().nullish(),
   })).nullish(),
@@ -152,7 +159,8 @@ Extraction Rules:
    - If input contains multiple note-like fragments (e.g. prior daily note + new update), merge them into ONE coherent "Note" that reads naturally, without duplication, while preserving important details.
 
 2. APPOINTMENTS (If mentioned):
-   - Extract into "Appointments" array. Use keys: "Practitioner Name", "Visit Type", "Profession", "Date", "Time", "Location", "Reason", "Notes".
+   - Extract into "Appointments" array. Use keys: "Practitioner Name", "Visit Type", "Profession", "Date", "Time", "Mode", "Address", "Reason", "Notes".
+   - "Mode" must be one of: "In-person", "Telehealth".
    - ${DATE_FORMAT_INSTRUCTION}
 
 3. SCRIPTS (If mentioned):
@@ -326,13 +334,16 @@ export async function parseScript(text: string, referenceDate?: Date | string): 
 
 const AppointmentResponseSchema = z.object({
   Date: ddmmyyyyDateString,
+  Time: appointmentTimeString.optional(),
   Profession: z.string().optional(),
   'Practitioner Name': z.string().optional(),
   'Visit Type': z.string().optional(),
-  Location: z.string().optional(),
+  Mode: z.enum(['In-person', 'Telehealth']).optional(),
+  Address: z.string().optional(),
   Reason: z.string().optional(),
-  'Admin Needs': z.array(z.enum(['Referral', 'Prescription', 'Medical Certificate', 'Imaging Request', 'Blood Test'])).optional(),
+  'Admin Needs': z.array(z.enum(['Repeat Prescription', 'Medical Certificate', 'Specialist Referral', 'Pathology Referral'])).optional(),
   Questions: z.string().optional(),
+  'Repeat Prescriptions': z.array(z.string()).optional(),
   Outcomes: z.string().optional(),
   'Follow-up Questions': z.string().optional(),
   Notes: z.string().optional()
@@ -343,11 +354,16 @@ export type AppointmentData = z.infer<typeof AppointmentResponseSchema>;
 const APPOINTMENT_SYSTEM_PROMPT = `
 You are a medical scribe extracting appointment data from a journal entry.
 Extract the appointment details and output valid JSON exactly matching these keys:
-"Date", "Profession", "Practitioner Name", "Visit Type", "Location", "Reason", "Admin Needs" (array of strings), "Questions", "Outcomes", "Follow-up Questions", "Notes".
+"Date", "Time", "Profession", "Practitioner Name", "Visit Type", "Mode", "Address", "Reason", "Admin Needs" (array of strings), "Questions", "Repeat Prescriptions" (array of strings), "Outcomes", "Follow-up Questions", "Notes".
 
 ${DATE_FORMAT_INSTRUCTION}
 
-Omit keys if not mentioned. Be concise. For "Admin Needs", allowed values are: 'Referral', 'Prescription', 'Medical Certificate', 'Imaging Request', 'Blood Test'.
+- "Time" should be in 24-hour HH:MM format (e.g., "14:30", "09:00").
+- "Mode" must be one of: "In-person", "Telehealth".
+- "Address" is the location/address of the appointment.
+- For "Admin Needs", allowed values are: 'Repeat Prescription', 'Medical Certificate', 'Specialist Referral', 'Pathology Referral'.
+- "Repeat Prescriptions" is a list of medication names that need repeat prescriptions.
+Omit keys if not mentioned. Be concise.
 `;
 
 export async function parseAppointment(text: string, referenceDate?: Date | string): Promise<AppointmentData> {

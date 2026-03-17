@@ -72,14 +72,14 @@ describe('GlassBoxCard Edit Dispatch', () => {
         'Practitioner Name': 'Dr Smith',
         'Visit Type': 'Consultation',
         Date: '2026-03-01',
-        'Admin Needs': ['Referral'],
+        'Admin Needs': ['Repeat Prescription'],
       },
     });
     render(<GlassBoxCard entry={entry} onUpdate={onUpdate} onApprove={onApprove} onUpdateAiResponse={onUpdateAiResponse} />);
 
     fireEvent.click(screen.getByText('Edit'));
 
-    const selectedChip = screen.getByRole('button', { name: 'Referral' });
+    const selectedChip = screen.getByRole('button', { name: 'Repeat Prescription' });
     expect(selectedChip.className).toContain('bg-calm-blue');
     expect(selectedChip.className).toContain('text-white');
     expect(selectedChip.className).not.toContain('bg-calm-primary');

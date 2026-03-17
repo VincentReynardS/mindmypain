@@ -127,13 +127,23 @@ function SafeAppointmentRender({ aiResponse }: { aiResponse: Record<string, Reco
     { key: 'Visit Type', label: 'Visit Type' },
     { key: 'Profession', label: 'Profession' },
     { key: 'Date', label: 'Date' },
-    { key: 'Location', label: 'Location' },
+    { key: 'Time', label: 'Time' },
+  ];
+
+  // Address with Location fallback for legacy entries
+  const address = getString(aiResponse['Address']) || getString(aiResponse['Location']);
+  const mode = getString(aiResponse['Mode']);
+
+  const lowerFields = [
     { key: 'Reason', label: 'Reason' },
     { key: 'Questions', label: 'Questions to Ask' },
     { key: 'Outcomes', label: 'Outcomes' },
     { key: 'Follow-up Questions', label: 'Follow-up Questions' },
     { key: 'Notes', label: 'Notes' },
   ];
+
+  const adminNeeds = getStringArray(aiResponse['Admin Needs']);
+  const repeatPrescriptions = getStringArray(aiResponse['Repeat Prescriptions']);
 
   return (
     <div className="space-y-2">
@@ -149,14 +159,56 @@ function SafeAppointmentRender({ aiResponse }: { aiResponse: Record<string, Reco
           </div>
         );
       })}
-      {getStringArray(aiResponse['Admin Needs']).length > 0 && (
+      {mode && (
         <div className="text-calm-text">
-          <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-1">Admin Needs</span>
+          <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-0.5">Mode</span>
+          <div className="text-sm">
+            <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+              mode === 'Telehealth' ? 'bg-calm-blue-soft text-calm-blue' : 'bg-calm-purple-soft text-calm-purple'
+            }`}>
+              {mode}
+            </span>
+          </div>
+        </div>
+      )}
+      {address && (
+        <div className="text-calm-text">
+          <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-0.5">Address</span>
+          <div className="text-sm">{address}</div>
+        </div>
+      )}
+      {lowerFields.map(({ key, label }) => {
+        const val = aiResponse[key];
+        const raw = getString(val);
+        if (!raw) return null;
+        return (
+          <div key={key} className="text-calm-text">
+            <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-0.5">{label}</span>
+            <div className="text-sm">{raw}</div>
+          </div>
+        );
+      })}
+      {adminNeeds.length > 0 && (
+        <div className="text-calm-text">
+          <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-1">Reason for Visit</span>
           <div className="flex flex-wrap gap-1">
-            {getStringArray(aiResponse['Admin Needs']).map((need, idx: number) => (
+            {adminNeeds.map((need, idx: number) => (
               <span key={idx} className="bg-calm-surface text-calm-text text-xs px-2 py-1 rounded-md border border-calm-border">
                 {need}
               </span>
+            ))}
+          </div>
+        </div>
+      )}
+      {repeatPrescriptions.length > 0 && (
+        <div className="text-calm-text">
+          <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-1">Repeat Prescriptions</span>
+          <div className="space-y-1">
+            {repeatPrescriptions.map((item, idx: number) => (
+              <div key={idx} className="flex items-center gap-2 text-sm">
+                <div className="h-1.5 w-1.5 rounded-full bg-calm-green shrink-0" />
+                {item}
+              </div>
             ))}
           </div>
         </div>
