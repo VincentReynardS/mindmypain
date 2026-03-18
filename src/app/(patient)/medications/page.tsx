@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { MedicationGlassBox } from '@/components/patient/medication-glass-box';
-import { updateMedicationEntry, approveMedicationEntry, backfillEntryIntent } from '@/app/actions/journal-actions';
+import { updateJournalAiResponse, approveMedicationEntry, backfillEntryIntent } from '@/app/actions/journal-actions';
 import { JsonObject, JournalEntry } from '@/types/database';
+import { selectMedicationEntries } from '@/lib/journal-entry-ai';
 import { useUserStore } from '@/lib/stores/user-store';
 import { formatDateDDMMYYYY } from '@/lib/utils/date-helpers';
 
@@ -20,17 +21,17 @@ export default function MedicationsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const personaId = useUserStore((s) => s.personaId);
-  const supabase = createClient();
+  const [supabase] = useState(createClient);
 
   // Note: snapshot captures render-time closure. Rapid concurrent mutations may
   // rollback to an already-optimistic state. Acceptable for prototype scope.
-  const handleUpdate = async (id: string, content: string) => {
+  const handleUpdate = async (id: string, aiResponse: JsonObject, contentText: string) => {
     const previousEntries = [...medicationEntries];
     setMedicationEntries(entries =>
-      entries.map(e => e.id === id ? { ...e, content } : e)
+      entries.map(e => e.id === id ? { ...e, ai_response: aiResponse, content: contentText } : e)
     );
     try {
-      await updateMedicationEntry(id, content);
+      await updateJournalAiResponse(id, aiResponse, contentText);
       setError(null);
     } catch (err) {
       console.error('Failed to update medication:', err);
@@ -72,46 +73,12 @@ export default function MedicationsPage() {
         .neq('status', 'archived')
         .order('created_at', { ascending: false });
 
-      const dedications: JournalEntry[] = [];
-      const mentions: MedicationMention[] = [];
-      const toBackfill: { id: string; intent: string }[] = [];
+      const { medications, mentions, toBackfill } = selectMedicationEntries((entries as JournalEntry[]) || []);
 
-      ((entries as JournalEntry[]) || []).forEach(entry => {
-        if (!entry.ai_response) return;
-        const ai = entry.ai_response as JsonObject | null;
-        if (!ai || typeof ai !== 'object') return;
+      // Best-effort backfill without delaying render.
+      void Promise.allSettled(toBackfill.map(({ id, intent }) => backfillEntryIntent(id, intent)));
 
-        // Check authoritative _intent first
-        if (typeof ai._intent === 'string') {
-          if (ai._intent === 'medication') dedications.push(entry);
-          // Medication mentions come from journal-intent entries, check below
-          if (ai._intent === 'journal' && typeof ai.Medication === 'string' && ai.Medication.trim() !== '') {
-            mentions.push({ entryId: entry.id, date: entry.created_at, medication: ai.Medication });
-          }
-          return;
-        }
-
-        // Legacy fallback: field-sniffing
-        if (ai['Brand Name'] || ai['Generic Name'] || ai.Dosage) {
-          dedications.push(entry);
-          toBackfill.push({ id: entry.id, intent: 'medication' });
-          return;
-        }
-
-        // Medication mention string from parseJournal()
-        if (typeof ai.Medication === 'string' && ai.Medication.trim() !== '') {
-          mentions.push({
-            entryId: entry.id,
-            date: entry.created_at,
-            medication: ai.Medication,
-          });
-        }
-      });
-
-      // On-the-fly backfill for legacy entries
-      toBackfill.forEach(({ id, intent }) => backfillEntryIntent(id, intent));
-
-      setMedicationEntries(dedications);
+      setMedicationEntries(medications);
       setMedicationMentions(mentions);
       setIsLoading(false);
     }

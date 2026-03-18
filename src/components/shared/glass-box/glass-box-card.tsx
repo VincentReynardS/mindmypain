@@ -90,30 +90,50 @@ function getDynamicBadge(entry: JournalEntry): { label: string; badgeClass: stri
 const DATE_FIELDS = new Set(['Date', 'Date Started', 'Date Stopped', 'Date Prescribed', 'Date Given']);
 
 function SafeMedicationRender({ aiResponse }: { aiResponse: Record<string, RecordValue> }) {
-  const fields = [
-    { key: 'Brand Name', label: 'Brand Name' },
-    { key: 'Generic Name', label: 'Generic Name' },
-    { key: 'Dosage', label: 'Dosage' },
-    { key: 'Date Started', label: 'Date Started' },
-    { key: 'Reason', label: 'Reason' },
+  const brandName = getString(aiResponse['Brand Name']);
+  const genericName = getString(aiResponse['Generic Name']);
+  const dosage = getString(aiResponse.Dosage);
+  const reason = getString(aiResponse.Reason);
+
+  const remainingFields = [
     { key: 'Side Effects', label: 'Side Effects' },
     { key: 'Feelings', label: 'Feelings' },
+    { key: 'Date Started', label: 'Date Started' },
     { key: 'Date Stopped', label: 'Date Stopped' },
     { key: 'Stop Reason', label: 'Stop Reason' },
     { key: 'Notes', label: 'Notes' },
   ];
 
   return (
-    <div className="space-y-2">
-      {fields.map(({ key, label }) => {
-        const val = aiResponse[key];
-        const raw = getString(val);
+    <div className="space-y-3 text-sm text-calm-text leading-relaxed">
+      {(brandName || genericName) && (
+        <div className="flex justify-between border-b border-calm-border pb-1">
+          <span className="font-medium text-calm-text-muted text-xs uppercase tracking-wider">Medication</span>
+          <span className="font-semibold text-calm-text text-right">
+            {brandName}{brandName && genericName ? ' (' : ''}{genericName}{brandName && genericName ? ')' : ''}
+          </span>
+        </div>
+      )}
+      {dosage && (
+        <div className="flex justify-between border-b border-calm-border pb-1">
+          <span className="font-medium text-calm-text-muted text-xs uppercase tracking-wider">Dosage</span>
+          <span>{dosage}</span>
+        </div>
+      )}
+      {reason && (
+        <div className="pt-1">
+          <span className="block font-medium text-calm-text-muted text-xs uppercase tracking-wider mb-1">Reason</span>
+          <p>{reason}</p>
+        </div>
+      )}
+      {remainingFields.map(({ key, label }) => {
+        const raw = getString(aiResponse[key]);
         if (!raw) return null;
         const display = DATE_FIELDS.has(key) ? formatDateDDMMYYYY(raw) : raw;
         return (
-          <div key={key} className="text-calm-text">
-            <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-0.5">{label}</span>
-            <div className="text-sm">{display}</div>
+          <div key={key} className="pt-1">
+            <span className="block font-medium text-calm-text-muted text-xs uppercase tracking-wider mb-1">{label}</span>
+            <div className="whitespace-pre-wrap">{display}</div>
           </div>
         );
       })}

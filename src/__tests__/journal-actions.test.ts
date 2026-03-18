@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createJournalEntry, updateJournalEntry, approveJournalEntry, processJournalEntry, updateJournalAiResponse, updateScriptOrReferralEntry, archiveJournalEntry, restoreJournalEntry, permanentlyDeleteJournalEntry, bulkDeleteArchivedEntries } from '@/app/actions/journal-actions';
+import { createJournalEntry, updateJournalEntry, approveJournalEntry, processJournalEntry, updateJournalAiResponse, updateScriptOrReferralEntry, archiveJournalEntry, restoreJournalEntry, permanentlyDeleteJournalEntry, bulkDeleteArchivedEntries, backfillEntryIntent } from '@/app/actions/journal-actions';
 import * as smartParser from '@/lib/openai/smart-parser';
 
 // Mock dependencies
@@ -195,6 +195,36 @@ describe('Journal Server Actions', () => {
       expect(mockUpdate).toHaveBeenCalledWith({ status: 'approved' });
       expect(mockChain.eq).toHaveBeenCalledWith('id', id);
       expect(revalidatePath).toHaveBeenCalledWith('/journal');
+    });
+  });
+
+  describe('backfillEntryIntent', () => {
+    it('creates ai_response from legacy JSON content when none exists', async () => {
+      mockSelect.mockReturnValueOnce({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({
+            data: {
+              ai_response: null,
+              content: JSON.stringify({
+                'Brand Name': 'Aspirin',
+                Dosage: '100mg',
+              }),
+            },
+            error: null,
+          }),
+        }),
+      });
+
+      await backfillEntryIntent('legacy-id', 'medication');
+
+      expect(mockUpdate).toHaveBeenCalledWith({
+        ai_response: {
+          _intent: 'medication',
+          'Brand Name': 'Aspirin',
+          Dosage: '100mg',
+        },
+      });
+      expect(mockChain.eq).toHaveBeenCalledWith('id', 'legacy-id');
     });
   });
 

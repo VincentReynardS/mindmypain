@@ -570,17 +570,33 @@ export async function backfillEntryIntent(id: string, intent: string) {
 
   const { data: entry, error: fetchError } = await supabase
     .from('journal_entries')
-    .select('ai_response')
+    .select('ai_response, content')
     .eq('id', id)
-    .single<{ ai_response: JsonObject | null }>();
+    .single<{ ai_response: JsonObject | null; content: string }>();
 
-  if (fetchError || !entry?.ai_response) return;
+  if (fetchError || !entry) return;
 
-  const existing = entry.ai_response as Record<string, unknown>;
-  if (existing._intent) return; // Already has intent, skip
+  const existing = entry.ai_response as Record<string, unknown> | null;
+  if (existing?._intent) return; // Already has intent, skip
+
+  let nextAiResponse: JsonObject | null = null;
+  if (existing) {
+    nextAiResponse = { ...existing, _intent: intent } as JsonObject;
+  } else {
+    try {
+      const parsed = JSON.parse(entry.content);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        nextAiResponse = { ...(parsed as Record<string, unknown>), _intent: intent } as JsonObject;
+      }
+    } catch {
+      return;
+    }
+  }
+
+  if (!nextAiResponse) return;
 
   await supabase
     .from('journal_entries')
-    .update({ ai_response: { ...existing, _intent: intent } } as never)
+    .update({ ai_response: nextAiResponse } as never)
     .eq('id', id);
 }
