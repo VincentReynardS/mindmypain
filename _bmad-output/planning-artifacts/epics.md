@@ -638,6 +638,19 @@ So that I can review my actual structured data, rather than just the raw input n
 - **Then** the entries should render using the full `MedicationGlassBox` component UI (like they do on the Home page)
 - **And** they should visually display the parsed structured data (Brand Name, Dosage, etc) instead of just the raw log note.
 
+### Story 7.9: Mary-Lynne's Account
+
+As a collaborator,
+I want a specific account for "Mary-Lynne" that functions exactly like Kim and Hilary's protected accounts,
+So that I can test the app with my true experience without interference.
+
+**Acceptance Criteria:**
+
+- **Given** the login screen
+- **When** I navigate to `/mary-lynne` or select Mary-Lynne
+- **Then** I am prompted for a password
+- **And** upon successful entry, I am logged into Mary-Lynne's specific persona environment
+
 # Epic 8: The Wizard's Dashboard & Scenario Control (Deferred)
 
 **Goal**: Enable the Researcher to monitor live sessions and trigger specific "Scenario Responses" or edit text in real-time. (Deferred).
