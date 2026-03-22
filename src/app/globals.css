@@ -60,6 +60,8 @@
   --color-calm-teal-soft: var(--calm-teal-soft);
   --color-calm-purple: var(--calm-purple);
   --color-calm-purple-soft: var(--calm-purple-soft);
+  --color-calm-rose: var(--calm-rose);
+  --color-calm-rose-soft: var(--calm-rose-soft);
   --color-calm-warm: var(--calm-warm);
   --color-calm-text: var(--calm-text);
   --color-calm-text-muted: var(--calm-text-muted);
@@ -130,6 +132,8 @@
   --calm-teal-soft: oklch(0.92 0.03 190);
   --calm-purple: oklch(0.55 0.1 290);
   --calm-purple-soft: oklch(0.92 0.03 290);
+  --calm-rose: oklch(0.55 0.1 350);
+  --calm-rose-soft: oklch(0.92 0.03 350);
   --calm-warm: oklch(0.9 0.03 60);
   --calm-text: oklch(0.25 0.02 250);
   --calm-text-muted: oklch(0.5 0.02 250);
@@ -190,6 +194,8 @@
   --calm-teal-soft: oklch(0.25 0.04 190);
   --calm-purple: oklch(0.65 0.1 290);
   --calm-purple-soft: oklch(0.25 0.04 290);
+  --calm-rose: oklch(0.65 0.1 350);
+  --calm-rose-soft: oklch(0.25 0.04 350);
   --calm-warm: oklch(0.3 0.04 60);
   --calm-text: oklch(0.9 0.01 240);
   --calm-text-muted: oklch(0.6 0.02 240);

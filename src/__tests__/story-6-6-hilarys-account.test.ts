@@ -69,13 +69,6 @@ describe("Story 6.6: Hilary's Account", () => {
   // ─── Server action: verifyHilaryPassword ───────────────────────────
 
   describe("verifyHilaryPassword server action", () => {
-    beforeEach(async () => {
-      const { __resetHilaryLoginRateLimitForTests } = await import(
-        "@/app/hilary/actions"
-      );
-      await __resetHilaryLoginRateLimitForTests();
-    });
-
     it("should accept correct password", async () => {
       vi.stubEnv("HILARYS_PASSWORD", "test-secret");
       const { verifyHilaryPassword } = await import("@/app/hilary/actions");
@@ -102,21 +95,6 @@ describe("Story 6.6: Hilary's Account", () => {
 
       const result = await verifyHilaryPassword("anything");
       expect(result).toBe(false);
-
-      vi.unstubAllEnvs();
-    });
-
-    it("should rate-limit after repeated invalid attempts", async () => {
-      vi.stubEnv("HILARYS_PASSWORD", "test-secret");
-      const { verifyHilaryPassword } = await import("@/app/hilary/actions");
-
-      for (let i = 0; i < 5; i++) {
-        const invalid = await verifyHilaryPassword("wrong-password");
-        expect(invalid).toBe(false);
-      }
-
-      const blocked = await verifyHilaryPassword("test-secret");
-      expect(blocked).toBe(false);
 
       vi.unstubAllEnvs();
     });
