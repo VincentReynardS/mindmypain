@@ -244,43 +244,43 @@ INSERT INTO journal_entries (user_id, content, transcription, status, entry_type
   now() - INTERVAL '1 day'
 ),
 
--- Entry 8 (New): Structured Appointment (12 hours ago)
+-- Entry 8 (New): Targeted Appointment Capture
 (
   'michael',
-  'I have my review appointment with Dr. Sharma next month for the fibromyalgia assessment. I need to get a medical certificate for work. I want to ask him what this diagnosis means for my job. I am going to take my list of questions.',
-  'I have my review appointment with Dr. Sharma next month for the fibromyalgia assessment. I need to get a medical certificate for work. I want to ask him what this diagnosis means for my job. I am going to take my list of questions.',
+  'I need a follow-up appointment with Dr. Sharma in one month.',
+  'I need a follow-up appointment with Dr. Sharma in one month.',
   'approved',
   'journal',
-  '{"Date":"12-04-2026","Time":"10:00","Profession":"Rheumatologist","Practitioner Name":"Dr. Sharma","Visit Type":"Initial Review","Mode":"Telehealth","Address":"","Reason":"Fibromyalgia assessment","Admin Needs":["Medical Certificate","Pathology Referral"],"Questions":"What does this diagnosis mean for my job?","Repeat Prescriptions":[],"Notes":"Going to take my list of questions."}',
+  '{"Date":"12-04-2026","Profession":"Rheumatologist","Practitioner Name":"Dr. Sharma","Visit Type":"Follow-up"}',
   ARRAY['Appointment'],
   '{}',
-  now() - INTERVAL '12 hours'
+  now() - INTERVAL '1 day' - INTERVAL '2 hours'
 ),
 
--- Entry 9 (New): Structured Medication (10 hours ago)
+-- Entry 9 (New): Targeted Medication Capture
 (
   'michael',
-  'I started taking Cymbalta 30mg last week for the Fibromyalgia. I don''t have any side effects yet. I am taking it every morning with food. I feel anxious about it but I am trying.',
-  'I started taking Cymbalta 30mg last week for the Fibromyalgia. I don''t have any side effects yet. I am taking it every morning with food. I feel anxious about it but I am trying.',
+  'I need to start taking Cymbalta 30mg.',
+  'I need to start taking Cymbalta 30mg.',
   'approved',
   'journal',
-  '{"Brand Name":"Cymbalta","Dosage":"30mg","Date Started":"05-03-2026","Reason":"Fibromyalgia","Side Effects":"None yet","Feelings":"Anxious but trying","Notes":"Taking it every morning with food."}',
+  '{"Brand Name":"Cymbalta","Dosage":"30mg","Date Started":"12-03-2026"}',
   ARRAY['Medication'],
   '{}',
-  now() - INTERVAL '10 hours'
+  now() - INTERVAL '1 day' - INTERVAL '1 hour'
 ),
 
--- Entry 10 (New): Structured Script/Referral (8 hours ago)
+-- Entry 10 (New): Targeted Script/Referral Capture
 (
   'michael',
-  'I got a psychologist referral yesterday and I just filled it. I booked the first session for next week.',
-  'I got a psychologist referral yesterday and I just filled it. I booked the first session for next week.',
+  'I got a psychologist referral today.',
+  'I got a psychologist referral today.',
   'approved',
   'journal',
-  '{"Name":"Psychologist Referral","Date Prescribed":"11-03-2026","Filled":true,"Notes":"Booked the first session for next week."}',
+  '{"Name":"Psychologist Referral","Filled":false}',
   ARRAY['Script', 'Referral'],
   '{}',
-  now() - INTERVAL '8 hours'
+  now() - INTERVAL '1 day'
 );
 
 -- ============================================================

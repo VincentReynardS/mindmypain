@@ -7,7 +7,7 @@ inputDocuments: []
 
 ## Overview
 
-This document outlines the three validation scenarios for the MINDmyPAIN design workshop. Each scenario is designed to test a specific user empowerment hypothesis using a "Director Mode" approach where participants guide a persona through a key interaction.
+This document outlines the four validation scenarios for the MINDmyPAIN design workshop. Each scenario is designed to test a specific user empowerment hypothesis using a "Director Mode" approach where participants guide a persona through a key interaction.
 
 **Duration:** ~7 minutes per scenario.
 **Persona 1:** Sarah (The Veteran) - Chronic Pain Manager (Complex History).
@@ -29,16 +29,11 @@ This document outlines the three validation scenarios for the MINDmyPAIN design 
 **Part A: The Brain Dump (Input)**
 
 1.  **Facilitator:** _"Sarah grabs her phone to tell the app everything at once before she forgets. She presses the microphone. What should she say?"_
-2.  **Participant Action (Director):** _"She needs to say: I have Dr. Lee on Tuesday at 2, and pick up Lyrica by Thursday."_
-3.  **Wizard Action:** Triggers **[Smart Parsing]**.
-4.  **AI Response:**
-    _"Got it, Sarah. I've updated your schedule:"_
-    **(Glass Box Card):**
+2.  **Participant Action (Example):** _"She needs to say: I have Dr. Lee on Tuesday at 2, and pick up Lyrica by Thursday."_
+3.  **AI Action:**
+    **(Card):**
     - **Appointment:** Dr. Lee (Rheumatology) - Tue 24th @ 2:00 PM.
     - **Task:** Refill 'Lyrica' (Deadline: Thursday).
-      _"Shall I set a reminder for the pharmacy run tomorrow?"_
-5.  **Facilitator:** _"Does that capture what Sarah needed?"_
-6.  **Participant Response:** _"Yes."_
 
 **(Fast Forward 2 Days)**
 
@@ -48,13 +43,11 @@ This document outlines the three validation scenarios for the MINDmyPAIN design 
 "It's now **Sunday morning**. Sarah wakes up feeling groggy. She has a nagging feeling she needs to do something important for her health this week, but she can't remember what."
 
 1.  **Facilitator:** _"Sarah opens the app and asks a question. What does she ask to get peace of mind?"_
-2.  **Participant Action (Director):** _"What do I have on this week?"_ or _"What am I forgetting?"_
-3.  **Wizard Action:** Triggers **[Weekly Brief]**.
-4.  **AI Response:**
-    _"Hi Sarah. It's a busy start to the week:"_
+2.  **Participant Action (Example):** _"What do I have on this week?"_ or _"What am I forgetting?"_
+3.  **AI Action:**
+    **(Card):**
     - **Urgent:** Refill Lyrica (Tomorrow!).
     - **Tuesday:** Dr. Lee @ 2:00 PM.
-      _"Would you like a reminder notification for the pharmacy?"_
 
 ---
 
@@ -71,26 +64,20 @@ This document outlines the three validation scenarios for the MINDmyPAIN design 
 **Part A: The Evidence Check (Proactive Recall)**
 
 1.  **Facilitator:** _"Sarah wants to check her facts before the appointment. She opens the Chat interface. What should she ask to get her exact medication history?"_
-2.  **Participant Action (Director):** _"When did I start Lyrica and has it made me dizzy?"_
-3.  **Wizard Action:** Triggers **[Medication Recall Chat]**.
-4.  **AI Response:**
-    _"Hi Sarah. Looking at your structured records:"_
-    - _"You started **Lyrica (75mg)** on **February 10th**."_
-    - _"You have logged **'Dizziness'** as a side effect on your Daily Journal **4 times** in the past two weeks."_
-    _"Would you like me to add 'Discuss Lyrica side effects' to your questions for tomorrow?"_
-5.  **Facilitator:** _"Does having these exact dates from the chat make Sarah feel more prepared to face a new doctor?"_
-6.  **Participant Response:** _"Yes, definitely."_
+2.  **Participant Action (Example):** _"When did I start Lyrica and has it made me dizzy?"_
+3.  **AI Action:**
+    - **Record Event:** Started **Lyrica (75mg)** on **February 10th**.
+    - **Journal Note:** Logged **'Dizziness'** as a side effect **4 times** in the past two weeks.
 
 **Part B: Setting the Agenda (Structured Appointment)**
 
 **Story Update:**
 "Sarah now wants to make sure all the details for tomorrow are set up correctly in her Appointments tab using the specific appointment form."
 
-1.  **Facilitator:** _"Sarah goes to the Appointments tab and taps the microphone to add tomorrow's visit. What does she say to capture the details?"_
-2.  **Participant Action (Director):** _"I have a Rheumatologist appointment with Dr. Chen tomorrow at 10 AM at the City Clinic. I need a repeat prescription and I want to stop my Lyrica."_
-3.  **Wizard Action:** Triggers **[Advanced Appointment Parse]**.
-4.  **AI Response:**
-    _(Glass Box Card - Appointment):_
+1.  **Facilitator:** _"Sarah opens the app and taps the microphone to add tomorrow's visit. What does she say to capture the details?"_
+2.  **Participant Action (Example):** _"I have a Rheumatologist appointment with Dr. Chen tomorrow at 10 AM at the City Clinic. I need a repeat prescription and I want to stop my Lyrica."_
+3.  **AI Action:**
+    _(Appointment Card):_
     - **Date/Time:** Tomorrow @ 10:00 AM
     - **Practitioner:** Dr. Chen (Rheumatologist)
     - **Address:** City Clinic
@@ -99,52 +86,85 @@ This document outlines the three validation scenarios for the MINDmyPAIN design 
       - Repeat Prescription
       - How to stop taking Lyrica?
     - **Outcomes/Plan:** _(Blank - to be filled after visit)_
-      _"Does this look correct for tomorrow's appointment?"_
-5.  **Facilitator:** _"Did the system capture her complex needs using the new detailed appointment structure?"_
-6.  **Participant Response:** _"Yes, it categorized her repeat script and questions perfectly."_
 
 ---
 
-## Scenario 3: The Order Maker (Michael - Smart Parsing & Reflection)
+## Scenario 3: The Order Maker (Michael - Single-Intent Parsing & Cross-Feature Tracking)
 
-**Hypothesis:** Intelligent multi-intent parsing and dedicated reflection spaces reduce cognitive overwhelm for new patients.
+**Hypothesis:** Intelligent targeted parsing allows users to accurately populate specific features (Medications, Scripts, Appointments) using simple natural language, reducing the burden of manual data entry forms.
 
 **Story Prompt (Facilitator reads to Participant):**
-"Now let's switch to **Michael**. He is newly diagnosed and very overwhelmed. His thoughts are a mess. Here is what is spinning in his head:
+"Now let's switch to **Michael**. He is newly diagnosed and very overwhelmed. He just finished a very dense initial review with his Rheumatologist, Dr. Sharma. His head is spinning with new instructions:
 
-> He woke up with his **Knee feeling hot** and swollen (Pain level 8/10).
-> He needs a **Physio Referral** because his GP told him to get one.
-> He only got **4 hours of sleep** last night and is feeling incredibly **anxious**.
+> 1. He was given a script to start a new medication: **Cymbalta 30mg**.
+> 2. He was given a **referral to see a Psychologist**.
+> 3. He needs to schedule a **Follow-up Appointment** with Dr. Sharma in exactly one month.
 >
-> It's all jumbled together in his mind."
+> It's all jumbled together in his mind, and he's exhausted. He wants to capture these before he forgets."
 
-**Part A: The Multi-Intent Brain Dump**
+**Part A: The Targeted Voice Captures**
 
-1.  **Facilitator:** _"Michael grabs his phone to dump all these disparate thoughts on the Home screen to clear his head. He presses the microphone. What should he say?"_
-2.  **Participant Action (Director):** _"My knee is hot and pain is an 8. I slept terrible, only 4 hours, and I'm anxious. Oh, and I need to get a physio referral."_
-3.  **Wizard Action:** Triggers **[Multi-Intent Extract]**.
-4.  **AI Response:**
-    _Processing..._
-    _"Okay Michael, I've organized that for you into your records:"_
-    **(Single Journal Glass Box with nested sections):**
-    - **Physical & Mental State:** Sleep: 4 hrs, Pain: 8/10, Mood: Anxious, Note: Knee hot/swollen.
-    - **Scripts/Referrals Found:** Physiotherapy Referral (Status: To Be Filled)
-      _"I've saved your reflection and noted the physio referral. Anything else?"_
-5.  **Facilitator:** _"Did the app successfully split his jumbled thoughts into the appropriate sections?"_
-6.  **Participant Action (Director):** _"Yes."_
+1.  **Facilitator:** _"Michael sits in his car and opens the app. Rather than filling out complex forms, he decides to use the microphone to log each item one by one. First, he logs the medication. What does he say?"_
+2.  **Participant Action (Example):** _"He taps the microphone and says: 'I need to start taking Cymbalta 30mg.'"_
+3.  **AI Action:**
+    The AI parses the input and creates a structured **(Medication Card):**
+    - **Brand Name:** Cymbalta
+    - **Dosage:** 30mg
 
-**Part B: The Calm Reflection**
+4.  **Facilitator:** _"Great. Now he wants to log his referral. He taps the microphone again. What does he say?"_
+5.  **Participant Action (Example):** _"'I got a psychologist referral today.'"_
+6.  **AI Action:**
+    The AI creates a structured **(Script/Referral Card):**
+    - **Name:** Psychologist Referral
+    - **Filled:** False
+
+7.  **Facilitator:** _"Finally, he logs the appointment. What does he say?"_
+8.  **Participant Action (Example):** _"'I need a follow-up appointment with Dr. Sharma in one month.'"_
+9.  **AI Action:**
+    The AI creates a structured **(Appointment Card):**
+    - **Practitioner:** Dr. Sharma
+    - **Type:** Follow-up
+
+**Part B: Navigating the Care Plan**
 
 **Story Update:**
-"A few hours later, Michael just wants to look at his mood and thoughts, without seeing his stressful to-do list of referrals and administrative tasks."
+"A few days later, Michael's brain fog has lifted slightly. He wants to review the medication he was prescribed, mark his referral as booked, and make sure his appointment is logged."
 
-1.  **Facilitator:** _"Michael wants a quiet space just to see his feelings. Where should he navigate?"_
-2.  **Participant Action (Director):** _"He goes to the dedicated Journal page."_
-3.  **Wizard Action:** Triggers **[Dedicated Journal View]**.
-4.  **AI Response:**
-    _Navigates to a clean page_
-    Only displays his raw reflection:
-    **"Sleep: 4 hrs. Feeling: Anxious. Notes: Knee hot, pain 8/10."**
-    (No referrals, appointments, or admin tasks shown).
-5.  **Facilitator:** _"Does separating the raw journal from the medical admin help Michael feel less overwhelmed?"_
-6.  **Participant Response:** _"Yes, it's a much cleaner space."_
+1.  **Facilitator:** _"Michael wants to verify his structured care plan. Where does he go in the app to check his medication, update his referral, and view his appointment?"_
+2.  **Participant Action (Example):** _"He navigates to the 'Medications' tab to check the Cymbalta dosage, moves to the 'Scripts' tab to mark the Psychologist Referral as 'filled/booked', and checks the 'Appointments' tab to confirm his booking."_
+3.  **AI Action:**
+    - The participant successfully interacts with multiple features (Medications, Scripts, Appointments).
+    - _(Script/Referral Card Updates):_ Shifted to 'Filled/Actioned' status.
+
+---
+
+## Scenario 4: The Post-Appointment Exhaustion (Michael - Outcomes & Immunisations)
+
+**Hypothesis:** Voice-driven logging reduces the stress of record-keeping after taxing medical appointments, and intelligent parsing ensures vital details are correctly categorized.
+
+**Story Prompt (Facilitator reads to Participant):**
+"Let's stick with **Michael**. He just finished his very first Physiotherapy session. It was painful and physically exhausting. The physio gave him instructions: he needs to do 'nerve glide' exercises twice a day. She also reminded him he needs a Flu shot as we are entering winter. His brain is fried, but he knows he needs to track this."
+
+**Part A: The Low-Energy Capture**
+
+1.  **Facilitator:** _"Michael gets in his car. He doesn't have the energy to type into different forms. He uses the green voice record button on the home screen. What does he say?"_
+2.  **Participant Action (Example):** _"I just finished at the physio. She said to do nerve glide exercises twice a day. Also she reminded me to get a flu shot."_
+3.  **AI Action:**
+    **(Cards):**
+    - **Journal (Care Note):** Physio session completed. Assigned 'nerve glide' exercises (2x/day).
+    - **Action Item:** Get Flu Shot.
+
+**Part B: The Preventative Action (Immunisation Parsing)**
+
+**Story Update:**
+"A week later, Michael acts on that reminder and gets his flu vaccine at the local pharmacy. The pharmacist hands him a slip with the vaccine details: **'Vaxigrip Tetra - Batch #1234'**. He wants to make sure this is added to his official Profile so his GP will see it."
+
+1.  **Facilitator:** _"Michael opens the app. What does he tell the app to ensure this is officially recorded?"_
+2.  **Participant Action (Example):** _"I just got my Flu vaccine at the pharmacy. It was Vaxigrip Tetra, batch 1234."_
+3.  **AI Action:**
+    **(Immunisation Card):**
+    - **Vaccine/Disease:** Influenza (Flu)
+    - **Brand/Description:** Vaxigrip Tetra
+    - **Batch No:** 1234
+    - **Date Given:** Today
+      *(Marks 'Get Flu Shot' task as complete)*
