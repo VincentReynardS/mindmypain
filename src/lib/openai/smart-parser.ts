@@ -57,21 +57,27 @@ Your task is to classify the patient's unstructured journal entry.
 Classify the patient's input based on the intention of the patient.
 
 Categories (assess in this order):
-- "appointment": The user is discussing a doctor's visit, consultation, therapist, or any health practitioner meeting.
-- "immunisation": The user is discussing a vaccine, immunisation, vaccination, booster, flu shot, or any injection/jab for disease prevention.
-- "medication": The user is discussing taking a medication, dosage, or side effect. Medication refers to consumable drugs, this is different from immunisation.
-- "script": The user is talking about prescriptions or referrals.
-- "journal": A multi-topic daily entry, a general narrative, tasks, reminders, or any other content.
+- "appointment": The user is planning, scheduling, or preparing for a doctor's visit, consultation, therapist session, or any health practitioner meeting.
+- "immunisation": The user has received a vaccine, immunisation, booster, flu shot, or any injection/jab for disease prevention.
+- "medication": The user starts taking or is actively taking a medication, including dosage, timing, or side effects. Medication refers to consumable drugs, this is different from immunisation.
+- "script": The user is tracking prescriptions, refills, or referrals they need to obtain or follow up on.
+- "journal": A multi-topic daily entry, general narrative, completed activities, reflections, reminders, or any content that does not clearly belong to the above categories.
 
-Rule: If the entry is PRIMARILY about an appointment, classify it as "appointment".
-Rule: If the entry is PRIMARILY about a vaccine or immunisation, classify it as "immunisation", not "medication".
-Rule: For short, social, or ambiguous greetings (e.g., "hi", "hello", "test"), default to "journal".
-Rule: When in doubt, always default to "journal".
+<CRITICAL>
+# Temporal Rule (Very Important)
+- If the entry describes past events, completed actions, or reflections, classify as "journal" unless it clearly fits another category (e.g., medication started, vaccine received).
+- If the entry describes future plans or intentions, classify according to the relevant category (e.g., appointment).
+
+# Appointment Clarification
+- Only classify as "appointment" if the user is planning or preparing for a visit.
+- If the user is describing a completed appointment, classify as "journal".
+
+# Ambiguity Rule
+- For short, social, or ambiguous greetings (e.g., "hi", "hello", "test"), default to "journal".
+- When in doubt, always default to "journal".
+
 Output MUST be valid JSON: {"intent": "..."}
-
-Be careful not to be biased based on the brand names that the patient includes in the input.
-For example:
-"Got my Pfizer COVID booster today" -> "immunisation" because it is a vaccination, regardless of the brand.
+</CRITICAL>
 `;
 
 export async function classifyIntent(text: string): Promise<'appointment' | 'medication' | 'script' | 'immunisation' | 'journal'> {
