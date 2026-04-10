@@ -14,7 +14,18 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
-export type PersonaId = "sarah" | "michael" | "guest" | "kim" | "hilary" | "mary-lynne" | string;
+export type PersonaId =
+  | "sarah"
+  | "michael"
+  | "guest"
+  | "kim"
+  | "hilary"
+  | "mary-lynne"
+  | "simone"
+  | "peter"
+  | "lucille"
+  | "kimberley"
+  | string;
 
 export interface UserState {
   personaId: PersonaId | null;
@@ -57,9 +68,38 @@ export const useUserStore = create<UserState>()(
         } else if (id === "mary-lynne") {
            iconBg = "bg-calm-rose-soft";
            iconText = "text-calm-rose";
+        } else if (id === "simone") {
+           iconBg = "bg-calm-teal-soft";
+           iconText = "text-calm-teal";
+        } else if (id === "peter") {
+           iconBg = "bg-calm-purple-soft";
+           iconText = "text-calm-purple";
+        } else if (id === "lucille") {
+           iconBg = "bg-calm-rose-soft";
+           iconText = "text-calm-rose";
+        } else if (id === "kimberley") {
+           iconBg = "bg-calm-blue-soft";
+           iconText = "text-calm-blue";
         }
 
-        const personaName = id === "guest" ? "Guest" : id === "kim" ? "Kim" : id === "hilary" ? "Hilary" : id === "mary-lynne" ? "Mary-Lynne" : actualId.charAt(0).toUpperCase() + actualId.slice(1);
+        const personaName =
+          id === "guest"
+            ? "Guest"
+            : id === "kim"
+            ? "Kim"
+            : id === "hilary"
+            ? "Hilary"
+            : id === "mary-lynne"
+            ? "Mary-Lynne"
+            : id === "simone"
+            ? "Simone"
+            : id === "peter"
+            ? "Peter"
+            : id === "lucille"
+            ? "Lucille"
+            : id === "kimberley"
+            ? "Kimberley"
+            : actualId.charAt(0).toUpperCase() + actualId.slice(1);
 
         set({
           personaId: actualId,
