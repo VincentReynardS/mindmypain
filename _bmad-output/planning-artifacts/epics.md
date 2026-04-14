@@ -665,6 +665,21 @@ So that these stakeholders can test the app securely without interfering with ex
 - **And** upon successful entry, I am logged into their specific persona environment, isolated from other users
 - **And** these personas are explicitly NOT visible on the public Persona selection cards
 
+### Story 7.11: Samuel Hamilton-Smith's Account
+
+As a collaborator,
+I want an explicit, hidden account for Samuel Hamilton-Smith,
+So that he can test the app securely without interfering with existing user states or simulated personas.
+
+**Acceptance Criteria:**
+
+- **Given** the login screen
+- **When** I navigate to the precise hidden path for his account (e.g., `/samuel`)
+- **Then** I am prompted for a password
+- **And** upon successful entry, I am logged into Samuel Hamilton-Smith's specific persona environment, isolated from other users
+- **And** this persona is explicitly NOT visible on the public Persona selection cards
+
+
 # Epic 8: The Wizard's Dashboard & Scenario Control (Deferred)
 
 **Goal**: Enable the Researcher to monitor live sessions and trigger specific "Scenario Responses" or edit text in real-time. (Deferred).
