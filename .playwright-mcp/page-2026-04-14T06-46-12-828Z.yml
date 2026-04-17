@@ -1,0 +1,14 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - heading "Samuel's Account" [level=1] [ref=e4]
+    - generic [ref=e5]:
+      - generic [ref=e6]: Password
+      - textbox "Password" [ref=e7]:
+        - /placeholder: Enter password
+      - alert [ref=e22]: Incorrect password
+      - button "Login" [disabled] [ref=e8]:
+        - img [ref=e9]
+        - text: Login
+  - button "Open Next.js Dev Tools" [ref=e18] [cursor=pointer]:
+    - img [ref=e19]
+  - alert [ref=e12]

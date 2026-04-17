@@ -25,6 +25,7 @@ export type PersonaId =
   | "peter"
   | "lucille"
   | "kimberley"
+  | "samuel"
   | string;
 
 export interface UserState {
@@ -80,6 +81,9 @@ export const useUserStore = create<UserState>()(
         } else if (id === "kimberley") {
            iconBg = "bg-calm-blue-soft";
            iconText = "text-calm-blue";
+        } else if (id === "samuel") {
+           iconBg = "bg-calm-green-soft";
+           iconText = "text-calm-green";
         }
 
         const personaName =
@@ -99,6 +103,8 @@ export const useUserStore = create<UserState>()(
             ? "Lucille"
             : id === "kimberley"
             ? "Kimberley"
+            : id === "samuel"
+            ? "Samuel"
             : actualId.charAt(0).toUpperCase() + actualId.slice(1);
 
         set({

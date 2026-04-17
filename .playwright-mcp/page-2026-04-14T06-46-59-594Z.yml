@@ -1,0 +1,70 @@
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e18] [cursor=pointer]:
+    - img [ref=e19]
+  - alert [ref=e12]
+  - generic [ref=e23]:
+    - banner "Main navigation" [ref=e24]:
+      - generic [ref=e25]:
+        - generic [ref=e26]: MINDmyPAIN
+        - generic [ref=e27]:
+          - generic [ref=e28]: Samuel
+          - button "User menu" [ref=e29]:
+            - img [ref=e30]
+          - menu:
+            - menuitem "My Detail":
+              - img
+              - text: My Detail
+            - menuitem "Archive":
+              - img
+              - text: Archive
+            - menuitem "Sign Out":
+              - img
+              - text: Sign Out
+    - main [ref=e33]:
+      - generic [ref=e34]:
+        - generic [ref=e35]:
+          - heading "Home" [level=1] [ref=e36]
+          - paragraph [ref=e37]: Capture your thoughts by voice or text.
+        - generic [ref=e38]:
+          - generic [ref=e39]: Journal entry
+          - textbox "Journal entry text input" [ref=e40]:
+            - /placeholder: What's on your mind? Type or use the mic...
+          - generic [ref=e41]:
+            - button "Clear input" [disabled] [ref=e42]:
+              - img [ref=e43]
+              - text: Clear
+            - button "Save Entry" [disabled] [ref=e46]
+        - button "Start recording" [ref=e49]:
+          - img [ref=e50]
+        - separator [ref=e53]
+        - status [ref=e54]:
+          - paragraph [ref=e55]: No entries yet. Start by recording or typing above.
+    - navigation "Bottom Navigation" [ref=e56]:
+      - link "Home" [ref=e57] [cursor=pointer]:
+        - /url: /home
+        - img [ref=e58]
+        - generic [ref=e61]: Home
+      - link "Journal" [ref=e62] [cursor=pointer]:
+        - /url: /journal
+        - img [ref=e63]
+        - generic [ref=e65]: Journal
+      - link "Appts" [ref=e66] [cursor=pointer]:
+        - /url: /appointments
+        - img [ref=e67]
+        - generic [ref=e70]: Appts
+      - link "Meds" [ref=e71] [cursor=pointer]:
+        - /url: /medications
+        - img [ref=e72]
+        - generic [ref=e75]: Meds
+      - link "Scripts" [ref=e76] [cursor=pointer]:
+        - /url: /scripts
+        - img [ref=e77]
+        - generic [ref=e80]: Scripts
+      - link "Immun." [ref=e81] [cursor=pointer]:
+        - /url: /immunisations
+        - img [ref=e82]
+        - generic [ref=e89]: Immun.
+      - link "Ask" [ref=e90] [cursor=pointer]:
+        - /url: /chat
+        - img [ref=e91]
+        - generic [ref=e93]: Ask

@@ -1,0 +1,28 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - heading "MINDmyPAIN" [level=1] [ref=e4]
+      - paragraph [ref=e5]: Your Smart Health Journal
+    - generic [ref=e6]:
+      - button "Start as Guest" [ref=e7] [cursor=pointer]:
+        - img [ref=e9]
+        - heading "Guest" [level=2] [ref=e12]
+        - paragraph [ref=e13]: The Clean Slate
+        - paragraph [ref=e14]: Start with a blank canvas. No prior medical history or seeded data will be loaded.
+        - generic [ref=e15]: Start as Guest
+      - button "Start as Sarah" [ref=e16] [cursor=pointer]:
+        - img [ref=e18]
+        - heading "Sarah, 45" [level=2] [ref=e20]
+        - paragraph [ref=e21]: The Veteran
+        - paragraph [ref=e22]: Living with CRPS. Wants efficiency and validation when explaining her condition to doctors.
+        - generic [ref=e23]: Start as Sarah
+      - button "Start as Michael" [ref=e24] [cursor=pointer]:
+        - img [ref=e26]
+        - heading "Michael, 28" [level=2] [ref=e34]
+        - paragraph [ref=e35]: The Overwhelmed
+        - paragraph [ref=e36]: Newly diagnosed with chronic pain. Needs clarity and calm to organize the chaos of new information.
+        - generic [ref=e37]: Start as Michael
+    - paragraph [ref=e38]: No account needed. Select a persona to begin.
+  - button "Open Next.js Dev Tools" [ref=e44] [cursor=pointer]:
+    - img [ref=e45]
+  - alert [ref=e48]
