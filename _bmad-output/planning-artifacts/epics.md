@@ -679,6 +679,20 @@ So that he can test the app securely without interfering with existing user stat
 - **And** upon successful entry, I am logged into Samuel Hamilton-Smith's specific persona environment, isolated from other users
 - **And** this persona is explicitly NOT visible on the public Persona selection cards
 
+### Story 7.12: Wave 2 Collaborator Accounts
+
+As a collaborator,
+I want explicit, hidden accounts for Ross Mieglich, Joanna Parlapiano, and Joanne Tynan,
+So that these stakeholders can test the app securely without interfering with existing user states.
+
+**Acceptance Criteria:**
+
+- **Given** the login screen
+- **When** I navigate to their precise hidden paths (e.g., `/ross`, `/joanna`, `/joanne`)
+- **Then** I am prompted for a password
+- **And** upon successful entry, I am logged into their specific persona environment, isolated from other users
+- **And** these personas are explicitly NOT visible on the public Persona selection cards
+
 
 # Epic 8: The Wizard's Dashboard & Scenario Control (Deferred)
 
