@@ -111,12 +111,12 @@ describe("Story 7.10: Additional Collaborator Accounts", () => {
 
   // ─── Server actions: verifyXPassword ──────────────────────────────
 
-  describe("verifySimonePassword server action", () => {
+  describe("verifyPersonaPassword for Simone", () => {
     it("should accept correct password", async () => {
       vi.stubEnv("SIMONE_PASSWORD", "test-secret");
-      const { verifySimonePassword } = await import("@/app/simone/actions");
+      const { verifyPersonaPassword } = await import("@/app/actions/verify-persona-password");
 
-      const result = await verifySimonePassword("test-secret");
+      const result = await verifyPersonaPassword("simone", "test-secret");
       expect(result).toBe(true);
 
       vi.unstubAllEnvs();
@@ -124,9 +124,9 @@ describe("Story 7.10: Additional Collaborator Accounts", () => {
 
     it("should reject incorrect password", async () => {
       vi.stubEnv("SIMONE_PASSWORD", "test-secret");
-      const { verifySimonePassword } = await import("@/app/simone/actions");
+      const { verifyPersonaPassword } = await import("@/app/actions/verify-persona-password");
 
-      const result = await verifySimonePassword("wrong-password");
+      const result = await verifyPersonaPassword("simone", "wrong-password");
       expect(result).toBe(false);
 
       vi.unstubAllEnvs();
@@ -134,21 +134,21 @@ describe("Story 7.10: Additional Collaborator Accounts", () => {
 
     it("should reject when SIMONE_PASSWORD env is not set", async () => {
       vi.stubEnv("SIMONE_PASSWORD", "");
-      const { verifySimonePassword } = await import("@/app/simone/actions");
+      const { verifyPersonaPassword } = await import("@/app/actions/verify-persona-password");
 
-      const result = await verifySimonePassword("anything");
+      const result = await verifyPersonaPassword("simone", "anything");
       expect(result).toBe(false);
 
       vi.unstubAllEnvs();
     });
   });
 
-  describe("verifyPeterPassword server action", () => {
+  describe("verifyPersonaPassword for Peter", () => {
     it("should accept correct password", async () => {
       vi.stubEnv("PETER_PASSWORD", "test-secret");
-      const { verifyPeterPassword } = await import("@/app/peter/actions");
+      const { verifyPersonaPassword } = await import("@/app/actions/verify-persona-password");
 
-      const result = await verifyPeterPassword("test-secret");
+      const result = await verifyPersonaPassword("peter", "test-secret");
       expect(result).toBe(true);
 
       vi.unstubAllEnvs();
@@ -156,9 +156,9 @@ describe("Story 7.10: Additional Collaborator Accounts", () => {
 
     it("should reject incorrect password", async () => {
       vi.stubEnv("PETER_PASSWORD", "test-secret");
-      const { verifyPeterPassword } = await import("@/app/peter/actions");
+      const { verifyPersonaPassword } = await import("@/app/actions/verify-persona-password");
 
-      const result = await verifyPeterPassword("wrong-password");
+      const result = await verifyPersonaPassword("peter", "wrong-password");
       expect(result).toBe(false);
 
       vi.unstubAllEnvs();
@@ -166,21 +166,21 @@ describe("Story 7.10: Additional Collaborator Accounts", () => {
 
     it("should reject when PETER_PASSWORD env is not set", async () => {
       vi.stubEnv("PETER_PASSWORD", "");
-      const { verifyPeterPassword } = await import("@/app/peter/actions");
+      const { verifyPersonaPassword } = await import("@/app/actions/verify-persona-password");
 
-      const result = await verifyPeterPassword("anything");
+      const result = await verifyPersonaPassword("peter", "anything");
       expect(result).toBe(false);
 
       vi.unstubAllEnvs();
     });
   });
 
-  describe("verifyLucillePassword server action", () => {
+  describe("verifyPersonaPassword for Lucille", () => {
     it("should accept correct password", async () => {
       vi.stubEnv("LUCILLE_PASSWORD", "test-secret");
-      const { verifyLucillePassword } = await import("@/app/lucille/actions");
+      const { verifyPersonaPassword } = await import("@/app/actions/verify-persona-password");
 
-      const result = await verifyLucillePassword("test-secret");
+      const result = await verifyPersonaPassword("lucille", "test-secret");
       expect(result).toBe(true);
 
       vi.unstubAllEnvs();
@@ -188,9 +188,9 @@ describe("Story 7.10: Additional Collaborator Accounts", () => {
 
     it("should reject incorrect password", async () => {
       vi.stubEnv("LUCILLE_PASSWORD", "test-secret");
-      const { verifyLucillePassword } = await import("@/app/lucille/actions");
+      const { verifyPersonaPassword } = await import("@/app/actions/verify-persona-password");
 
-      const result = await verifyLucillePassword("wrong-password");
+      const result = await verifyPersonaPassword("lucille", "wrong-password");
       expect(result).toBe(false);
 
       vi.unstubAllEnvs();
@@ -198,23 +198,21 @@ describe("Story 7.10: Additional Collaborator Accounts", () => {
 
     it("should reject when LUCILLE_PASSWORD env is not set", async () => {
       vi.stubEnv("LUCILLE_PASSWORD", "");
-      const { verifyLucillePassword } = await import("@/app/lucille/actions");
+      const { verifyPersonaPassword } = await import("@/app/actions/verify-persona-password");
 
-      const result = await verifyLucillePassword("anything");
+      const result = await verifyPersonaPassword("lucille", "anything");
       expect(result).toBe(false);
 
       vi.unstubAllEnvs();
     });
   });
 
-  describe("verifyKimberleyPassword server action", () => {
+  describe("verifyPersonaPassword for Kimberley", () => {
     it("should accept correct password", async () => {
       vi.stubEnv("KIMBERLEY_PASSWORD", "test-secret");
-      const { verifyKimberleyPassword } = await import(
-        "@/app/kimberley/actions"
-      );
+      const { verifyPersonaPassword } = await import("@/app/actions/verify-persona-password");
 
-      const result = await verifyKimberleyPassword("test-secret");
+      const result = await verifyPersonaPassword("kimberley", "test-secret");
       expect(result).toBe(true);
 
       vi.unstubAllEnvs();
@@ -222,11 +220,9 @@ describe("Story 7.10: Additional Collaborator Accounts", () => {
 
     it("should reject incorrect password", async () => {
       vi.stubEnv("KIMBERLEY_PASSWORD", "test-secret");
-      const { verifyKimberleyPassword } = await import(
-        "@/app/kimberley/actions"
-      );
+      const { verifyPersonaPassword } = await import("@/app/actions/verify-persona-password");
 
-      const result = await verifyKimberleyPassword("wrong-password");
+      const result = await verifyPersonaPassword("kimberley", "wrong-password");
       expect(result).toBe(false);
 
       vi.unstubAllEnvs();
@@ -234,11 +230,9 @@ describe("Story 7.10: Additional Collaborator Accounts", () => {
 
     it("should reject when KIMBERLEY_PASSWORD env is not set", async () => {
       vi.stubEnv("KIMBERLEY_PASSWORD", "");
-      const { verifyKimberleyPassword } = await import(
-        "@/app/kimberley/actions"
-      );
+      const { verifyPersonaPassword } = await import("@/app/actions/verify-persona-password");
 
-      const result = await verifyKimberleyPassword("anything");
+      const result = await verifyPersonaPassword("kimberley", "anything");
       expect(result).toBe(false);
 
       vi.unstubAllEnvs();

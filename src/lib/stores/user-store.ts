@@ -1,5 +1,5 @@
 /**
- * User Store - Manages simulated persona selection (Sarah/Michael/Guest/Kim/Hilary/Mary-Lynne)
+ * User Store - Manages simulated persona selection.
  *
  * Architecture: Zustand store following the pattern:
  * - Export raw store creator for testing
@@ -8,34 +8,71 @@
  * - Persisted via localStorage so personas survive page refreshes,
  *   tab backgrounding, and screen locks (critical for mobile workshops)
  *
+ * Persona styling and display names are derived from the central
+ * registry in `@/lib/persona-config` — do NOT hardcode per-id mappings here.
+ *
  * @see architecture.md - State Management (Decision 4)
+ * @see persona-config.ts - Single source of truth for persona metadata
  */
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import {
+  ACCENT_ICON_CLASSES,
+  KNOWN_PERSONAS,
+  type KnownPersonaId,
+} from "@/lib/persona-config";
 
-export type PersonaId =
-  | "sarah"
-  | "michael"
-  | "guest"
-  | "kim"
-  | "hilary"
-  | "mary-lynne"
-  | "simone"
-  | "peter"
-  | "lucille"
-  | "kimberley"
-  | "samuel"
-  | string;
+export type PersonaId = KnownPersonaId | "guest" | (string & {});
+
+const DEFAULT_ICON_BG = "bg-calm-surface-raised";
+const DEFAULT_ICON_TEXT = "text-calm-text-muted";
 
 export interface UserState {
   personaId: PersonaId | null;
   personaName: string | null;
-  personaIconBg: string; // Taildwind class for avatar bg
-  personaIconText: string; // Tailwind class for avatar text
+  personaIconBg: string;
+  personaIconText: string;
   isSelected: boolean;
   selectPersona: (id: PersonaId) => void;
   clearPersona: () => void;
+}
+
+function resolvePersona(id: PersonaId): {
+  actualId: string;
+  personaName: string;
+  iconBg: string;
+  iconText: string;
+} {
+  if (id === "guest") {
+    const actualId = `guest_${Date.now()}_${Math.random()
+      .toString(36)
+      .substring(2, 9)}`;
+    return {
+      actualId,
+      personaName: "Guest",
+      iconBg: DEFAULT_ICON_BG,
+      iconText: DEFAULT_ICON_TEXT,
+    };
+  }
+
+  const known = (KNOWN_PERSONAS as Record<string, (typeof KNOWN_PERSONAS)[KnownPersonaId]>)[id];
+  if (known) {
+    const accent = ACCENT_ICON_CLASSES[known.accentColor];
+    return {
+      actualId: known.personaId,
+      personaName: known.displayName,
+      iconBg: accent.iconBg,
+      iconText: accent.iconText,
+    };
+  }
+
+  return {
+    actualId: id,
+    personaName: id.charAt(0).toUpperCase() + id.slice(1),
+    iconBg: DEFAULT_ICON_BG,
+    iconText: DEFAULT_ICON_TEXT,
+  };
 }
 
 export const useUserStore = create<UserState>()(
@@ -43,70 +80,11 @@ export const useUserStore = create<UserState>()(
     (set) => ({
       personaId: null,
       personaName: null,
-      personaIconBg: "bg-surface-raised",
-      personaIconText: "text-calm-text-muted",
+      personaIconBg: DEFAULT_ICON_BG,
+      personaIconText: DEFAULT_ICON_TEXT,
       isSelected: false,
       selectPersona: (id: PersonaId) => {
-        // If guest, create a transient unique ID to prevent database collisions
-        // across multiple users testing the prototype simultaneously.
-        const actualId = id === "guest" ? `guest_${Date.now()}_${Math.random().toString(36).substring(2, 9)}` : id;
-
-        let iconBg = "bg-calm-surface-raised";
-        let iconText = "text-calm-text-muted";
-
-        if (id === "sarah") {
-           iconBg = "bg-calm-blue-soft";
-           iconText = "text-calm-blue";
-        } else if (id === "michael") {
-           iconBg = "bg-calm-green-soft";
-           iconText = "text-calm-green";
-        } else if (id === "kim") {
-           iconBg = "bg-calm-teal-soft";
-           iconText = "text-calm-teal";
-        } else if (id === "hilary") {
-           iconBg = "bg-calm-purple-soft";
-           iconText = "text-calm-purple";
-        } else if (id === "mary-lynne") {
-           iconBg = "bg-calm-rose-soft";
-           iconText = "text-calm-rose";
-        } else if (id === "simone") {
-           iconBg = "bg-calm-teal-soft";
-           iconText = "text-calm-teal";
-        } else if (id === "peter") {
-           iconBg = "bg-calm-purple-soft";
-           iconText = "text-calm-purple";
-        } else if (id === "lucille") {
-           iconBg = "bg-calm-rose-soft";
-           iconText = "text-calm-rose";
-        } else if (id === "kimberley") {
-           iconBg = "bg-calm-blue-soft";
-           iconText = "text-calm-blue";
-        } else if (id === "samuel") {
-           iconBg = "bg-calm-green-soft";
-           iconText = "text-calm-green";
-        }
-
-        const personaName =
-          id === "guest"
-            ? "Guest"
-            : id === "kim"
-            ? "Kim"
-            : id === "hilary"
-            ? "Hilary"
-            : id === "mary-lynne"
-            ? "Mary-Lynne"
-            : id === "simone"
-            ? "Simone"
-            : id === "peter"
-            ? "Peter"
-            : id === "lucille"
-            ? "Lucille"
-            : id === "kimberley"
-            ? "Kimberley"
-            : id === "samuel"
-            ? "Samuel"
-            : actualId.charAt(0).toUpperCase() + actualId.slice(1);
-
+        const { actualId, personaName, iconBg, iconText } = resolvePersona(id);
         set({
           personaId: actualId,
           personaName,
@@ -119,8 +97,8 @@ export const useUserStore = create<UserState>()(
         set({
           personaId: null,
           personaName: null,
-          personaIconBg: "bg-calm-surface-raised",
-          personaIconText: "text-calm-text-muted",
+          personaIconBg: DEFAULT_ICON_BG,
+          personaIconText: DEFAULT_ICON_TEXT,
           isSelected: false,
         }),
     }),

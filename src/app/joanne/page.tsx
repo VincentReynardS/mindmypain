@@ -1,9 +1,9 @@
 import { HiddenPersonaLogin } from "@/components/shared/hidden-persona-login";
 import { HIDDEN_PERSONAS } from "@/lib/persona-config";
 
-const config = HIDDEN_PERSONAS["kim"];
+const config = HIDDEN_PERSONAS["joanne"];
 
-export default function KimLoginPage() {
+export default function JoanneLoginPage() {
   return (
     <HiddenPersonaLogin
       personaId={config.personaId}

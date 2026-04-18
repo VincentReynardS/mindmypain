@@ -68,12 +68,12 @@ describe("Story 6.1: Kim's Account", () => {
 
   // ─── Server action: verifyKimPassword ───────────────────────────
 
-  describe("verifyKimPassword server action", () => {
+  describe("verifyPersonaPassword for Kim", () => {
     it("should accept correct password", async () => {
       vi.stubEnv("KIMS_PASSWORD", "test-secret");
-      const { verifyKimPassword } = await import("@/app/kim/actions");
+      const { verifyPersonaPassword } = await import("@/app/actions/verify-persona-password");
 
-      const result = await verifyKimPassword("test-secret");
+      const result = await verifyPersonaPassword("kim", "test-secret");
       expect(result).toBe(true);
 
       vi.unstubAllEnvs();
@@ -81,9 +81,9 @@ describe("Story 6.1: Kim's Account", () => {
 
     it("should reject incorrect password", async () => {
       vi.stubEnv("KIMS_PASSWORD", "test-secret");
-      const { verifyKimPassword } = await import("@/app/kim/actions");
+      const { verifyPersonaPassword } = await import("@/app/actions/verify-persona-password");
 
-      const result = await verifyKimPassword("wrong-password");
+      const result = await verifyPersonaPassword("kim", "wrong-password");
       expect(result).toBe(false);
 
       vi.unstubAllEnvs();
@@ -91,9 +91,9 @@ describe("Story 6.1: Kim's Account", () => {
 
     it("should reject when KIMS_PASSWORD env is not set", async () => {
       vi.stubEnv("KIMS_PASSWORD", "");
-      const { verifyKimPassword } = await import("@/app/kim/actions");
+      const { verifyPersonaPassword } = await import("@/app/actions/verify-persona-password");
 
-      const result = await verifyKimPassword("anything");
+      const result = await verifyPersonaPassword("kim", "anything");
       expect(result).toBe(false);
 
       vi.unstubAllEnvs();

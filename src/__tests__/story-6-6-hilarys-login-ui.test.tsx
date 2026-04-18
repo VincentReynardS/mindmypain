@@ -8,20 +8,21 @@ import { PersonaSelector } from "@/components/patient/persona-selector";
 import HilaryLoginPage from "@/app/hilary/page";
 
 const mockPush = vi.fn();
-const mockVerifyHilaryPassword = vi.fn();
+const mockVerifyPersonaPassword = vi.fn();
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
-vi.mock("@/app/hilary/actions", () => ({
-  verifyHilaryPassword: (password: string) => mockVerifyHilaryPassword(password),
+vi.mock("@/app/actions/verify-persona-password", () => ({
+  verifyPersonaPassword: (personaId: string, password: string) =>
+    mockVerifyPersonaPassword(personaId, password),
 }));
 
 describe("Story 6.6: Hilary login UI flow", () => {
   beforeEach(() => {
     mockPush.mockReset();
-    mockVerifyHilaryPassword.mockReset();
+    mockVerifyPersonaPassword.mockReset();
 
     useUserStore.setState({
       personaId: null,
@@ -42,7 +43,7 @@ describe("Story 6.6: Hilary login UI flow", () => {
   });
 
   it("shows an error and does not navigate on invalid password", async () => {
-    mockVerifyHilaryPassword.mockResolvedValue(false);
+    mockVerifyPersonaPassword.mockResolvedValue(false);
 
     render(<HilaryLoginPage />);
 
@@ -52,7 +53,7 @@ describe("Story 6.6: Hilary login UI flow", () => {
     fireEvent.click(screen.getByRole("button", { name: "Login" }));
 
     await waitFor(() => {
-      expect(mockVerifyHilaryPassword).toHaveBeenCalledWith("wrong-password");
+      expect(mockVerifyPersonaPassword).toHaveBeenCalledWith("hilary", "wrong-password");
     });
 
     expect(screen.getByRole("alert").textContent).toContain("Incorrect password");
@@ -60,8 +61,8 @@ describe("Story 6.6: Hilary login UI flow", () => {
     expect(useUserStore.getState().personaId).toBeNull();
   });
 
-  it("sets Hilary persona and redirects to /journal on valid password", async () => {
-    mockVerifyHilaryPassword.mockResolvedValue(true);
+  it("sets Hilary persona and redirects to /home on valid password", async () => {
+    mockVerifyPersonaPassword.mockResolvedValue(true);
 
     render(<HilaryLoginPage />);
 

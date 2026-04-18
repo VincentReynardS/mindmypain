@@ -68,12 +68,12 @@ describe("Story 7.9: Mary-Lynne's Account", () => {
 
   // ─── Server action: verifyMaryLynnePassword ───────────────────────
 
-  describe("verifyMaryLynnePassword server action", () => {
+  describe("verifyPersonaPassword for Mary-Lynne", () => {
     it("should accept correct password", async () => {
       vi.stubEnv("MARY_LYNNES_PASSWORD", "test-secret");
-      const { verifyMaryLynnePassword } = await import("@/app/mary-lynne/actions");
+      const { verifyPersonaPassword } = await import("@/app/actions/verify-persona-password");
 
-      const result = await verifyMaryLynnePassword("test-secret");
+      const result = await verifyPersonaPassword("mary-lynne", "test-secret");
       expect(result).toBe(true);
 
       vi.unstubAllEnvs();
@@ -81,9 +81,9 @@ describe("Story 7.9: Mary-Lynne's Account", () => {
 
     it("should reject incorrect password", async () => {
       vi.stubEnv("MARY_LYNNES_PASSWORD", "test-secret");
-      const { verifyMaryLynnePassword } = await import("@/app/mary-lynne/actions");
+      const { verifyPersonaPassword } = await import("@/app/actions/verify-persona-password");
 
-      const result = await verifyMaryLynnePassword("wrong-password");
+      const result = await verifyPersonaPassword("mary-lynne", "wrong-password");
       expect(result).toBe(false);
 
       vi.unstubAllEnvs();
@@ -91,9 +91,9 @@ describe("Story 7.9: Mary-Lynne's Account", () => {
 
     it("should reject when MARY_LYNNES_PASSWORD env is not set", async () => {
       vi.stubEnv("MARY_LYNNES_PASSWORD", "");
-      const { verifyMaryLynnePassword } = await import("@/app/mary-lynne/actions");
+      const { verifyPersonaPassword } = await import("@/app/actions/verify-persona-password");
 
-      const result = await verifyMaryLynnePassword("anything");
+      const result = await verifyPersonaPassword("mary-lynne", "anything");
       expect(result).toBe(false);
 
       vi.unstubAllEnvs();
