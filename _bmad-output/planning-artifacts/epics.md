@@ -524,6 +524,33 @@ So that the application can properly handle parallel server actions and regressi
 - **Then** the optimistic UI precisely reflects the state without breaking or conflicting
 - **And** the Zustand store is robust enough to handle these parallel actions reliably
 
+### Story 6.8: Remove "Save as Doctor Summary" Feature
+
+As a patient user,
+I do not want to see a specific "Save as Doctor Summary" feature,
+So that I am not confused about how it differs from the proactive chat interface.
+
+**Acceptance Criteria:**
+
+- **Given** the active application views
+- **When** navigating through the journal or chat
+- **Then** any UI elements (buttons, forms, cards) related to generating or approving a "Doctor Summary" or "Clinical Summary" should be removed.
+- **And** the primary way to recall data for doctor visits is explicitly directed through the Proactive Chat interface.
+
+### Story 6.9: Refactor Data Model to Remove `clinical_summary` Type
+
+As a developer,
+I want to remove the redundant `clinical_summary` data types and seed data,
+So that the database schema correctly reflects the active features of the application.
+
+**Acceptance Criteria:**
+
+- **Given** the database schema and seed data
+- **When** the "Save as Doctor Summary" feature is removed
+- **Then** the `clinical_summary` entry type should be removed from the `journal_entry_type` enum (or safely deprecated).
+- **And** any existing seed data (e.g., Sarah's Entry 4) should be converted to a standard `journal` entry or removed/updated to reflect the new structure.
+- **And** the `smart-parser.ts` logic must no longer attempt to classify inputs as `CLINICAL_SUMMARY`.
+
 # Epic 7: Core Refinements & Functional Expansion
 
 **Goal**: Address immediate functional gaps identified in post-Epic 6 testing prior to opening the Dashboard view, expanding structured health records to include demographics and immunizations, and standardizing Date inputs across the parse engine.
@@ -694,108 +721,71 @@ So that these stakeholders can test the app securely without interfering with ex
 - **And** these personas are explicitly NOT visible on the public Persona selection cards
 
 
-# Epic 8: The Wizard's Dashboard & Scenario Control (Deferred)
+# Epic 8: User-Centric Core Refinements
 
-**Goal**: Enable the Researcher to monitor live sessions and trigger specific "Scenario Responses" or edit text in real-time. (Deferred).
-**User Outcome**: (Researcher) Can invisibly drive the workshop scenarios. (Patient) Receives intelligent, context-aware responses that feel like a "Magic" AI.
-**FRs covered**: FR_WD1, FR_WD2, FR_WD3
+**Goal**: Address direct user feedback to improve medication tracking, AI contextual awareness, date input UX, and healthcare team management.
+**User Outcome**: Users can track active medications without duplication, receive accurate time-aware AI answers, easily input dates of birth, and manage their care team seamlessly.
+**FRs covered**: Refinements to existing FRs + New implicit FRs from testing.
 
-### Story 8.1: Researcher Dashboard Overview
-
-As a researcher,
-I want a dashboard where I can see the active session for "Sarah" or "Michael",
-So that I can monitor their inputs in real-time.
-
-**Acceptance Criteria:**
-
-- **Given** the user is on `/app/dashboard`
-- **When** the page loads
-- **Then** they should see two panels: "Active Patient: Sarah" and "History Log"
-- **And** The interface should clearly distinguish between 'User Input' (Left) and 'AI Response' (Right)
-- **And** It should show the current connection status (Online/Offline)
-- **And** Must adhere to `@simulated-auth-only` principles for viewing across users.
-
-### Story 8.2: Live Stream & Real-time Updates
-
-As a researcher,
-I want incoming patient logs to appear instantly (<500ms),
-So that I can respond quickly and maintain the illusion of a fast AI.
-
-**Acceptance Criteria:**
-
-- **Given** the dashboard is open
-- **When** a patient submits a new log via Epic 2/3 forms
-- **Then** the new entry should appear at the top of the feed immediately (Supabase Realtime)
-- **And** A visual indicator should flash to grab my attention (NFR_USE2)
-
-### Story 8.3: Wizard Intervention Actions (Edit/Scenario Trigger)
-
-As a researcher,
-I want to edit the AI-generated draft before the patient sees it,
-So that I can correct hallucinations or improve the tone.
-
-**Acceptance Criteria:**
-
-- **Given** a new drafted response appears in the dashboard
-- **When** I click "Edit"
-- **Then** the text area (or structured JSON form) should become editable
-- **And** I can type new content or correct form fields
-- **And** Clicking "Push to Patient" should update the `journal_entries` status to `pending_review` (visible to patient)
-
-### Story 8.4: Pre-Canned Response Library
-
-As a researcher,
-I want a library of pre-written responses for the specific workshop scenarios,
-So that I don't have to type long medical summaries in 7 minutes.
-
-**Acceptance Criteria:**
-
-- **Given** I am responding to an input
-- **When** I click the "Scenario Library" button
-- **Then** a modal should open with options matched to the structured schemas (e.g., `[New Appointment Pattern]`, `[Medication Review Alert]`)
-- **And** Selecting one should auto-fill the response editor with the scripted text/json
-- **And** I can still make minor edits before pushing
-
-### Story 8.5: "Thinking State" Indication
+### Story 8.1: Medication Structure & Active Summary
 
 As a patient user,
-I want to see a "AI is thinking..." animation while the researcher is preparing a response,
-So that I know the system hasn't crashed.
+I want my entered medications to be displayed on a Medications Home Screen with an Active Summary checklist,
+So that I can see what I am currently taking, what is inactive, and track natural supplements without the AI constantly re-adding duplicates to my journal.
 
 **Acceptance Criteria:**
+- **Given** I input a medication via voice/text
+- **When** the AI processes it
+- **Then** the system checks for existing active medications to deduplicate entries
+- **And** the `/medications` tab displays an "Active Medication Summary" with Yes/No checkboxes
+- **And** tapping a medication shows full details (dosages, side effects, etc.)
+- **And** inactive/past medications are moved to a specific section in the Profile
 
-- **Given** the researcher is editing/typing a response (dashboard active)
-- **When** the entry status is `draft` (backend state)
-- **Then** the patient UI should show a "pulsing brain" or "Thinking..." skeleton loader
-- **And** It should persist until the status changes to `pending_review`
-- **Given** the researcher is editing/typing a response (dashboard active)
-- **When** the entry status is `draft` (backend state)
-- **Then** the patient UI should show a "pulsing brain" or "Thinking..." skeleton loader
-- **And** It should persist until the status changes to `pending_review`
-
-### Story 6.8: Remove "Save as Doctor Summary" Feature
+### Story 8.2: AI Temporal Awareness (Prompt Injection)
 
 As a patient user,
-I do not want to see a specific "Save as Doctor Summary" feature,
-So that I am not confused about how it differs from the proactive chat interface.
+I want the AI to know what today's date is when answering my questions,
+So that it doesn't give me outdated information about "upcoming" tests that have already passed.
 
 **Acceptance Criteria:**
+- **Given** I ask "Do I have any upcoming tests?"
+- **When** the Proactive Chat query is sent to the LLM
+- **Then** the system prompt injects the exact current date and time
+- **And** the AI successfully filters out past events and only returns tests scheduled in the future
 
-- **Given** the active application views
-- **When** navigating through the journal or chat
-- **Then** any UI elements (buttons, forms, cards) related to generating or approving a "Doctor Summary" or "Clinical Summary" should be removed.
-- **And** the primary way to recall data for doctor visits is explicitly directed through the Proactive Chat interface.
+### Story 8.3: Date of Birth Picker Component
 
-### Story 6.9: Refactor Data Model to Remove `clinical_summary` Type
-
-As a developer,
-I want to remove the redundant `clinical_summary` data types and seed data,
-So that the database schema correctly reflects the active features of the application.
+As a patient user,
+I want a calendar or wheel picker for entering my Date of Birth,
+So that I don't struggle to format it correctly as dd-mm-yyyy.
 
 **Acceptance Criteria:**
+- **Given** the "My Detail" profile page
+- **When** I click the Date of Birth field
+- **Then** a native date picker (or Shadcn Calendar) is displayed
+- **And** the chosen date is automatically formatted properly for the backend schema
 
-- **Given** the database schema and seed data
-- **When** the "Save as Doctor Summary" feature is removed
-- **Then** the `clinical_summary` entry type should be removed from the `journal_entry_type` enum (or safely deprecated).
-- **And** any existing seed data (e.g., Sarah's Entry 4) should be converted to a standard `journal` entry or removed/updated to reflect the new structure.
-- **And** the `smart-parser.ts` logic must no longer attempt to classify inputs as `CLINICAL_SUMMARY`.
+### Story 8.4: Healthcare Team Tracking Feature
+
+As a patient user,
+I want a dedicated "Team" tab to see my healthcare providers,
+So that I can track their profession, name, address, email, and phone number.
+
+**Acceptance Criteria:**
+- **Given** the bottom navigation
+- **When** I tap the "Team" button
+- **Then** I am taken to a list of my care team displayed as cards
+- **And** I can add new team members via the voice/text input box on the home page
+
+### Story 8.5: AI Spelling Deduplication & Entity Resolution
+
+As a patient user,
+I want the AI to be careful about spelling and generally infer which specific person I might be referring to (e.g., recognizing that "Dr Chew", "Dr Chewy", and "Dr Chiu" are the same person),
+So that my appointments or healthcare team entries aren't duplicated under different spellings.
+
+**Acceptance Criteria:**
+- **Given** I mention a person's name with slight spelling variations or phonetic similarities
+- **When** the AI parses the entry to create a record (e.g., an appointment or team member)
+- **Then** it must reference existing entities (like team members) to perform general entity resolution
+- **And** it successfully merges the data under the primary recognized spelling without creating duplicates
+
