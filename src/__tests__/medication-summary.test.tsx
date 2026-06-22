@@ -67,6 +67,7 @@ describe('MedicationSummary', () => {
   it('renders an Edit button in each section header', () => {
     renderSummary();
     expect(screen.getAllByRole('button', { name: /edit .* section/i }).length).toBe(3);
+    expect(screen.getAllByText('Edit').length).toBe(3);
   });
 
   it('renders an enabled, reflecting checkbox for active items', () => {
@@ -88,7 +89,7 @@ describe('MedicationSummary', () => {
     renderSummary();
     fireEvent.click(screen.getByRole('button', { name: /Lyrica 75mg \(Pregabalin\)/i }));
     // Detail view shows the medication glass box "Edit" affordance
-    expect(screen.getByText('Edit')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeTruthy();
   });
 
   it('shows an empty state hint when a section has no items', () => {

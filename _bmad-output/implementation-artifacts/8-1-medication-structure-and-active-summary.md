@@ -1,6 +1,6 @@
 # Story 8.1: Medication Structure & Active Summary
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -72,6 +72,16 @@ N/A
 - **Task 2  -  Summary UI (`medication-summary.tsx`, `medications/page.tsx`):** New `MedicationSummary` renders the three sections (Active Medications, Natural Supplements, Inactive). Each header has an Edit button (expands all items in the section for management); the Inactive header shows an archive icon. Items render as `Brand Name Dosage (Generic Name)` with an interactive adherence checkbox (disabled for inactive items). The toggle persists `Checked` optimistically via `updateJournalAiResponse`.
 - **Task 3  -  Detail view (`medication-glass-box.tsx`):** Tapping an item expands the existing `MedicationGlassBox` for full view/edit. Added a `Category` selector to its edit form and made serialization preserve `Category`, `Is Active` (derived from `Date Stopped`), `Checked`, and `Last Mentioned` so edits no longer wipe these fields. Internal flags are hidden from the read-only detail render.
 - **Test status:** Full suite 596/597 passing. The single failure (`story-7-1-date-formatting.test.ts`  -  Michael's seed `Date Started` expected `05-03-2026`, seed contains `12-03-2026`) is **pre-existing** and confirmed failing on clean `HEAD` with all story-8.1 changes stashed; it is unrelated to this story (seed-data drift). Lint: all changed files pass; the one repo lint error (`persona-guard.tsx` set-state-in-effect) is also pre-existing. `tsc --noEmit` clean.
+- **Code review fixes (AI):** Fixed all HIGH/MEDIUM review findings: medication stop/change mentions now route to medication intent; dedup lookup errors fail closed instead of creating duplicate medication records; `Last Mentioned` uses `dd-mm-yyyy`; legacy medication JSON is preserved when adherence checkboxes are toggled before backfill; section header Edit labels are visible; medications page fetch failures surface an error instead of an empty state.
+- **Review verification:** `npm test -- medication journal-actions smart-parser` passes (103 tests). `npm run type-check` passes.
+
+### Senior Developer Review (AI)
+
+- **Outcome:** Approved after fixes.
+- **Issues fixed:** 3 High, 3 Medium.
+- **High:** stopped-medication mentions could bypass medication parsing; dedup Supabase lookup errors were ignored; legacy medication checkbox toggles could overwrite structured data with only `Checked`.
+- **Medium:** section header Edit labels were not visible; `Last Mentioned` used `yyyy-mm-dd`; medications page fetch errors looked like "No medications found".
+- **Validation:** Acceptance Criteria 1-5 rechecked against implementation. Focused regression coverage added/updated for stop intent prompt coverage, dedup lookup failure behavior, legacy adherence preservation, visible Edit labels, and normalized `Last Mentioned` dates.
 
 ### File List
 
@@ -92,6 +102,7 @@ N/A
 
 | Date       | Change                                                                                       |
 |------------|----------------------------------------------------------------------------------------------|
+| 2026-06-22 | Review fixes: resolved 3 High and 3 Medium code review findings; added regression tests; Status -> done. |
 | 2026-06-22 | Enhancement (review): added a one-click "Mark Inactive" / "Reactivate" button to the `MedicationGlassBox` card header so users can move an active med/supplement to Inactive (and back) without opening the edit form. Added 2 unit tests. |
 | 2026-06-22 | Fix (review): dedup now MERGES the incoming parse into the existing active record via `mergeMedicationMention`, so a "stopped taking X" mention applies `Is Active=false` / `Date Stopped` and moves the med to Inactive, instead of only stamping a date. Added 4 unit tests. |
 | 2026-06-22 | Implemented Story 8.1: medication `Category`/`Is Active` classification, active-medication deduplication in `processJournalEntry`, and the three-section Medications Summary UI (Active / Supplements / Inactive) with adherence checkboxes and expandable `MedicationGlassBox` detail. Status -> review. |

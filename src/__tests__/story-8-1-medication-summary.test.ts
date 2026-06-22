@@ -6,6 +6,7 @@ import {
   findDuplicateActiveMedication,
   formatMedicationLabel,
   mergeMedicationMention,
+  buildMedicationAdherenceAiResponse,
 } from '@/lib/journal-entry-ai';
 import type { JournalEntry, JsonObject } from '@/types/database';
 
@@ -147,5 +148,26 @@ describe('mergeMedicationMention', () => {
   it('does not clobber existing values with empty incoming strings', () => {
     const merged = mergeMedicationMention(existingAi, { 'Brand Name': 'Lyrica', Dosage: '' }, '20-06-2026');
     expect(merged.Dosage).toBe('75mg');
+  });
+});
+
+describe('buildMedicationAdherenceAiResponse', () => {
+  it('preserves legacy medication content fields when toggling adherence before backfill', () => {
+    const entry = makeMed('legacy', {}, {
+      ai_response: null,
+      content: JSON.stringify({
+        'Brand Name': 'Aspirin',
+        Dosage: '100mg',
+      }),
+    });
+
+    const nextAi = buildMedicationAdherenceAiResponse(entry, true);
+
+    expect(nextAi).toEqual(expect.objectContaining({
+      _intent: 'medication',
+      'Brand Name': 'Aspirin',
+      Dosage: '100mg',
+      Checked: true,
+    }));
   });
 });

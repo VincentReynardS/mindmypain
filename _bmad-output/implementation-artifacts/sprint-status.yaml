@@ -105,7 +105,7 @@ development_status:
   epic-7-retrospective: optional
 
   epic-8: in-progress
-  8-1-medication-structure-and-active-summary: review
+  8-1-medication-structure-and-active-summary: done
   8-2-ai-temporal-awareness-prompt-injection: backlog
   8-3-date-of-birth-picker-component: backlog
   8-4-healthcare-team-tracking-feature: backlog

@@ -296,6 +296,26 @@ export function mergeMedicationMention(
   return withPersistedIntent(merged, "medication");
 }
 
+/**
+ * Builds a complete medication ai_response for adherence updates. Legacy
+ * entries may have medication JSON in `content` before backfill completes; use
+ * that as the base so a checkbox toggle cannot replace the structured record
+ * with only `{ Checked: true }`.
+ */
+export function buildMedicationAdherenceAiResponse(entry: JournalEntry, checked: boolean): JsonObject {
+  const ai = medicationAi(entry);
+  const legacyContent = !ai ? parseLegacyJsonContent(entry.content) : null;
+  const base = ai ?? (legacyContent && hasMedicationStructuredFields(legacyContent) ? legacyContent : {});
+
+  return withPersistedIntent(
+    {
+      ...base,
+      Checked: checked,
+    },
+    "medication"
+  );
+}
+
 export function selectMedicationEntries(entries: JournalEntry[]): {
   medications: JournalEntry[];
   mentions: { entryId: string; date: string; medication: string }[];

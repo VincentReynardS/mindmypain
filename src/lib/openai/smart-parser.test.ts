@@ -38,6 +38,22 @@ describe('smart-parser', () => {
       expect(result).toBe('medication');
     });
 
+    it('should classify stopped medication mentions as medication intent', async () => {
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: JSON.stringify({ intent: 'medication' }) } }],
+      });
+      const result = await classifyIntent('I stopped taking Lyrica today because it made me dizzy');
+      expect(result).toBe('medication');
+      expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({
+        messages: expect.arrayContaining([
+          expect.objectContaining({
+            role: 'system',
+            content: expect.stringContaining('stops'),
+          }),
+        ]),
+      }));
+    });
+
     it('should classify an immunisation intent', async () => {
       mockCreate.mockResolvedValueOnce({
         choices: [{ message: { content: JSON.stringify({ intent: 'immunisation' }) } }],

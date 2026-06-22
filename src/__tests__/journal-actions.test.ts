@@ -430,7 +430,7 @@ describe('Journal Server Actions', () => {
           ai_response: expect.objectContaining({
             _intent: 'medication',
             'Brand Name': 'Lyrica',
-            'Last Mentioned': '2026-06-20',
+            'Last Mentioned': '20-06-2026',
           }),
         })
       );
@@ -438,6 +438,63 @@ describe('Journal Server Actions', () => {
       expect(mockDelete).toHaveBeenCalled();
       expect(mockChain.eq).toHaveBeenCalledWith('id', 'new-med-id');
       expect(revalidatePath).toHaveBeenCalledWith('/medications');
+    });
+
+    it('does not create a duplicate medication when the dedupe lookup fails', async () => {
+      mockSelect.mockReturnValueOnce({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'new-med-id',
+              user_id: 'sarah',
+              created_at: '2026-06-20T08:00:00Z',
+              status: 'draft',
+              content: 'Still taking my Lyrica',
+              entry_type: 'raw_text',
+            },
+            error: null,
+          }),
+        }),
+      });
+
+      const dedupErrorResult = { data: null, error: { message: 'RLS blocked lookup' } };
+      const dedupChain: Record<string, unknown> = {};
+      const ret = () => dedupChain;
+      dedupChain.eq = vi.fn(ret);
+      dedupChain.neq = vi.fn(ret);
+      dedupChain.then = (resolve: (v: typeof dedupErrorResult) => unknown) => Promise.resolve(dedupErrorResult).then(resolve);
+      mockSelect.mockReturnValueOnce(dedupChain as never);
+
+      const { classifyIntent } = await import('@/lib/openai/smart-parser');
+      vi.mocked(classifyIntent).mockResolvedValueOnce('medication');
+
+      const smartParserModule = await import('@/lib/openai/smart-parser');
+      vi.spyOn(smartParserModule, 'parseMedication').mockResolvedValueOnce({
+        'Brand Name': 'Lyrica',
+        'Is Active': true,
+      } as never);
+
+      const result = await processJournalEntry('new-med-id');
+
+      expect(result).toEqual({ success: true });
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entry_type: 'journal',
+          status: 'draft',
+          ai_response: expect.objectContaining({
+            _intent: 'journal',
+            Note: 'Still taking my Lyrica',
+          }),
+        })
+      );
+      expect(mockUpdate).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          ai_response: expect.objectContaining({
+            _intent: 'medication',
+            'Brand Name': 'Lyrica',
+          }),
+        })
+      );
     });
 
     it('should not attempt journal-merge when intent is non-journal with sparse parser output', async () => {

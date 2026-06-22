@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { MedicationSummary } from '@/components/patient/medication-summary';
 import { updateJournalAiResponse, approveMedicationEntry, backfillEntryIntent } from '@/app/actions/journal-actions';
 import { JsonObject, JournalEntry } from '@/types/database';
-import { selectMedicationEntries } from '@/lib/journal-entry-ai';
+import { buildMedicationAdherenceAiResponse, selectMedicationEntries } from '@/lib/journal-entry-ai';
 import { useUserStore } from '@/lib/stores/user-store';
 import { formatDateDDMMYYYY } from '@/lib/utils/date-helpers';
 
@@ -43,7 +43,7 @@ export default function MedicationsPage() {
   const handleToggleCheck = (entry: JournalEntry) => {
     const ai = (entry.ai_response as JsonObject | null) ?? {};
     const nextChecked = !(ai.Checked === true);
-    const nextAi = { ...ai, Checked: nextChecked } as JsonObject;
+    const nextAi = buildMedicationAdherenceAiResponse(entry, nextChecked);
     // Optimistic adherence toggle; content text is preserved unchanged.
     void handleUpdate(entry.id, nextAi, entry.content ?? '');
   };
@@ -73,13 +73,22 @@ export default function MedicationsPage() {
       }
 
       setIsLoading(true);
-      const { data: entries } = await supabase
+      const { data: entries, error: loadError } = await supabase
         .from('journal_entries')
         .select('*')
         .eq('user_id', personaId)
         .eq('entry_type', 'journal')
         .neq('status', 'archived')
         .order('created_at', { ascending: false });
+
+      if (loadError) {
+        console.error('Failed to load medications:', loadError);
+        setMedicationEntries([]);
+        setMedicationMentions([]);
+        setError('Failed to load medications. Please try again.');
+        setIsLoading(false);
+        return;
+      }
 
       const { medications, mentions, toBackfill } = selectMedicationEntries((entries as JournalEntry[]) || []);
 

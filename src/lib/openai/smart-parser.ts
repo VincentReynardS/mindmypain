@@ -59,13 +59,13 @@ Classify the patient's input based on the intention of the patient.
 Categories (assess in this order):
 - "appointment": The user is planning, scheduling, or preparing for a doctor's visit, consultation, therapist session, or any health practitioner meeting.
 - "immunisation": The user has received a vaccine, immunisation, booster, flu shot, or any injection/jab for disease prevention.
-- "medication": The user starts taking or is actively taking a medication, including dosage, timing, or side effects. Medication refers to consumable drugs, this is different from immunisation.
+- "medication": The user starts taking, is actively taking, changes, stops, discontinues, pauses, or reports side effects for a medication, including dosage or timing. Medication refers to consumable drugs, this is different from immunisation.
 - "script": The user is tracking prescriptions, refills, or referrals they need to obtain or follow up on.
 - "journal": A multi-topic daily entry, general narrative, completed activities, reflections, reminders, or any content that does not clearly belong to the above categories.
 
 <CRITICAL>
 # Temporal Rule (Very Important)
-- If the entry describes past events, completed actions, or reflections, classify as "journal" unless it clearly fits another category (e.g., medication started, vaccine received).
+- If the entry describes past events, completed actions, or reflections, classify as "journal" unless it clearly fits another category (e.g., medication started/stopped/changed, vaccine received).
 - If the entry describes future plans or intentions, classify according to the relevant category (e.g., appointment).
 
 # Appointment Clarification
