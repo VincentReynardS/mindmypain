@@ -106,7 +106,7 @@ development_status:
 
   epic-8: in-progress
   8-1-medication-structure-and-active-summary: done
-  8-2-ai-temporal-awareness-prompt-injection: review
+  8-2-ai-temporal-awareness-prompt-injection: done
   8-3-date-of-birth-picker-component: backlog
   8-4-healthcare-team-tracking-feature: backlog
   8-5-ai-spelling-deduplication-entity-resolution: backlog
