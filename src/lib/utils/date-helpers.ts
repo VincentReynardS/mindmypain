@@ -67,6 +67,62 @@ export function getDateLabel(dateString: string): string {
 }
 
 /**
+ * Returns the current date and time formatted as `dd-mm-yyyy hh:mm AM/PM`
+ * in the Australia/Melbourne timezone.
+ *
+ * Used to inject temporal awareness into AI prompts so the assistant can
+ * compare relative queries ("upcoming", "past") against today, aligning with
+ * the dd-mm-yyyy dates stored in journal entries.
+ *
+ * @see 8-2-ai-temporal-awareness-prompt-injection.md
+ */
+export function getCurrentDateTimeContext(referenceDate: Date = new Date()): string {
+  const datePart = formatDateInTimeZone(referenceDate);
+
+  const parts = new Intl.DateTimeFormat("en-AU", {
+    timeZone: AUSTRALIA_TIME_ZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  }).formatToParts(referenceDate);
+
+  const hour = parts.find((part) => part.type === "hour")?.value;
+  const minute = parts.find((part) => part.type === "minute")?.value;
+  const dayPeriod = parts.find((part) => part.type === "dayPeriod")?.value;
+
+  if (!hour || !minute || !dayPeriod) {
+    throw new Error("Unable to format time parts");
+  }
+
+  return `${datePart} ${hour}:${minute} ${dayPeriod.toUpperCase()}`;
+}
+
+/**
+ * Classifies a stored date string as PAST, TODAY, or UPCOMING relative to the
+ * current date (Australia/Melbourne timezone, date-only comparison).
+ *
+ * Accepts dd-mm-yyyy, yyyy-mm-dd, or any Date-parseable string. Returns null
+ * when the value cannot be parsed.
+ *
+ * Used to deterministically tag dates injected into AI prompts so the assistant
+ * does not have to compute relative tense itself.
+ *
+ * @see 8-2-ai-temporal-awareness-prompt-injection.md
+ */
+export function getRelativeDateStatus(
+  value: string,
+  referenceDate: Date = new Date()
+): "PAST" | "TODAY" | "UPCOMING" | null {
+  const iso = toYYYYMMDD(value);
+  if (!iso) return null;
+
+  const todayIso = toYYYYMMDD(formatDateInTimeZone(referenceDate));
+  if (iso < todayIso) return "PAST";
+  if (iso > todayIso) return "UPCOMING";
+  return "TODAY";
+}
+
+/**
  * Formats a timestamp to HH:mm format (24-hour).
  */
 export function formatTime(dateString: string): string {

@@ -162,6 +162,60 @@ describe("POST /api/chat", () => {
     expect(systemMsg.content).toContain("Slept 6 hours");
   });
 
+  it("should inject the current date and time into the system prompt", async () => {
+    await POST(
+      makeRequest({ question: "Do I have any upcoming tests?", userId: "sarah" })
+    );
+
+    const messages = mockChatCreate.mock.calls[0][0].messages;
+    const systemMsg = messages.find(
+      (m: { role: string }) => m.role === "system"
+    );
+    // The system prompt must include a current date/time in dd-mm-yyyy hh:mm AM/PM format
+    expect(systemMsg.content).toMatch(/\d{2}-\d{2}-\d{4} \d{2}:\d{2} (AM|PM)/);
+    expect(systemMsg.content).toContain("current date");
+  });
+
+  it("should tag appointment dates as PAST or UPCOMING in the system prompt", async () => {
+    const entries = [
+      {
+        id: "1",
+        content: "Old pain management review",
+        entry_type: "journal",
+        created_at: "2026-01-01T00:00:00Z",
+        ai_response: { Date: "01-01-2000", "Practitioner Name": "Dr. Past" },
+      },
+      {
+        id: "2",
+        content: "Future review",
+        entry_type: "journal",
+        created_at: "2026-01-01T00:00:00Z",
+        ai_response: { Date: "01-01-2099", "Practitioner Name": "Dr. Future" },
+      },
+    ];
+
+    const hybridWithData = () => {
+      const p = Promise.resolve({ data: entries, error: null });
+      return Object.assign(p, mockChain);
+    };
+    mockChain.select.mockImplementation(hybridWithData);
+    mockChain.eq.mockImplementation(hybridWithData);
+    mockChain.order.mockImplementation(hybridWithData);
+
+    await POST(
+      makeRequest({ question: "Do I have any upcoming appointments?", userId: "sarah" })
+    );
+
+    const messages = mockChatCreate.mock.calls[0][0].messages;
+    const systemMsg = messages.find(
+      (m: { role: string }) => m.role === "system"
+    );
+    expect(systemMsg.content).toContain("Dr. Past");
+    expect(systemMsg.content).toContain("[PAST]");
+    expect(systemMsg.content).toContain("Dr. Future");
+    expect(systemMsg.content).toContain("[UPCOMING]");
+  });
+
   it("should include conversation history in messages", async () => {
     const history = [
       { role: "user", content: "Previous question" },

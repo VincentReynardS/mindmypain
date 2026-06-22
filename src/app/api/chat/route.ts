@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getOpenAIClient } from "@/lib/openai";
 import { createClient } from "@/lib/supabase/server";
+import {
+  getCurrentDateTimeContext,
+  formatDateDDMMYYYY,
+  getRelativeDateStatus,
+} from "@/lib/utils/date-helpers";
 import type { JournalEntry } from "@/types/database";
 
 const MAX_HISTORY_LENGTH = 50;
@@ -34,6 +39,24 @@ const chatResponseSchema = z.object({
   followUps: z.array(z.string()),
 });
 
+function annotateDate(value: string): string {
+  const formatted = formatDateDDMMYYYY(value);
+  const status = getRelativeDateStatus(value);
+  return status ? `${formatted} [${status}]` : formatted;
+}
+
+function describeDatedRecord(record: Record<string, unknown>): string {
+  const who = ["Practitioner Name", "Profession", "Visit Type", "Reason"]
+    .map((k) => record[k])
+    .filter((v): v is string => typeof v === "string" && v.length > 0)
+    .join(", ");
+  const date =
+    typeof record.Date === "string" && record.Date
+      ? annotateDate(record.Date)
+      : "date unknown";
+  return `${who || "appointment"} on ${date}`;
+}
+
 function serializeEntries(entries: JournalEntry[]): string {
   if (entries.length === 0) return "No journal entries found.";
 
@@ -57,11 +80,26 @@ function serializeEntries(entries: JournalEntry[]): string {
           .join(", ");
         if (scalarFields) details += ` | ${scalarFields}`;
 
-        const arrayFields = ["Appointments", "Scripts"]
-          .filter((k) => Array.isArray(ai[k]) && (ai[k] as unknown[]).length > 0)
-          .map((k) => `${k}: ${JSON.stringify(ai[k])}`)
-          .join(", ");
-        if (arrayFields) details += ` | ${arrayFields}`;
+        // Standalone appointment / immunisation records store their date at the
+        // top level of ai_response. Surface it with an explicit temporal tag so
+        // the assistant can filter past vs. upcoming reliably.
+        if (typeof ai.Date === "string" && ai.Date) {
+          details += ` | Appointment: ${describeDatedRecord(ai)}`;
+        }
+        if (typeof ai["Date Given"] === "string" && ai["Date Given"]) {
+          details += ` | Immunisation on ${annotateDate(ai["Date Given"] as string)}`;
+        }
+
+        // Journal entries can also carry nested Appointments/Scripts arrays.
+        if (Array.isArray(ai.Appointments) && ai.Appointments.length > 0) {
+          const appts = (ai.Appointments as Record<string, unknown>[])
+            .map((a) => describeDatedRecord(a))
+            .join("; ");
+          details += ` | Appointments: ${appts}`;
+        }
+        if (Array.isArray(ai.Scripts) && (ai.Scripts as unknown[]).length > 0) {
+          details += ` | Scripts: ${JSON.stringify(ai.Scripts)}`;
+        }
       }
 
       return details;
@@ -300,10 +338,19 @@ export async function POST(request: NextRequest) {
 
     const context = serializeEntries(entries || []);
 
+    const currentDateTime = getCurrentDateTimeContext();
+    const temporalContext = `--- Current Date & Time ---
+The current date and time is ${currentDateTime} (format: dd-mm-yyyy hh:mm AM/PM).
+Dates in the journal data below use dd-mm-yyyy format. Appointment and immunisation dates are tagged with their tense relative to the current date: [PAST], [TODAY], or [UPCOMING].
+When the user asks about "upcoming", "future", "next", "past", or "recent" events:
+- Only include events tagged [UPCOMING] (or [TODAY]) when answering about upcoming/future events.
+- NEVER describe a [PAST] event as upcoming. If an event's date is before today, it has already happened.
+- If there are no [UPCOMING] events matching the question, clearly say there are none scheduled.`;
+
     const messages: { role: "system" | "user" | "assistant"; content: string }[] = [
       {
         role: "system",
-        content: `${SYSTEM_PROMPT}\n\n--- Journal Data ---\n${context}`,
+        content: `${SYSTEM_PROMPT}\n\n${temporalContext}\n\n--- Journal Data ---\n${context}`,
       },
       ...(body.history || []),
       { role: "user", content: body.question },
