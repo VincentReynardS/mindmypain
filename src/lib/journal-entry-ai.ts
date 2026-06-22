@@ -161,6 +161,141 @@ export function selectImmunisationEntries(entries: JournalEntry[]): {
   return { immunisations, toBackfill };
 }
 
+export type MedicationCategory = "prescription" | "supplement";
+
+export interface IncomingMedication {
+  "Brand Name"?: unknown;
+  "Generic Name"?: unknown;
+  [key: string]: unknown;
+}
+
+function medicationAi(entry: JournalEntry): Record<string, unknown> | null {
+  return asObject(entry.ai_response);
+}
+
+/**
+ * Reads a medication entry's category. Defaults to "prescription" when unset
+ * so legacy medication entries continue to appear in the prescription summary.
+ */
+export function getMedicationCategory(entry: JournalEntry): MedicationCategory {
+  const ai = medicationAi(entry);
+  return ai?.Category === "supplement" ? "supplement" : "prescription";
+}
+
+/**
+ * A medication is considered inactive when it has been explicitly flagged
+ * (`Is Active === false`) or when a stop date has been recorded.
+ */
+export function isMedicationActive(entry: JournalEntry): boolean {
+  const ai = medicationAi(entry);
+  if (!ai) return true;
+  if (ai["Is Active"] === false) return false;
+  if (getNonEmptyString(ai["Date Stopped"])) return false;
+  return true;
+}
+
+/**
+ * Builds the patient-facing label: `Brand Name Dosage (Generic Name)`.
+ * Parts that are missing are omitted so the label always reads naturally.
+ */
+export function formatMedicationLabel(entry: JournalEntry): string {
+  const ai = medicationAi(entry) ?? {};
+  const brand = getNonEmptyString(ai["Brand Name"]);
+  const dosage = getNonEmptyString(ai.Dosage);
+  const generic = getNonEmptyString(ai["Generic Name"]);
+
+  const head = [brand, dosage].filter(Boolean).join(" ");
+  if (head && generic) return `${head} (${generic})`;
+  if (head) return head;
+  if (generic) return generic;
+  return getNonEmptyString(entry.content) ?? "Medication";
+}
+
+/**
+ * Groups dedicated medication entries into the three Active Summary sections.
+ */
+export function groupMedicationEntries(medications: JournalEntry[]): {
+  activePrescriptions: JournalEntry[];
+  activeSupplements: JournalEntry[];
+  inactive: JournalEntry[];
+} {
+  const activePrescriptions: JournalEntry[] = [];
+  const activeSupplements: JournalEntry[] = [];
+  const inactive: JournalEntry[] = [];
+
+  for (const entry of medications) {
+    if (!isMedicationActive(entry)) {
+      inactive.push(entry);
+    } else if (getMedicationCategory(entry) === "supplement") {
+      activeSupplements.push(entry);
+    } else {
+      activePrescriptions.push(entry);
+    }
+  }
+
+  return { activePrescriptions, activeSupplements, inactive };
+}
+
+function normalizeMedicationName(value: unknown): string | null {
+  const name = getNonEmptyString(value);
+  return name ? name.toLowerCase().replace(/\s+/g, " ") : null;
+}
+
+/**
+ * Deduplication helper: finds an existing ACTIVE medication entry that matches
+ * the incoming parsed medication by brand or generic name (case-insensitive).
+ * Returns null when there is no name to match or no active match exists.
+ */
+export function findDuplicateActiveMedication(
+  incoming: IncomingMedication,
+  existing: JournalEntry[]
+): JournalEntry | null {
+  const incomingBrand = normalizeMedicationName(incoming["Brand Name"]);
+  const incomingGeneric = normalizeMedicationName(incoming["Generic Name"]);
+  if (!incomingBrand && !incomingGeneric) return null;
+
+  for (const entry of existing) {
+    if (!isMedicationActive(entry)) continue;
+    const ai = medicationAi(entry);
+    if (!ai) continue;
+
+    const brand = normalizeMedicationName(ai["Brand Name"]);
+    const generic = normalizeMedicationName(ai["Generic Name"]);
+
+    if (incomingBrand && (incomingBrand === brand || incomingBrand === generic)) return entry;
+    if (incomingGeneric && (incomingGeneric === brand || incomingGeneric === generic)) return entry;
+  }
+
+  return null;
+}
+
+/**
+ * Merges a re-mentioned medication into an existing active record (deduplication).
+ * Meaningful incoming fields overwrite the existing values - this is how a "stopped"
+ * mention propagates `Is Active: false` / `Date Stopped` onto the original entry so it
+ * moves to the Inactive section, rather than silently being discarded. Empty incoming
+ * strings never clobber existing data. Always stamps `Last Mentioned`.
+ */
+export function mergeMedicationMention(
+  existingAi: Record<string, unknown>,
+  incoming: Record<string, unknown>,
+  mentionDate: string
+): JsonObject {
+  const merged: Record<string, unknown> = { ...existingAi };
+
+  for (const [key, value] of Object.entries(incoming)) {
+    if (key === "_intent") continue;
+    if (typeof value === "string") {
+      if (value.trim().length > 0) merged[key] = value;
+    } else if (typeof value === "boolean") {
+      merged[key] = value;
+    }
+  }
+
+  merged["Last Mentioned"] = mentionDate;
+  return withPersistedIntent(merged, "medication");
+}
+
 export function selectMedicationEntries(entries: JournalEntry[]): {
   medications: JournalEntry[];
   mentions: { entryId: string; date: string; medication: string }[];

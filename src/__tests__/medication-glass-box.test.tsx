@@ -198,6 +198,47 @@ describe('MedicationGlassBox', () => {
     });
   });
 
+  it('edits Category via a select and saves it', async () => {
+    render(
+      <MedicationGlassBox entry={mockEntry} onUpdate={mockOnUpdate} onApprove={mockOnApprove} />
+    );
+
+    fireEvent.click(screen.getByText('Edit'));
+    const categorySelect = screen.getByLabelText(/Category/i);
+    fireEvent.change(categorySelect, { target: { value: 'supplement' } });
+    fireEvent.click(screen.getByText('Save'));
+
+    await waitFor(() => {
+      expect(mockOnUpdate).toHaveBeenCalledWith(
+        'test-id',
+        expect.objectContaining({ Category: 'supplement' }),
+        expect.any(String)
+      );
+    });
+  });
+
+  it('preserves adherence (Checked) and Last Mentioned through an edit save', async () => {
+    const entryWithExtras: JournalEntry = {
+      ...mockEntry,
+      ai_response: { ...medicationAiResponse, Checked: true, 'Last Mentioned': '2026-06-20' },
+    };
+
+    render(
+      <MedicationGlassBox entry={entryWithExtras} onUpdate={mockOnUpdate} onApprove={mockOnApprove} />
+    );
+
+    fireEvent.click(screen.getByText('Edit'));
+    fireEvent.click(screen.getByText('Save'));
+
+    await waitFor(() => {
+      expect(mockOnUpdate).toHaveBeenCalledWith(
+        'test-id',
+        expect.objectContaining({ Checked: true, 'Last Mentioned': '2026-06-20' }),
+        expect.any(String)
+      );
+    });
+  });
+
   it('calls onApprove when Add is clicked', async () => {
     render(
       <MedicationGlassBox
@@ -211,6 +252,47 @@ describe('MedicationGlassBox', () => {
 
     await waitFor(() => {
       expect(mockOnApprove).toHaveBeenCalledWith('test-id');
+    });
+  });
+
+  it('shows a "Mark Inactive" action for an active medication and stops it on click', async () => {
+    render(
+      <MedicationGlassBox entry={{ ...mockEntry, status: 'approved' }} onUpdate={mockOnUpdate} onApprove={mockOnApprove} />
+    );
+
+    fireEvent.click(screen.getByText('Mark Inactive'));
+
+    await waitFor(() => {
+      expect(mockOnUpdate).toHaveBeenCalledWith(
+        'test-id',
+        expect.objectContaining({ 'Is Active': false }),
+        expect.any(String)
+      );
+    });
+    const aiArg = mockOnUpdate.mock.calls[0][1];
+    expect(aiArg['Date Stopped']).toBeTruthy();
+  });
+
+  it('shows a "Reactivate" action for an inactive medication and clears the stop on click', async () => {
+    const inactiveEntry: JournalEntry = {
+      ...mockEntry,
+      status: 'approved',
+      ai_response: { ...medicationAiResponse, 'Date Stopped': '01-05-2026', 'Is Active': false, 'Stop Reason': 'Drowsy' },
+    };
+
+    render(
+      <MedicationGlassBox entry={inactiveEntry} onUpdate={mockOnUpdate} onApprove={mockOnApprove} />
+    );
+
+    expect(screen.queryByText('Mark Inactive')).toBeNull();
+    fireEvent.click(screen.getByText('Reactivate'));
+
+    await waitFor(() => {
+      expect(mockOnUpdate).toHaveBeenCalledWith(
+        'test-id',
+        expect.objectContaining({ 'Is Active': true, 'Date Stopped': null }),
+        expect.any(String)
+      );
     });
   });
 

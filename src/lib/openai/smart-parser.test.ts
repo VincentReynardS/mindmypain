@@ -303,6 +303,25 @@ describe('smart-parser', () => {
       const result = await parseMedication('Took Advil 200mg for headache');
       expect(result).toEqual(mockResponse);
     });
+
+    it('should capture Category (supplement) and Is Active fields', async () => {
+      const mockResponse = {
+        'Brand Name': 'Vitamin C',
+        Category: 'supplement',
+        'Is Active': true,
+      };
+      mockCreate.mockResolvedValueOnce({ choices: [{ message: { content: JSON.stringify(mockResponse) } }] });
+      const result = await parseMedication('Started taking Vitamin C every morning');
+      expect(result.Category).toBe('supplement');
+      expect(result['Is Active']).toBe(true);
+    });
+
+    it('should reject an unsupported Category value', async () => {
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: JSON.stringify({ 'Brand Name': 'X', Category: 'herbal' }) } }],
+      });
+      await expect(parseMedication('took something')).rejects.toThrow();
+    });
   });
 
   describe('parseScript', () => {

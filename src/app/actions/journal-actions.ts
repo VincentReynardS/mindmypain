@@ -15,7 +15,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { JournalEntry, JsonObject, NewJournalEntry, UpdateJournalEntry } from '@/types/database';
-import { getPersistedIntent, isEntryIntent, isJournalDisplayShape, normalizeImmunisationAiResponse, withPersistedIntent } from '@/lib/journal-entry-ai';
+import { getPersistedIntent, isEntryIntent, isJournalDisplayShape, normalizeImmunisationAiResponse, withPersistedIntent, findDuplicateActiveMedication, selectMedicationEntries, mergeMedicationMention } from '@/lib/journal-entry-ai';
 
 type JournalMergeCandidate = Pick<JournalEntry, 'id' | 'content' | 'status' | 'ai_response' | 'created_at'>;
 type ScriptAiResponse = JsonObject & { Scripts?: Array<JsonObject> };
@@ -293,6 +293,56 @@ export async function processJournalEntry(id: string) {
     }
 
     const persistedIntent = getPersistedIntent(intent, usedJournalSafetyNet);
+
+    // Medication deduplication: if the parsed medication already exists as an
+    // ACTIVE record, do NOT create a duplicate card. Instead, record the
+    // last-mentioned date on the existing entry and remove the new raw entry.
+    if (persistedIntent === 'medication' && entry.user_id) {
+      const { data: existingEntries } = await supabase
+        .from('journal_entries')
+        .select('*')
+        .eq('user_id', entry.user_id)
+        .eq('entry_type', 'journal')
+        .neq('status', 'archived')
+        .neq('id', id);
+
+      const { medications } = selectMedicationEntries((existingEntries as JournalEntry[]) ?? []);
+      const duplicate = findDuplicateActiveMedication(
+        aiResponse as Record<string, unknown>,
+        medications
+      );
+
+      if (duplicate) {
+        const existingAi = (duplicate.ai_response as Record<string, unknown>) ?? {};
+        const mentionDate = new Date(entry.created_at).toISOString().split('T')[0];
+        // Merge the new parse into the existing record so state changes (e.g. a
+        // "stopped taking" mention setting Is Active=false / Date Stopped) are applied,
+        // rather than silently discarding the mention.
+        const updatedDuplicateAi = mergeMedicationMention(
+          existingAi,
+          aiResponse as Record<string, unknown>,
+          mentionDate
+        );
+
+        const { error: dedupeUpdateError } = await supabase
+          .from('journal_entries')
+          .update({ ai_response: updatedDuplicateAi } as never)
+          .eq('id', duplicate.id);
+
+        if (dedupeUpdateError) throw new Error(dedupeUpdateError.message);
+
+        const { error: dedupeDeleteError } = await supabase
+          .from('journal_entries')
+          .delete()
+          .eq('id', id);
+
+        if (dedupeDeleteError) throw new Error(dedupeDeleteError.message);
+
+        revalidatePath('/journal');
+        revalidatePath('/medications');
+        return { success: true, deduplicated: true };
+      }
+    }
 
     const normalizedAiResponse = persistedIntent === 'immunisation'
       ? normalizeImmunisationAiResponse(aiResponse as Record<string, unknown>)

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { MedicationGlassBox } from '@/components/patient/medication-glass-box';
+import { MedicationSummary } from '@/components/patient/medication-summary';
 import { updateJournalAiResponse, approveMedicationEntry, backfillEntryIntent } from '@/app/actions/journal-actions';
 import { JsonObject, JournalEntry } from '@/types/database';
 import { selectMedicationEntries } from '@/lib/journal-entry-ai';
@@ -38,6 +38,14 @@ export default function MedicationsPage() {
       setMedicationEntries(previousEntries);
       setError('Failed to update medication. Please try again.');
     }
+  };
+
+  const handleToggleCheck = (entry: JournalEntry) => {
+    const ai = (entry.ai_response as JsonObject | null) ?? {};
+    const nextChecked = !(ai.Checked === true);
+    const nextAi = { ...ai, Checked: nextChecked } as JsonObject;
+    // Optimistic adherence toggle; content text is preserved unchanged.
+    void handleUpdate(entry.id, nextAi, entry.content ?? '');
   };
 
   const handleApprove = async (id: string) => {
@@ -128,21 +136,14 @@ export default function MedicationsPage() {
           </div>
         ) : (
           <>
-            {/* My Medications — dedicated medication records */}
+            {/* Active / Supplement / Inactive summaries with adherence checkboxes */}
             {medicationEntries.length > 0 && (
-              <section>
-                <h2 className="text-lg font-medium text-calm-text mb-3">My Medications</h2>
-                <div className="space-y-4">
-                  {medicationEntries.map((entry) => (
-                    <MedicationGlassBox
-                      key={entry.id}
-                      entry={entry}
-                      onUpdate={handleUpdate}
-                      onApprove={handleApprove}
-                    />
-                  ))}
-                </div>
-              </section>
+              <MedicationSummary
+                medications={medicationEntries}
+                onUpdate={handleUpdate}
+                onApprove={handleApprove}
+                onToggleCheck={handleToggleCheck}
+              />
             )}
 
             {/* Medication Mentions — journal entries that mention medications */}

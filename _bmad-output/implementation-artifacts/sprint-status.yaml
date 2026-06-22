@@ -104,10 +104,10 @@ development_status:
   7-12-wave-2-collaborator-accounts: done
   epic-7-retrospective: optional
 
-  epic-8: backlog
-  8-1-researcher-dashboard-overview: backlog
-  8-2-live-stream-real-time-updates: backlog
-  8-3-wizard-intervention-actions-edit-scenario-trigger: backlog
-  8-4-pre-canned-response-library: backlog
-  8-5-thinking-state-indication: backlog
+  epic-8: in-progress
+  8-1-medication-structure-and-active-summary: review
+  8-2-ai-temporal-awareness-prompt-injection: backlog
+  8-3-date-of-birth-picker-component: backlog
+  8-4-healthcare-team-tracking-feature: backlog
+  8-5-ai-spelling-deduplication-entity-resolution: backlog
   epic-8-retrospective: optional

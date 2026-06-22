@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { JournalEntry, JsonObject } from '@/types/database';
-import { isEntryIntent } from '@/lib/journal-entry-ai';
+import { isEntryIntent, isMedicationActive } from '@/lib/journal-entry-ai';
 import { formatDateDDMMYYYY } from '@/lib/utils/date-helpers';
 
 interface MedicationGlassBoxProps {
@@ -15,6 +15,8 @@ interface MedicationData {
   'Brand Name'?: string;
   'Generic Name'?: string;
   Dosage?: string;
+  Category?: 'prescription' | 'supplement';
+  'Is Active'?: boolean;
   'Date Started'?: string;
   Reason?: string;
   'Side Effects'?: string;
@@ -22,6 +24,9 @@ interface MedicationData {
   'Date Stopped'?: string;
   'Stop Reason'?: string;
   Notes?: string;
+  // Passthrough fields (not directly edited but preserved on save):
+  Checked?: boolean;
+  'Last Mentioned'?: string;
 }
 
 function extractMedicationData(entry: JournalEntry): MedicationData {
@@ -49,6 +54,8 @@ function extractMedicationData(entry: JournalEntry): MedicationData {
     if (ai['Brand Name']) result['Brand Name'] = String(ai['Brand Name']);
     if (ai['Generic Name']) result['Generic Name'] = String(ai['Generic Name']);
     if (ai.Dosage) result.Dosage = String(ai.Dosage);
+    if (ai.Category === 'supplement' || ai.Category === 'prescription') result.Category = ai.Category;
+    if (typeof ai['Is Active'] === 'boolean') result['Is Active'] = ai['Is Active'];
     if (ai['Date Started']) result['Date Started'] = String(ai['Date Started']);
     if (ai.Reason) result.Reason = String(ai.Reason);
     if (ai['Side Effects']) result['Side Effects'] = String(ai['Side Effects']);
@@ -56,6 +63,8 @@ function extractMedicationData(entry: JournalEntry): MedicationData {
     if (ai['Date Stopped']) result['Date Stopped'] = String(ai['Date Stopped']);
     if (ai['Stop Reason']) result['Stop Reason'] = String(ai['Stop Reason']);
     if (ai.Notes) result.Notes = String(ai.Notes);
+    if (typeof ai.Checked === 'boolean') result.Checked = ai.Checked;
+    if (ai['Last Mentioned']) result['Last Mentioned'] = String(ai['Last Mentioned']);
     return result;
   }
 
@@ -72,11 +81,15 @@ function extractMedicationData(entry: JournalEntry): MedicationData {
 }
 
 function serializeToAiResponse(form: MedicationData): JsonObject {
+  // A stop date implies the medication is no longer active.
+  const isActive = form['Date Stopped'] ? false : form['Is Active'] ?? true;
   return {
     _intent: 'medication',
     'Brand Name': form['Brand Name'] || null,
     'Generic Name': form['Generic Name'] || null,
     Dosage: form.Dosage || null,
+    Category: form.Category || 'prescription',
+    'Is Active': isActive,
     'Date Started': form['Date Started'] || null,
     Reason: form.Reason || null,
     'Side Effects': form['Side Effects'] || null,
@@ -84,6 +97,8 @@ function serializeToAiResponse(form: MedicationData): JsonObject {
     'Date Stopped': form['Date Stopped'] || null,
     'Stop Reason': form['Stop Reason'] || null,
     Notes: form.Notes || null,
+    Checked: form.Checked ?? false,
+    'Last Mentioned': form['Last Mentioned'] || null,
   } as JsonObject;
 }
 
@@ -129,6 +144,31 @@ export function MedicationGlassBox({ entry, onUpdate, onApprove }: MedicationGla
       await onApprove(entry.id);
     } catch (error) {
        console.error("Failed to approve medication", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleToggleActive = async () => {
+    try {
+      setIsSaving(true);
+      const data = extractMedicationData(entry);
+      if (isMedicationActive(entry)) {
+        // Mark inactive: record a stop date (today) so it moves to the Inactive section.
+        data['Date Stopped'] = data['Date Stopped'] || formatDateDDMMYYYY(new Date().toISOString());
+        data['Is Active'] = false;
+      } else {
+        // Reactivate: clear the stop so it returns to the active sections.
+        data['Date Stopped'] = undefined;
+        data['Stop Reason'] = undefined;
+        data['Is Active'] = true;
+      }
+      const aiResponse = serializeToAiResponse(data);
+      const contentText = serializeToContentText(data);
+      setFormData(data);
+      await onUpdate(entry.id, aiResponse, contentText);
+    } catch (error) {
+      console.error('Failed to change medication status', error);
     } finally {
       setIsSaving(false);
     }
@@ -196,6 +236,19 @@ export function MedicationGlassBox({ entry, onUpdate, onApprove }: MedicationGla
                 placeholder="dd-mm-yyyy"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-calm-text-muted mb-1" htmlFor="med-category">Category</label>
+            <select
+              id="med-category"
+              className="w-full rounded-md border border-calm-border bg-white p-2 text-sm text-calm-text"
+              value={formData.Category || 'prescription'}
+              onChange={(e) => handleChange('Category', e.target.value)}
+            >
+              <option value="prescription">Prescription / Medicine</option>
+              <option value="supplement">Natural Supplement</option>
+            </select>
           </div>
 
           <div>
@@ -311,6 +364,14 @@ export function MedicationGlassBox({ entry, onUpdate, onApprove }: MedicationGla
           >
             Edit
           </button>
+          <button
+            onClick={handleToggleActive}
+            disabled={isSaving}
+            className="rounded-md px-3 py-1.5 text-xs font-medium text-calm-text-muted hover:bg-calm-surface disabled:opacity-50"
+            style={{ minHeight: '44px' }}
+          >
+            {isMedicationActive(entry) ? 'Mark Inactive' : 'Reactivate'}
+          </button>
           {!isApproved && (
             <button
               onClick={handleApprove}
@@ -348,7 +409,7 @@ export function MedicationGlassBox({ entry, onUpdate, onApprove }: MedicationGla
         )}
 
         {Object.entries(data).map(([key, value]) => {
-          if (['Brand Name', 'Generic Name', 'Dosage', 'Reason'].includes(key)) return null;
+          if (['Brand Name', 'Generic Name', 'Dosage', 'Reason', 'Is Active', 'Checked', 'Last Mentioned'].includes(key)) return null;
           if (!value) return null;
 
           const formattedKey = key;

@@ -376,6 +376,70 @@ describe('Journal Server Actions', () => {
       expect(revalidatePath).toHaveBeenCalledWith('/journal');
     });
 
+    it('deduplicates a medication that already exists as active, recording last-mentioned and deleting the new entry', async () => {
+      // 1. Entry fetch
+      mockSelect.mockReturnValueOnce({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'new-med-id',
+              user_id: 'sarah',
+              created_at: '2026-06-20T08:00:00Z',
+              status: 'draft',
+              content: 'Still taking my Lyrica',
+              entry_type: 'raw_text',
+            },
+            error: null,
+          }),
+        }),
+      });
+
+      // 2. Existing-medication fetch: a thenable chain resolving to one active Lyrica record
+      const existingMed = {
+        id: 'existing-lyrica',
+        user_id: 'sarah',
+        content: '',
+        ai_response: { _intent: 'medication', 'Brand Name': 'Lyrica' },
+        created_at: '2026-05-01T08:00:00Z',
+        entry_type: 'journal',
+        status: 'approved',
+      };
+      const dedupResult = { data: [existingMed], error: null };
+      const dedupChain: Record<string, unknown> = {};
+      const ret = () => dedupChain;
+      dedupChain.eq = vi.fn(ret);
+      dedupChain.neq = vi.fn(ret);
+      dedupChain.then = (resolve: (v: typeof dedupResult) => unknown) => Promise.resolve(dedupResult).then(resolve);
+      mockSelect.mockReturnValueOnce(dedupChain as never);
+
+      const { classifyIntent } = await import('@/lib/openai/smart-parser');
+      vi.mocked(classifyIntent).mockResolvedValueOnce('medication');
+
+      const smartParserModule = await import('@/lib/openai/smart-parser');
+      vi.spyOn(smartParserModule, 'parseMedication').mockResolvedValueOnce({
+        'Brand Name': 'Lyrica',
+        'Is Active': true,
+      } as never);
+
+      const result = await processJournalEntry('new-med-id');
+
+      expect(result).toEqual({ success: true, deduplicated: true });
+      // Existing entry updated with Last Mentioned date
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ai_response: expect.objectContaining({
+            _intent: 'medication',
+            'Brand Name': 'Lyrica',
+            'Last Mentioned': '2026-06-20',
+          }),
+        })
+      );
+      // New raw entry deleted
+      expect(mockDelete).toHaveBeenCalled();
+      expect(mockChain.eq).toHaveBeenCalledWith('id', 'new-med-id');
+      expect(revalidatePath).toHaveBeenCalledWith('/medications');
+    });
+
     it('should not attempt journal-merge when intent is non-journal with sparse parser output', async () => {
       mockSelect.mockReturnValueOnce({
         eq: vi.fn().mockReturnValue({

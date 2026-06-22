@@ -235,6 +235,8 @@ const MedicationResponseSchema = z.object({
   'Brand Name': z.string().optional(),
   'Generic Name': z.string().optional(),
   Dosage: z.string().optional(),
+  Category: z.enum(['prescription', 'supplement']).optional(),
+  'Is Active': z.boolean().optional(),
   'Date Started': ddmmyyyyDateString,
   Reason: z.string().optional(),
   'Side Effects': z.string().optional(),
@@ -249,11 +251,14 @@ export type MedicationResponse = z.infer<typeof MedicationResponseSchema>;
 const MEDICATION_SYSTEM_PROMPT = `
 You are a medical scribe extracting medication data from a journal entry.
 Extract the medication details and output valid JSON exactly matching these keys:
-"Brand Name", "Generic Name", "Dosage", "Date Started", "Reason", "Side Effects", "Feelings", "Date Stopped", "Stop Reason", "Notes".
+"Brand Name", "Generic Name", "Dosage", "Category", "Is Active", "Date Started", "Reason", "Side Effects", "Feelings", "Date Stopped", "Stop Reason", "Notes".
 
+- "Category" MUST be one of: "prescription" (a pharmaceutical drug, prescribed or over-the-counter medicine) or "supplement" (a natural supplement, vitamin, mineral, or herbal product such as Vitamin C, Omega-3, Magnesium). Default to "prescription" when unsure.
+- "Is Active" is a boolean: true if the patient is currently taking it, false if they have stopped. Default to true unless they clearly indicate they stopped.
+- If the patient indicates they stopped, set "Is Active" to false and populate "Date Stopped".
 ${DATE_FORMAT_INSTRUCTION}
 
-Omit keys if not mentioned. Be concise.
+Omit keys if not mentioned (except keep "Category" and "Is Active" populated). Be concise.
 `;
 
 export async function parseMedication(text: string, referenceDate?: Date | string): Promise<MedicationResponse> {
