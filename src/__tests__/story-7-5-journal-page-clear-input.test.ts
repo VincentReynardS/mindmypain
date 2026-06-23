@@ -158,9 +158,9 @@ describe("Story 7.5: Dedicated Journal Page & Clear Input", () => {
       expect(bottomNavSource).toContain("BookOpen");
     });
 
-    it("should include all 7 navigation items", () => {
+    it("should include all 8 navigation items", () => {
       const hrefMatches = bottomNavSource.match(/href:/g);
-      expect(hrefMatches).toHaveLength(7);
+      expect(hrefMatches).toHaveLength(8);
     });
 
     it("should use shortened labels for mobile viewport", () => {

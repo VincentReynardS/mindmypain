@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { parseMedication, parseScript, classifyIntent, parseAppointment, parseImmunisation, getCurrentDateContext } from './smart-parser';
+import { parseMedication, parseScript, classifyIntent, parseAppointment, parseImmunisation, parseTeamMember, getCurrentDateContext } from './smart-parser';
 
 // Hoist the mock function so it's available in vi.mock
 const { mockCreate } = vi.hoisted(() => {
@@ -60,6 +60,14 @@ describe('smart-parser', () => {
       });
       const result = await classifyIntent('Got my Pfizer COVID booster today');
       expect(result).toBe('immunisation');
+    });
+
+    it('should classify a healthcare team member intent', async () => {
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: JSON.stringify({ intent: 'team' }) } }],
+      });
+      const result = await classifyIntent('Add Dr Smith my GP, phone 0400 000 000');
+      expect(result).toBe('team');
     });
 
     it('should fall back to journal if unclear', async () => {
@@ -388,6 +396,39 @@ describe('smart-parser', () => {
     it('should throw on API failure', async () => {
       mockCreate.mockRejectedValueOnce(new Error('API Error'));
       await expect(parseImmunisation('flu shot')).rejects.toThrow('Failed to parse immunisation');
+    });
+  });
+
+  describe('parseTeamMember', () => {
+    it('should parse a team member with Profession, Name, Address, Email, and Phone', async () => {
+      const mockResponse = {
+        Profession: 'General Practitioner',
+        Name: 'Dr Sarah Smith',
+        Address: '12 Health St, Sydney NSW 2000',
+        Email: 'reception@clinic.example',
+        Phone: '0400 000 000',
+      };
+      mockCreate.mockResolvedValueOnce({ choices: [{ message: { content: JSON.stringify(mockResponse) } }] });
+      const result = await parseTeamMember('Add my GP Dr Sarah Smith at 12 Health St, phone 0400 000 000');
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should handle partial team member data without hallucinating contact details', async () => {
+      const mockResponse = { Profession: 'Physiotherapist', Name: 'John Doe' };
+      mockCreate.mockResolvedValueOnce({ choices: [{ message: { content: JSON.stringify(mockResponse) } }] });
+      const result = await parseTeamMember('My physio is John Doe');
+      expect(result.Name).toBe('John Doe');
+      expect(result.Phone).toBeUndefined();
+      expect(result.Email).toBeUndefined();
+    });
+
+    it('should throw on empty input', async () => {
+      await expect(parseTeamMember('')).rejects.toThrow('Input text cannot be empty');
+    });
+
+    it('should throw on API failure', async () => {
+      mockCreate.mockRejectedValueOnce(new Error('API Error'));
+      await expect(parseTeamMember('my GP')).rejects.toThrow('Failed to parse team member');
     });
   });
 

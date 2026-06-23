@@ -59,6 +59,7 @@ Classify the patient's input based on the intention of the patient.
 Categories (assess in this order):
 - "appointment": The user is planning, scheduling, or preparing for a doctor's visit, consultation, therapist session, or any health practitioner meeting.
 - "immunisation": The user has received a vaccine, immunisation, booster, flu shot, or any injection/jab for disease prevention.
+- "team": The user is adding or recording a healthcare provider/practitioner to their care team for future reference (e.g. "add my GP", "my physio is", "my specialist's details are"), capturing who they are and how to contact them (profession, name, address, email, phone). This is about saving a provider's contact details, NOT planning a visit (that is "appointment").
 - "medication": The user starts taking, is actively taking, changes, stops, discontinues, pauses, or reports side effects for a medication, including dosage or timing. Medication refers to consumable drugs, this is different from immunisation.
 - "script": The user is tracking prescriptions, refills, or referrals they need to obtain or follow up on.
 - "journal": A multi-topic daily entry, general narrative, completed activities, reflections, reminders, or any content that does not clearly belong to the above categories.
@@ -80,7 +81,7 @@ Output MUST be valid JSON: {"intent": "..."}
 </CRITICAL>
 `;
 
-export async function classifyIntent(text: string): Promise<'appointment' | 'medication' | 'script' | 'immunisation' | 'journal'> {
+export async function classifyIntent(text: string): Promise<'appointment' | 'medication' | 'script' | 'immunisation' | 'team' | 'journal'> {
   if (!text || text.trim().length === 0) {
     throw new Error('Input text cannot be empty');
   }
@@ -454,5 +455,60 @@ export async function parseImmunisation(text: string, referenceDate?: Date | str
   } catch (error) {
     console.error('Error parsing immunisation:', error);
     throw new Error(`Failed to parse immunisation from text: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+// === Parsing Healthcare Team Members ===
+
+const TeamMemberResponseSchema = z.object({
+  Profession: z.string().optional(),
+  Name: z.string().optional(),
+  Address: z.string().optional(),
+  Email: z.string().optional(),
+  Phone: z.string().optional(),
+});
+
+export type TeamMemberResponse = z.infer<typeof TeamMemberResponseSchema>;
+
+const TEAM_MEMBER_SYSTEM_PROMPT = `
+You are a medical scribe extracting a healthcare provider's contact details from a journal entry so the patient can save them to their care team.
+Extract the provider details and output valid JSON exactly matching these keys:
+"Profession", "Name", "Address", "Email", "Phone".
+
+- "Profession" is the provider's role or specialty (e.g., "General Practitioner", "Physiotherapist", "Pain Specialist", "Psychologist").
+- "Name" is the practitioner or clinic name (e.g., "Dr Sarah Smith", "Northside Physio").
+- "Address" is the clinic/practice address.
+- "Email" is the contact email address.
+- "Phone" is the contact phone number, kept exactly as the user states it.
+
+CRITICAL: Only extract information explicitly present in the entry. NEVER invent, guess, or hallucinate contact details. If a field is not mentioned, OMIT the key entirely. Be concise.
+`;
+
+export async function parseTeamMember(text: string): Promise<TeamMemberResponse> {
+  if (!text || text.trim().length === 0) {
+    throw new Error('Input text cannot be empty');
+  }
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: MODEL_ID,
+      messages: [
+        { role: 'system', content: TEAM_MEMBER_SYSTEM_PROMPT },
+        { role: 'user', content: text },
+      ],
+      response_format: { type: 'json_object' },
+    });
+
+    const content = response.choices[0].message.content;
+
+    if (!content) {
+      throw new Error('No content received from AI');
+    }
+
+    const parsed = JSON.parse(content);
+    return TeamMemberResponseSchema.parse(parsed);
+  } catch (error) {
+    console.error('Error parsing team member:', error);
+    throw new Error(`Failed to parse team member from text: ${error instanceof Error ? error.message : String(error)}`);
   }
 }

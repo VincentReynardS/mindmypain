@@ -48,6 +48,17 @@ describe("PatientBottomNav Component", () => {
     expect(source).toContain('href: "/medications"');
     expect(source).toContain('href: "/scripts"');
     expect(source).toContain('href: "/immunisations"');
+    expect(source).toContain('href: "/team"');
+  });
+
+  it('should include a Team tab linking to /team', () => {
+    const source = fs.readFileSync(
+      path.resolve(__dirname, "../components/patient/bottom-nav.tsx"),
+      "utf-8"
+    );
+    expect(source).toContain('href: "/team"');
+    expect(source).toContain('"Team"');
+    expect(source).toContain("Users");
   });
 
   it("should use appropriate icons", () => {

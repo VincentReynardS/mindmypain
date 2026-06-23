@@ -1,10 +1,10 @@
 import type { JsonObject, JournalEntry } from "@/types/database";
 import { normalizeOptionalDateDDMMYYYY } from "@/lib/utils/date-helpers";
 
-export type EntryIntent = "appointment" | "medication" | "script" | "immunisation" | "journal";
+export type EntryIntent = "appointment" | "medication" | "script" | "immunisation" | "team" | "journal";
 
 type BackfillIntent = { id: string; intent: EntryIntent };
-const ENTRY_INTENTS = new Set<EntryIntent>(["appointment", "medication", "script", "immunisation", "journal"]);
+const ENTRY_INTENTS = new Set<EntryIntent>(["appointment", "medication", "script", "immunisation", "team", "journal"]);
 
 const JOURNAL_KEYS = new Set([
   "Sleep",
@@ -28,11 +28,12 @@ const MEDICATION_KEYS = [
   "Date Stopped",
   "Stop Reason",
 ] as const;
-const NON_JOURNAL_INTENTS = new Set<EntryIntent>(["appointment", "medication", "script", "immunisation"]);
+const NON_JOURNAL_INTENTS = new Set<EntryIntent>(["appointment", "medication", "script", "immunisation", "team"]);
 const RAW_TEXT_MEDICAL_PATTERNS = [
   /\b(appointment|appt|consult|follow-up|doctor|dr\.?|specialist|physio|clinic|visit|referral)\b/i,
   /\b(medication|medicine|meds|tablet|capsule|dosage|dose|prescription|script|refill|repeat|pharmacy|chemist)\b/i,
   /\b(vaccine|vaccination|immuni[sz]ation|booster|flu shot|covid shot|tetanus)\b/i,
+  /\b(care team|my (gp|physio|psychologist|specialist|practitioner|provider))\b/i,
 ];
 
 function getNonEmptyString(value: unknown): string | null {
@@ -159,6 +160,26 @@ export function selectImmunisationEntries(entries: JournalEntry[]): {
   }
 
   return { immunisations, toBackfill };
+}
+
+/**
+ * Selects dedicated healthcare team-member entries. Relies on the authoritative
+ * `_intent === "team"` discriminator set at parse time.
+ */
+export function selectTeamMemberEntries(entries: JournalEntry[]): {
+  teamMembers: JournalEntry[];
+} {
+  const teamMembers: JournalEntry[] = [];
+
+  for (const entry of entries) {
+    const ai = asObject(entry.ai_response);
+    if (!ai) continue;
+    if (ai._intent === "team") {
+      teamMembers.push(entry);
+    }
+  }
+
+  return { teamMembers };
 }
 
 export type MedicationCategory = "prescription" | "supplement";

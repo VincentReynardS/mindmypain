@@ -7,6 +7,7 @@ import { MedicationEditForm } from './editors/medication-edit-form';
 import { AppointmentEditForm } from './editors/appointment-edit-form';
 import { ScriptEditForm } from './editors/script-edit-form';
 import { ImmunisationEditForm } from './editors/immunisation-edit-form';
+import { TeamMemberEditForm } from './editors/team-member-edit-form';
 import { ArchiveConfirmPopover } from '@/components/shared/archive-confirm-popover';
 import { formatDateDDMMYYYY } from '@/lib/utils/date-helpers';
 
@@ -25,7 +26,7 @@ const TYPE_CONFIG: Record<JournalEntryType, { label: string; badgeClass: string 
   insight_card: { label: 'Insight', badgeClass: 'bg-calm-blue-soft text-calm-blue' },
 };
 
-type AiResponseShape = 'medication' | 'appointment' | 'script' | 'immunisation' | 'journal';
+type AiResponseShape = 'medication' | 'appointment' | 'script' | 'immunisation' | 'team' | 'journal';
 type RecordValue = string | number | boolean | null | JsonObject | RecordValue[];
 
 const asRecord = (value: unknown): Record<string, RecordValue> | null => {
@@ -54,6 +55,7 @@ const getStringArray = (value: RecordValue | undefined): string[] => {
 const BADGE_CONFIG: Record<AiResponseShape, { label: string; badgeClass: string }> = {
   appointment: { label: 'Appointment', badgeClass: 'bg-indigo-100 text-indigo-700' },
   immunisation: { label: 'Immunisation', badgeClass: 'bg-teal-100 text-teal-700' },
+  team: { label: 'Care Team', badgeClass: 'bg-calm-green-soft text-calm-green' },
   medication: { label: 'Medication', badgeClass: 'bg-amber-100 text-amber-800' },
   script: { label: 'Script', badgeClass: 'bg-calm-blue-soft text-calm-blue' },
   journal: { label: 'Journal', badgeClass: 'bg-calm-purple-soft text-calm-purple' },
@@ -291,6 +293,31 @@ function SafeImmunisationRender({ aiResponse }: { aiResponse: Record<string, Rec
   );
 }
 
+function SafeTeamMemberRender({ aiResponse }: { aiResponse: Record<string, RecordValue> }) {
+  const fields = [
+    { key: 'Profession', label: 'Profession' },
+    { key: 'Name', label: 'Name' },
+    { key: 'Address', label: 'Address' },
+    { key: 'Email', label: 'Email' },
+    { key: 'Phone', label: 'Phone' },
+  ];
+
+  return (
+    <div className="space-y-2">
+      {fields.map(({ key, label }) => {
+        const raw = getString(aiResponse[key]);
+        if (!raw) return null;
+        return (
+          <div key={key} className="text-calm-text">
+            <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-0.5">{label}</span>
+            <div className="text-sm">{raw}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function parseJournalRecord(content: string, aiResponse?: unknown): Record<string, RecordValue> | null {
   const direct = asRecord(aiResponse);
   if (direct) return direct;
@@ -384,6 +411,7 @@ function renderByShape(shape: AiResponseShape, content: string, aiResponse: Reco
     case 'immunisation': return <SafeImmunisationRender aiResponse={aiResponse} />;
     case 'medication': return <SafeMedicationRender aiResponse={aiResponse} />;
     case 'script': return <SafeScriptRender aiResponse={aiResponse} />;
+    case 'team': return <SafeTeamMemberRender aiResponse={aiResponse} />;
     case 'journal':
     default: return <SafeHealthJournalRender content={content} aiResponse={aiResponse} hideAdminTasks={hideAdminTasks} />;
   }
@@ -460,6 +488,8 @@ export function GlassBoxCard({ entry, onUpdate, onApprove, onUpdateAiResponse, o
           return <ScriptEditForm aiResponse={entry.ai_response} onSave={handleAiResponseSave} onCancel={handleCancel} isSaving={isSaving} />;
         case 'immunisation':
           return <ImmunisationEditForm aiResponse={entry.ai_response} onSave={handleAiResponseSave} onCancel={handleCancel} isSaving={isSaving} />;
+        case 'team':
+          return <TeamMemberEditForm aiResponse={entry.ai_response} onSave={handleAiResponseSave} onCancel={handleCancel} isSaving={isSaving} />;
       }
     }
 

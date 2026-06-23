@@ -135,6 +135,16 @@ export async function approveImmunisationEntry(id: string) {
   revalidatePath('/immunisations');
 }
 
+export async function updateTeamMemberEntry(id: string, content: string) {
+  await updateJournalEntry(id, { content });
+  revalidatePath('/team');
+}
+
+export async function approveTeamMemberEntry(id: string) {
+  await approveJournalEntry(id);
+  revalidatePath('/team');
+}
+
 export async function approveJournalEntry(id: string) {
   const supabase = await createClient();
   
@@ -192,6 +202,11 @@ export async function processJournalEntry(id: string) {
       case 'immunisation': {
         const { parseImmunisation } = await import('@/lib/openai/smart-parser');
         aiResponse = await parseImmunisation(entry.content || '', entry.created_at);
+        break;
+      }
+      case 'team': {
+        const { parseTeamMember } = await import('@/lib/openai/smart-parser');
+        aiResponse = await parseTeamMember(entry.content || '');
         break;
       }
       case 'journal':
@@ -448,6 +463,7 @@ export async function updateJournalAiResponse(
   revalidatePath('/medications');
   revalidatePath('/scripts');
   revalidatePath('/immunisations');
+  revalidatePath('/team');
 }
 
 export async function archiveJournalEntry(id: string) {
@@ -476,6 +492,7 @@ export async function archiveJournalEntry(id: string) {
   revalidatePath('/appointments');
   revalidatePath('/scripts');
   revalidatePath('/immunisations');
+  revalidatePath('/team');
 }
 
 export async function restoreJournalEntry(id: string) {
@@ -503,6 +520,7 @@ export async function restoreJournalEntry(id: string) {
   revalidatePath('/appointments');
   revalidatePath('/scripts');
   revalidatePath('/immunisations');
+  revalidatePath('/team');
 }
 
 export async function permanentlyDeleteJournalEntry(id: string) {
@@ -521,6 +539,7 @@ export async function permanentlyDeleteJournalEntry(id: string) {
   revalidatePath('/appointments');
   revalidatePath('/scripts');
   revalidatePath('/immunisations');
+  revalidatePath('/team');
 }
 
 export async function bulkDeleteArchivedEntries(userId: string) {
@@ -539,6 +558,7 @@ export async function bulkDeleteArchivedEntries(userId: string) {
   revalidatePath('/appointments');
   revalidatePath('/scripts');
   revalidatePath('/immunisations');
+  revalidatePath('/team');
 }
 
 export async function updateScriptOrReferralEntry(id: string, isFilled: boolean) {

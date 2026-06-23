@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, CalendarHeart, Pill, FileText, MessageCircle, Syringe, BookOpen } from "lucide-react";
+import { Home, CalendarHeart, Pill, FileText, MessageCircle, Syringe, BookOpen, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function PatientBottomNav() {
@@ -38,6 +38,11 @@ export function PatientBottomNav() {
       label: "Immun.",
       href: "/immunisations",
       icon: Syringe,
+    },
+    {
+      label: "Team",
+      href: "/team",
+      icon: Users,
     },
     {
       label: "Ask",
