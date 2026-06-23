@@ -123,6 +123,15 @@ export function getRelativeDateStatus(
 }
 
 /**
+ * Returns today's date formatted as dd-mm-yyyy in the Australia/Melbourne
+ * timezone. Used as a sensible default for empty date pickers so the native
+ * calendar opens on today rather than an arbitrary fallback date.
+ */
+export function getTodayDDMMYYYY(referenceDate: Date = new Date()): string {
+  return formatDateInTimeZone(referenceDate);
+}
+
+/**
  * Formats a timestamp to HH:mm format (24-hour).
  */
 export function formatTime(dateString: string): string {

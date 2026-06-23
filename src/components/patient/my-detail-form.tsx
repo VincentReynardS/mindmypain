@@ -10,6 +10,7 @@ import {
   getProfileValidationErrors,
   type ProfileValidationErrors,
 } from "@/lib/profile-validation";
+import { formatDateDDMMYYYY, getTodayDDMMYYYY, toYYYYMMDD } from "@/lib/utils/date-helpers";
 
 interface ProfileFormData {
   full_name: string;
@@ -91,6 +92,9 @@ export function MyDetailForm() {
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [fieldErrors, setFieldErrors] = useState<ProfileValidationErrors>({});
+
+  // A date of birth can never be in the future; cap the picker at today.
+  const maxDob = toYYYYMMDD(getTodayDDMMYYYY());
 
   useEffect(() => {
     let cancelled = false;
@@ -236,14 +240,16 @@ export function MyDetailForm() {
           )}
         </div>
         <div>
-          <label className={labelClass} htmlFor="profile-dob">Date of Birth (dd-mm-yyyy)</label>
+          <label className={labelClass} htmlFor="profile-dob">Date of Birth</label>
           <input
             id="profile-dob"
-            type="text"
+            type="date"
+            max={maxDob}
             className={`${inputClass} ${fieldErrors.dob ? "border-red-400" : ""}`}
-            placeholder="dd-mm-yyyy"
-            value={form.dob}
-            onChange={(e) => handleChange("dob", e.target.value)}
+            value={toYYYYMMDD(form.dob)}
+            onChange={(e) =>
+              handleChange("dob", e.target.value ? formatDateDDMMYYYY(e.target.value) : "")
+            }
             disabled={saving}
             style={{ minHeight: "44px" }}
             aria-invalid={Boolean(fieldErrors.dob)}
@@ -335,14 +341,18 @@ export function MyDetailForm() {
           />
         </div>
         <div>
-          <label className={labelClass} htmlFor="profile-medicare-valid">Medicare Valid To (dd-mm-yyyy)</label>
+          <label className={labelClass} htmlFor="profile-medicare-valid">Medicare Valid To</label>
           <input
             id="profile-medicare-valid"
-            type="text"
+            type="date"
             className={`${inputClass} ${fieldErrors.medicare_valid_to ? "border-red-400" : ""}`}
-            placeholder="dd-mm-yyyy"
-            value={form.medicare_valid_to}
-            onChange={(e) => handleChange("medicare_valid_to", e.target.value)}
+            value={toYYYYMMDD(form.medicare_valid_to)}
+            onChange={(e) =>
+              handleChange(
+                "medicare_valid_to",
+                e.target.value ? formatDateDDMMYYYY(e.target.value) : ""
+              )
+            }
             disabled={saving}
             style={{ minHeight: "44px" }}
             aria-invalid={Boolean(fieldErrors.medicare_valid_to)}
