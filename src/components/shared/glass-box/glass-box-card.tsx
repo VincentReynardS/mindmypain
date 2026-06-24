@@ -309,7 +309,7 @@ function SafeTeamMemberRender({ aiResponse }: { aiResponse: Record<string, Recor
         if (!raw) return null;
         return (
           <div key={key} className="text-calm-text">
-            <span className="font-medium text-calm-primary block text-[10px] uppercase tracking-wider mb-0.5">{label}</span>
+            <span className="font-medium text-calm-text-muted block text-[10px] uppercase tracking-wider mb-0.5">{label}</span>
             <div className="text-sm">{raw}</div>
           </div>
         );

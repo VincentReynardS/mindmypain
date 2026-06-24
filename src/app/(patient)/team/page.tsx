@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { TeamMemberGlassBox } from '@/components/patient/team-member-glass-box';
-import { updateTeamMemberEntry, approveTeamMemberEntry } from '@/app/actions/journal-actions';
+import { updateJournalAiResponse, approveTeamMemberEntry } from '@/app/actions/journal-actions';
 import { JsonObject, JournalEntry } from '@/types/database';
 import { useUserStore } from '@/lib/stores/user-store';
 import { selectTeamMemberEntries } from '@/lib/journal-entry-ai';
@@ -15,19 +15,17 @@ export default function TeamPage() {
   const personaId = useUserStore((s) => s.personaId);
   const [supabase] = useState(createClient);
 
-  const handleUpdate = async (id: string, content: string) => {
+  const handleUpdate = async (id: string, aiResponse: object, contentText: string) => {
     const previousEntries = [...teamEntries];
-    let parsed: JsonObject | null = null;
-    try { parsed = JSON.parse(content) as JsonObject; } catch { /* keep null */ }
     setTeamEntries(entries =>
       entries.map(e => e.id === id ? {
         ...e,
-        content,
-        ...(parsed ? { ai_response: { ...(e.ai_response as JsonObject || {}), ...parsed } } : {}),
+        content: contentText,
+        ai_response: { ...(e.ai_response as JsonObject || {}), ...(aiResponse as JsonObject) },
       } : e)
     );
     try {
-      await updateTeamMemberEntry(id, content);
+      await updateJournalAiResponse(id, aiResponse as JsonObject, contentText);
       setError(null);
     } catch (err) {
       console.error('Failed to update team member:', err);

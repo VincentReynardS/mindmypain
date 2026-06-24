@@ -1,6 +1,6 @@
 # Story 8.4: healthcare-team-tracking-feature
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -90,4 +90,27 @@ Gemini 3.1 Pro (Low)
 - `src/__tests__/patient-bottom-nav.test.tsx` (modified) - Team tab assertions
 - `src/__tests__/story-7-5-journal-page-clear-input.test.ts` (modified) - nav count 7->8
 - `src/__tests__/team-page.test.tsx` (new) - selection + page tests
-- `src/__tests__/team-member-glass-box.test.tsx` (new) - card + GlassBoxCard wiring tests
+- `src/__tests__/team-member-glass-box.test.tsx` (new) - card + GlassBoxCard wiring tests; behavioral RTL edit-persistence tests added in review
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Vincent | **Date:** 2026-06-24 | **Outcome:** Approved (all High/Medium issues fixed)
+
+### Findings & Resolutions
+
+- **[HIGH][FIXED] Edits on `/team` were silently lost on reload.** The standalone `TeamMemberGlassBox` saved through `updateTeamMemberEntry`, which wrote only the `content` column, while the renderer (`resolveTeamMemberData`) prefers `ai_response`, which was never updated. The optimistic local merge masked the bug until refresh. Fix: the card now serializes a structured payload and `/team` persists via `updateJournalAiResponse` (writes both `ai_response` and `content`, preserving `_intent`), matching the Home-feed `GlassBoxCard` path. The orphaned `updateTeamMemberEntry` action was removed.
+- **[MEDIUM][FIXED] `SafeTeamMemberRender` used the undefined `text-calm-primary` token** (`glass-box-card.tsx`). Replaced with `text-calm-text-muted` (defined in `globals.css`), consistent with the standalone card.
+- **[MEDIUM][FIXED] Weak test coverage.** The new UI tests were source-string assertions that could not catch the High bug. Added jsdom/RTL behavioral tests covering the edit/save/persist path, the `_intent` non-leak, and field-clearing-to-null.
+- **[MEDIUM][FIXED] `_intent` leaked into the `content` column.** `resolveTeamMemberData` and serialization now extract only the five known team fields, dropping discriminators like `_intent`.
+- **[LOW][NOTED] `/team` over-fetches** all non-archived journal entries then filters client-side; acceptable at prototype scale.
+- **[LOW][NOTED] `selectTeamMemberEntries` has no legacy/backfill fallback** (relies solely on `_intent === 'team'`); acceptable as the feature is new (no legacy rows).
+
+### Validation
+
+- `npx tsc --noEmit` clean; ESLint clean on all changed files.
+- Targeted suites pass (team page + card: 16 tests). Full suite: 644 passed, 1 pre-existing/unrelated failure (`story-7-1` seed-SQL date assertion, untouched by this story).
+- Git File List verified against the commit: no discrepancies.
+
+### Change Log
+
+- 2026-06-24: Senior Developer Review (AI) fixed 1 High + 3 Medium findings; status review to done.

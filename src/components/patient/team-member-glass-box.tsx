@@ -4,9 +4,11 @@ import { useState } from 'react';
 import { Pencil } from 'lucide-react';
 import { JournalEntry } from '@/types/database';
 
+const TEAM_FIELD_KEYS = ['Profession', 'Name', 'Address', 'Email', 'Phone'] as const;
+
 interface TeamMemberGlassBoxProps {
   entry: JournalEntry;
-  onUpdate: (id: string, content: string) => Promise<void>;
+  onUpdate: (id: string, aiResponse: object, contentText: string) => Promise<void>;
   onApprove: (id: string) => Promise<void>;
 }
 
@@ -20,18 +22,50 @@ interface TeamMemberData {
 
 function parseContent(content: string): TeamMemberData {
   try {
-    return JSON.parse(content || '{}');
+    return pickTeamFields(JSON.parse(content || '{}'));
   } catch {
     return {};
   }
 }
 
+/** Extracts only the known team fields, dropping discriminators like `_intent`. */
+function pickTeamFields(src: Record<string, unknown> | null): TeamMemberData {
+  if (!src) return {};
+  const out: TeamMemberData = {};
+  for (const key of TEAM_FIELD_KEYS) {
+    const val = src[key];
+    if (typeof val === 'string' && val.trim().length > 0) out[key] = val;
+  }
+  return out;
+}
+
 function resolveTeamMemberData(entry: JournalEntry): TeamMemberData {
-  const ai = entry.ai_response as TeamMemberData | null;
-  if (ai && (ai.Profession || ai.Name || ai.Address || ai.Email || ai.Phone)) {
+  const ai = pickTeamFields(entry.ai_response as Record<string, unknown> | null);
+  if (ai.Profession || ai.Name || ai.Address || ai.Email || ai.Phone) {
     return ai;
   }
   return parseContent(entry.content);
+}
+
+/** Builds the persisted ai_response payload (empty fields become null). */
+function serializeToAiResponse(form: TeamMemberData): Record<string, string | null> {
+  return {
+    Profession: form.Profession?.trim() || null,
+    Name: form.Name?.trim() || null,
+    Address: form.Address?.trim() || null,
+    Email: form.Email?.trim() || null,
+    Phone: form.Phone?.trim() || null,
+  };
+}
+
+/** Builds the human-readable raw `content` text from the form. */
+function serializeToContentText(form: TeamMemberData): string {
+  const lines: string[] = [];
+  for (const key of TEAM_FIELD_KEYS) {
+    const val = form[key]?.trim();
+    if (val) lines.push(`${key}: ${val}`);
+  }
+  return lines.join('\n');
 }
 
 export function TeamMemberGlassBox({ entry, onUpdate, onApprove }: TeamMemberGlassBoxProps) {
@@ -44,7 +78,7 @@ export function TeamMemberGlassBox({ entry, onUpdate, onApprove }: TeamMemberGla
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      await onUpdate(entry.id, JSON.stringify(formData));
+      await onUpdate(entry.id, serializeToAiResponse(formData), serializeToContentText(formData));
       setIsEditing(false);
     } catch (error) {
       console.error("Failed to save team member", error);

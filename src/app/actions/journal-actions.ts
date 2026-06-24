@@ -135,11 +135,6 @@ export async function approveImmunisationEntry(id: string) {
   revalidatePath('/immunisations');
 }
 
-export async function updateTeamMemberEntry(id: string, content: string) {
-  await updateJournalEntry(id, { content });
-  revalidatePath('/team');
-}
-
 export async function approveTeamMemberEntry(id: string) {
   await approveJournalEntry(id);
   revalidatePath('/team');
